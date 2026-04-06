@@ -2,49 +2,65 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Jeans Club Notification Trigger</title>
+    <title>Jeans Club - Sarcastic Notifications</title>
     <style>
-        body {
-            font-family: monospace;
-            background: #0a0a0a;
-            color: #00ff00;
-            padding: 20px;
-        }
-        .log {
-            background: #1a1a1a;
-            padding: 15px;
-            border-radius: 5px;
-            white-space: pre-wrap;
-            font-size: 12px;
-        }
+        body { font-family: monospace; background: #0a0a0a; color: #00ff00; padding: 20px; }
+        .log { background: #1a1a1a; padding: 15px; border-radius: 5px; white-space: pre-wrap; font-size: 12px; max-height: 400px; overflow-y: auto; }
+        button { background: #00ff00; color: #000; border: none; padding: 10px 20px; margin: 10px; cursor: pointer; font-weight: bold; border-radius: 5px; }
+        button:hover { background: #ff6600; color: white; }
     </style>
 </head>
 <body>
-    <h1>Ì±ñ Jeans Club Notification Service</h1>
-    <p>Status: <span id="status">Ìø¢ RUNNING</span></p>
-    <div class="log" id="log">Initializing...</div>
+    <h1>Ì±ñ Jeans Club - WITTY & SARCASTIC NOTIFICATIONS</h1>
+    <p>Status: <span style="color: #00ff00;">Ìø¢ RUNNING Every 30 minutes</span></p>
+    <div style="margin: 20px 0;">
+        <button onclick="sendTestNotification()">Ì¥î TEST NOW</button>
+        <button onclick="sendSarcasticNow()">Ì≤Ä SEND SARCASTIC NOW</button>
+    </div>
+    <div class="log" id="log">Starting witty notification service...</div>
 
     <script>
     const ONESIGNAL_APP_ID = '40cfbe3f-800c-4105-b3aa-ca32676332b0';
     const ONESIGNAL_API_KEY = 'os_v2_app_idh34p4abraqlm5kzizgoyzswb4xhwz45qnu6du72szadwuaxglazhrzdezgl7xoat43nps2nojsz4j3kypjqxpty3sj7ohgi2aihki';
 
-    const DARK_MESSAGES = [
-        { title: "Ì≤Ä Existential Crisis", body: "Your jeans will outlive you. Make sure they're stylish ones. Ì±ñ" },
-        { title: "Ì¥Æ Your Future", body: "I see jeans in your future. And debt. Mostly debt. Worth it though!" },
-        { title: "‚ö∞Ô∏è Breaking News", body: "Local person spends money they don't have on jeans they don't need. More at 11." },
-        { title: "Ì±ª Spooky Fact", body: "Your money isn't gone... it's just... fashionably late. Forever." },
-        { title: "Ì¥° Clown Update", body: "You're one step closer to looking like a million bucks. Too bad you spent it all on jeans." },
-        { title: "Ì≥â Financial Advice", body: "Money can't buy happiness. But it can buy jeans. That's basically the same thing." },
-        { title: "ÌΩ∑ Poor Decisions", body: "Every great love story starts with a bad decision. These jeans are your soulmate." },
-        { title: "Ìæ™ Circus Alert", body: "Your financial literacy left the chat. But your drip? IMMACULATE." },
-        { title: "Ì∫¶ Epitaph", body: "Here lies your savings. Cause of death: 'But they were on sale!'" },
-        { title: "Ì≥¢ PSA", body: "Warning: Excessive denim consumption may lead to happiness, confidence, and bankruptcy." }
+    // WITTY, SARCASTIC, TEASING MESSAGES - NO FLASH SALES
+    const SARCASTIC_MESSAGES = [
+        { title: "Ì≤Ä Congratulations!", body: "You've survived another day without buying jeans. We're not impressed." },
+        { title: "Ì¥Æ Fortune Cookie", body: "Your future includes jeans. And debt. Mostly debt. But hey, style!" },
+        { title: "Ì¥° Clown Alert", body: "Another day, another person who hasn't bought jeans. The circus is disappointed." },
+        { title: "Ì≥â Financial Expert", body: "Your bank account called. It's feeling neglected. Buy something." },
+        { title: "Ì±ª Spooky News", body: "Your money isn't gone... it's just... fashionably late. Forever." },
+        { title: "Ìæ™ Circus Update", body: "The main clown (you) hasn't been to the jeans circus today. We're worried." },
+        { title: "‚ö∞Ô∏è RIP", body: "Your savings account died of loneliness. Cause: No jeans purchases." },
+        { title: "ÌΩ∑ Bad Decisions", body: "Remember: Every great love story starts with a bad decision. These jeans are waiting." },
+        { title: "Ì∫¶ Epitaph", body: "Here lies your impulse control. It died waiting for you to buy jeans." },
+        { title: "Ì≥¢ PSA", body: "Warning: Not buying jeans may lead to happiness? No wait, that's wrong. Buy jeans." },
+        { title: "Ìæ≠ Therapy Session", body: "Therapist: 'Why do you need more jeans?' You: 'You wouldn't understand.'" },
+        { title: "Ì≥ä Stock Market", body: "The only thing going up is your need for jeans. Everything else? Down." },
+        { title: "Ìæ∞ Gambling", body: "Buying jeans is gambling with extra steps. Will they fit? Who cares! YOLO." },
+        { title: "Ì≤Ä Death & Taxes", body: "Two things are certain: Death, taxes, and you needing more jeans." },
+        { title: "Ì¥Ñ Vicious Cycle", body: "Not buying jeans ‚Üí Sad ‚Üí Buy jeans ‚Üí Happy ‚Üí Broke ‚Üí Buy more jeans to feel better." },
+        { title: "Ìæ™ Welcome to the Circus", body: "You're the main attraction! Starring: Your wallet. Co-starring: Your impulse control (very small role)." },
+        { title: "Ì¥° Honk Honk!", body: "This is your clown nose. Ì±É Buy jeans or we take it back." },
+        { title: "Ì≥â Financial Forecast", body: "Cloudy with a chance of... MORE JEANS! Your points are waiting to be spent." },
+        { title: "Ì¥î Reality Check", body: "You don't need jeans. But you also don't need happiness. Your choice." },
+        { title: "Ì≤Ö Confidence Issue", body: "Your confidence is low. Jeans are high. Do the math." },
+        { title: "Ìµ∞Ô∏è Time Machine", body: "In 10 years, you won't remember the price. You'll just remember how COOL you looked." },
+        { title: "ÌæØ Life Goals", body: "Some people save for retirement. You could save for jeans. Priorities." },
+        { title: "Ì¥• Hot Take", body: "Money can be earned again. Limited edition jeans cannot. You do the math." },
+        { title: "Ì±ñ Intervention", body: "This is an intervention! ...Just kidding, buy more jeans." },
+        { title: "Ì≤Ä Existential Crisis", body: "Your jeans will outlive you. Make sure they're stylish ones." },
+        { title: "Ì¥° Self-Awareness", body: "You have a problem. The problem is: not enough jeans." },
+        { title: "Ìæ™ Join the Circus", body: "We have cookies. And jeans. Mostly jeans though. Still interested?" },
+        { title: "Ì≥â Poor Decisions", body: "Your financial advisor is crying. But your mirror is smiling. Worth it?" },
+        { title: "Ì±ª Ghosted", body: "Your money ghosted you. It's with us now. At the jeans store." },
+        { title: "Ì≤Ä Final Warning", body: "This is your conscience speaking. Buy the jeans. Do it. No regrets." }
     ];
 
     function addLog(message) {
         const log = document.getElementById('log');
         const timestamp = new Date().toLocaleString();
-        log.innerHTML += `\\n[${timestamp}] ${message}`;
+        log.innerHTML += `\n[${timestamp}] ${message}`;
         log.scrollTop = log.scrollHeight;
         console.log(message);
     }
@@ -71,62 +87,67 @@
             });
             
             const result = await response.json();
-            addLog(`‚úÖ Sent! Notification ID: ${result.id || 'Success'}`);
+            if (result.id) {
+                addLog(`‚úÖ SENT! ID: ${result.id}`);
+            } else {
+                addLog(`‚ö†Ô∏è Response: ${JSON.stringify(result)}`);
+            }
             return result;
         } catch (error) {
-            addLog(`‚ùå Error: ${error.message}`);
+            addLog(`‚ùå ERROR: ${error.message}`);
             return null;
         }
     }
 
-    async function runScheduledNotifications() {
+    // Manual test buttons
+    window.sendTestNotification = async function() {
+        addLog('Ì¥î TEST BUTTON CLICKED');
+        await sendNotification(
+            'Ì¥î JEANS CLUB TEST', 
+            'If you see this, the sarcasm engine is working! Prepare to be roasted every 30 minutes. Ì±ñ'
+        );
+    };
+    
+    window.sendSarcasticNow = async function() {
+        addLog('Ì≤Ä SARCASTIC BUTTON CLICKED');
+        const randomMsg = SARCASTIC_MESSAGES[Math.floor(Math.random() * SARCASTIC_MESSAGES.length)];
+        await sendNotification(randomMsg.title, randomMsg.body);
+    };
+
+    // 30-MINUTE SCHEDULE - ONLY SARCASTIC/WITTY MESSAGES
+    let lastSentSlot = -1;
+
+    async function runEvery30Minutes() {
         const now = new Date();
         const hour = now.getHours();
-        const day = now.getDay();
+        const minute = now.getMinutes();
+        const currentSlot = Math.floor(minute / 30);
         
-        addLog(`Ìµê Checking schedule - Hour: ${hour}, Day: ${day}`);
-        
-        // DAILY DARK HUMOR (9 AM)
-        if (hour === 9) {
-            const randomMsg = DARK_MESSAGES[Math.floor(Math.random() * DARK_MESSAGES.length)];
-            await sendNotification(randomMsg.title, randomMsg.body);
+        // Check if we already sent this slot
+        if (lastSentSlot === currentSlot && lastSentSlot !== -1) {
+            return;
         }
         
-        // WEEKEND SPECIAL (Sat/Sun 10 AM)
-        if ((day === 6 || day === 0) && hour === 10) {
-            await sendNotification('Ìæâ WEEKEND DENIM SPECIAL! Ìæâ', 'Double points on all purchases TODAY ONLY! Show this notification at checkout. Ì±ñ');
-        }
+        addLog(`‚è∞ 30-MINUTE TRIGGER at ${hour}:${minute}`);
         
-        // MIDNIGHT RESET (12 AM)
-        if (hour === 0) {
-            await sendNotification('Ìºô Midnight Denim Thoughts...', 'New day, new jeans! Your daily points have been refreshed. Shop now!');
-        }
+        // Pick a random sarcastic message
+        const randomMsg = SARCASTIC_MESSAGES[Math.floor(Math.random() * SARCASTIC_MESSAGES.length)];
         
-        // BIRTHDAY CHECK (8 AM)
-        if (hour === 8) {
-            await sendNotification('ÌæÇ BIRTHDAY BONUS! ÌæÇ', 'Is it your birthday? Get 200 FREE points! Show your ID at checkout. Valid today only!');
-        }
+        addLog(`Ì≤Ä Selected: "${randomMsg.title}"`);
+        await sendNotification(randomMsg.title, randomMsg.body);
         
-        // LOW POINTS REMINDER (3 PM)
-        if (hour === 15) {
-            await sendNotification('‚ö†Ô∏è LOW POINTS ALERT!', 'Check your points balance. Shop now to earn more and unlock bigger discounts!');
-        }
-        
-        // FLASH SALE (6 PM)
-        if (hour === 18) {
-            await sendNotification('‚ö° FLASH SALE! ‚ö°', 'Next 2 hours: 20% OFF everything! Use code: FLASH20 at checkout.');
-        }
-        
-        addLog('‚úÖ Schedule check complete');
+        lastSentSlot = currentSlot;
+        addLog(`‚úÖ Next sarcastic notification in 30 minutes`);
     }
 
-    // Run immediately when triggered
-    runScheduledNotifications();
+    // Run immediately and then every 30 minutes
+    setTimeout(runEvery30Minutes, 1000);
+    setInterval(runEvery30Minutes, 30 * 60 * 1000);
     
-    // Also run every hour if page stays open
-    setInterval(runScheduledNotifications, 60 * 60 * 1000);
-    
-    addLog('Ì∫Ä Notification service ready!');
+    addLog('Ì∫Ä SARCASTIC NOTIFICATION SERVICE ACTIVE');
+    addLog('Ì≤Ä Sending witty, sarcastic, teasing messages every 30 minutes');
+    addLog('‚è∞ No flash sales - just pure sarcasm');
+    addLog(`Ì≥ö Loaded ${SARCASTIC_MESSAGES.length} sarcastic messages`);
     </script>
 </body>
 </html>
