@@ -5962,14 +5962,7 @@ class IframeEmailService extends GoogleAppsEmailService {}
             return re.test(String(email).toLowerCase());
         }
         
-        // Google Apps Script Email Service (simplified)
-        class GoogleAppsEmailService {
-            constructor() { this.scriptURL = 'https://script.google.com/macros/s/AKfycbzmJS_ThUUb_FsyeuBVbLyBRdGXAD0Pj1uhv_4CCD8NtV0WCL6THqgIBIawmWK4F7CN/exec'; }
-            async sendWelcomeEmail(email, memberData) { console.log('Welcome email would send to:', email); return true; }
-            async sendPurchaseEmail(email, memberData, purchaseData) { console.log('Purchase email would send to:', email); return true; }
-            async sendNewsletterWelcomeEmail(email, memberData, newsletterData) { console.log('Newsletter welcome email would send to:', email); return true; }
-            async sendBulkNewsletter(emails, subject, message) { console.log(`Newsletter would send to ${emails.length} subscribers`); return { success: true, message: 'Newsletter sent' }; }
-        }
+        
         
         class IframeEmailService extends GoogleAppsEmailService {}
         
