@@ -7745,7 +7745,8 @@ function normalizeEmailForDatabase(email) {
                 if (points >= 7500) return 'BRONZE';
                 return 'PEARL';
             }
-async signUpWithEmail(name, email, password, referralCode = null) {
+
+            async signUpWithEmail(name, email, password, referralCode = null) {
     try {
         if (!name || !email || !password) {
             showToast('Please fill in all required fields', 'error');
@@ -7851,6 +7852,14 @@ async signUpWithEmail(name, email, password, referralCode = null) {
         localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
         localStorage.setItem('jeansClubIsAdmin', 'false');
         
+        // ✅ ADD ONESIGNAL SYNC RIGHT HERE (BEFORE startListeningForNotifications)
+        if (window.OneSignal) {
+            window.OneSignal.Deferred.push(function(OneSignal) {
+                OneSignal.setExternalUserId(member.jcId);
+                console.log('✅ OneSignal synced with new member:', member.jcId);
+            });
+        }
+        
         if (typeof startListeningForNotifications === 'function') {
             await startListeningForNotifications();
             await fetchUndeliveredNotifications();
@@ -7893,76 +7902,85 @@ async signUpWithEmail(name, email, password, referralCode = null) {
         return false;
     }
 }
-            async loginWithJCId(jcId, password) {
-                try {
-                    if (!jcId || !password) {
-                        showToast('Please enter both JC ID and password', 'error');
-                        return false;
-                    }
-                    
-                    if (jcId.toLowerCase() === 'admin' && password === 'jeansclub2024') {
-                        this.isAdmin = true;
-                        this.currentMember = null;
-                        this.currentSalesperson = prompt("Enter your name:", "Salesperson");
-                        localStorage.setItem('jeansClubCurrentMember', '');
-                        localStorage.setItem('jeansClubIsAdmin', 'true');
-                        localStorage.setItem('jeansClubSalesperson', this.currentSalesperson);
-                        
-                        showAdminPanel();
-                        showToast(`Welcome ${this.currentSalesperson}!`, 'success');
-                        return true;
-                    }
-                    
-                    const member = await this.db.getMemberByJCId(jcId.toUpperCase());
-                    if (!member) {
-                        showToast('Invalid JC ID or password', 'error');
-                        return false;
-                    }
-                    
-                    if (member.loginMethod === 'google') {
-                        showToast('Please use Google Sign-In for this account', 'error');
-                        return false;
-                    }
-                    
-                    if (member.password !== password) {
-                        showToast('Invalid JC ID or password', 'error');
-                        return false;
-                    }
-                    
-                    if (!member.lifetimePoints) {
-                        member.lifetimePoints = Math.floor(member.totalSpent / 1000) + 10;
-                    }
-                    
-                    member.lastLogin = new Date().toISOString();
-                    await this.db.saveMember(member);
-                    
-                    this.currentMember = member;
-                    this.isAdmin = false;
-                    localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
-                    localStorage.setItem('jeansClubIsAdmin', 'false');
-                    
-                    const updatedMember = await this.db.getMemberByJCId(member.jcId);
-                    if (updatedMember) {
-                        this.currentMember = updatedMember;
-                        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
-                    }
-                    // ✅ ADD THESE 3 LINES RIGHT HERE
-if (typeof startListeningForNotifications === 'function') {
-    await startListeningForNotifications();
-    await fetchUndeliveredNotifications();
+async loginWithJCId(jcId, password) {
+    try {
+        if (!jcId || !password) {
+            showToast('Please enter both JC ID and password', 'error');
+            return false;
+        }
+        
+        if (jcId.toLowerCase() === 'admin' && password === 'jeansclub2024') {
+            this.isAdmin = true;
+            this.currentMember = null;
+            this.currentSalesperson = prompt("Enter your name:", "Salesperson");
+            localStorage.setItem('jeansClubCurrentMember', '');
+            localStorage.setItem('jeansClubIsAdmin', 'true');
+            localStorage.setItem('jeansClubSalesperson', this.currentSalesperson);
+            
+            showAdminPanel();
+            showToast(`Welcome ${this.currentSalesperson}!`, 'success');
+            return true;
+        }
+        
+        const member = await this.db.getMemberByJCId(jcId.toUpperCase());
+        if (!member) {
+            showToast('Invalid JC ID or password', 'error');
+            return false;
+        }
+        
+        if (member.loginMethod === 'google') {
+            showToast('Please use Google Sign-In for this account', 'error');
+            return false;
+        }
+        
+        if (member.password !== password) {
+            showToast('Invalid JC ID or password', 'error');
+            return false;
+        }
+        
+        if (!member.lifetimePoints) {
+            member.lifetimePoints = Math.floor(member.totalSpent / 1000) + 10;
+        }
+        
+        member.lastLogin = new Date().toISOString();
+        await this.db.saveMember(member);
+        
+        this.currentMember = member;
+        this.isAdmin = false;
+        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
+        localStorage.setItem('jeansClubIsAdmin', 'false');
+        
+        const updatedMember = await this.db.getMemberByJCId(member.jcId);
+        if (updatedMember) {
+            this.currentMember = updatedMember;
+            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
+        }
+        
+        // ✅ START LISTENING FOR NOTIFICATIONS
+        if (typeof startListeningForNotifications === 'function') {
+            await startListeningForNotifications();
+            await fetchUndeliveredNotifications();
+        }
+        
+        // ✅ ADD ONESIGNAL AUTO-SYNC RIGHT HERE
+        if (window.OneSignal) {
+            window.OneSignal.Deferred.push(function(OneSignal) {
+                OneSignal.setExternalUserId(this.currentMember.jcId);
+                console.log('✅ OneSignal synced with member:', this.currentMember.jcId);
+            }.bind(this));
+        }
+        
+        showDashboard(this.currentMember);
+        showToast(`Welcome back ${member.name}!`, 'success');
+        
+        return true;
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        showToast('An error occurred. Please try again.', 'error');
+        return false;
+    }
 }
-                    showDashboard(this.currentMember);
-                    showToast(`Welcome back ${member.name}!`, 'success');
-                    
-                    return true;
-                    
-                } catch (error) {
-                    console.error('Login error:', error);
-                    showToast('An error occurred. Please try again.', 'error');
-                    return false;
-                }
-            }
-
 
             async addPurchase(jcId, amount, description) {
     try {
@@ -9112,9 +9130,16 @@ async function enablePushNotifications() {
     
     const result = await pushManager.subscribe();
     
+    // Also subscribe to OneSignal
+    if (window.OneSignal) {
+        window.OneSignal.Deferred.push(function(OneSignal) {
+            OneSignal.registerForPushNotifications();
+            console.log('OneSignal subscription requested');
+        });
+    }
+    
     if (result) {
         console.log('✅ Notifications enabled successfully');
-        // Update button
         const btn = document.getElementById('notifyToggleBtn');
         if (btn) {
             btn.textContent = '🔕 Notifications On';
@@ -9436,7 +9461,7 @@ function requestNotificationPermission() {
         pushManager.subscribe();
     }
 }
-// Toggle push notifications
+// Toggle push notifications with OneSignal support
 async function togglePushNotifications() {
     console.log('🔄 Toggle notifications called');
     
@@ -9444,32 +9469,59 @@ async function togglePushNotifications() {
         await initPushNotifications();
     }
     
+    const btn = document.getElementById('notifyToggleBtn');
+    
     if (pushManager.isSubscribed) {
-        // Unsubscribe
+        // ========== UNSUBSCRIBE ==========
         console.log('Turning OFF notifications...');
-        const result = await pushManager.unsubscribe();
-        if (result) {
-            const btn = document.getElementById('notifyToggleBtn');
-            if (btn) {
-                btn.textContent = '🔔 Enable Notifications';
-                btn.style.background = '';
-            }
-            showToast('Notifications disabled', 'info');
+        
+        // Unsubscribe from your push system
+        await pushManager.unsubscribe();
+        
+        // Unsubscribe from OneSignal
+        if (window.OneSignal) {
+            window.OneSignal.Deferred.push(function(OneSignal) {
+                OneSignal.setSubscription(false);
+                console.log('✅ OneSignal unsubscribed');
+            });
         }
+        
+        // Update button
+        if (btn) {
+            btn.textContent = '🔔 Enable Notifications';
+            btn.style.background = '';
+        }
+        showToast('Notifications disabled on this device', 'info');
+        
     } else {
-        // Subscribe
+        // ========== SUBSCRIBE ==========
         console.log('Turning ON notifications...');
+        
+        // Subscribe to your push system
         const result = await pushManager.subscribe();
-        if (result) {
-            const btn = document.getElementById('notifyToggleBtn');
-            if (btn) {
-                btn.textContent = '🔕 Notifications On';
-                btn.style.background = '#28a745';
-            }
+        
+        // Subscribe to OneSignal
+        if (window.OneSignal) {
+            window.OneSignal.Deferred.push(function(OneSignal) {
+                OneSignal.registerForPushNotifications();
+                console.log('✅ OneSignal subscription requested');
+                
+                // Set external user ID if logged in
+                if (clubManager && clubManager.currentMember) {
+                    OneSignal.setExternalUserId(clubManager.currentMember.jcId);
+                    console.log('✅ OneSignal user ID set:', clubManager.currentMember.jcId);
+                }
+            });
         }
+        
+        // Update button
+        if (btn) {
+            btn.textContent = '🔕 Notifications On';
+            btn.style.background = '#28a745';
+        }
+        showToast('🔔 Notifications enabled! You will receive updates even when browser is closed.', 'success');
     }
 }
-
 // ===========================================
 // REPLACE sendPushNotification with this Supabase version
 // ===========================================
