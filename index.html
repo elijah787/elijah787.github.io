@@ -2605,6 +2605,28 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Add jsQR Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <!-- OneSignal SDK -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(function(OneSignal) {
+    OneSignal.init({
+      appId: "40cfbe3f-800c-4105-b3aa-ca32676332b0",
+      safari_web_id: "",
+      allowLocalhostAsSecureOrigin: true,
+    });
+  });
+  
+  // Automatically set external_id when user is logged in
+  if (typeof clubManager !== 'undefined' && clubManager && clubManager.currentMember) {
+    OneSignalDeferred.push(function(OneSignal) {
+      OneSignal.login(clubManager.currentMember.jcId);
+      OneSignal.sendTag("tier", clubManager.currentMember.tier);
+      OneSignal.sendTag("points", clubManager.currentMember.points.toString());
+      console.log("✅ OneSignal initialized with JC ID:", clubManager.currentMember.jcId);
+    });
+  }
+</script>
 </head>
 <body>
     <!-- Search Modal -->
