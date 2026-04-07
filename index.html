@@ -7861,7 +7861,7 @@ function normalizeEmailForDatabase(email) {
         setTimeout(function() {
             if (window.OneSignal) {
                 try {
-                    window.OneSignal.User.login(' + member.jcId + ');
+                    window.OneSignal.setExternalUserId(' + member.jcId + ');
                     console.log('✅ OneSignal external ID set for new member:', member.jcId);
                 } catch(err) {
                     console.error('Failed to set external ID:', err);
@@ -7975,7 +7975,7 @@ async loginWithJCId(jcId, password) {
         setTimeout(function() {
             if (window.OneSignal) {
                 try {
-                    window.OneSignal.User.login(' + this.currentMember.jcId + ');
+                    window.OneSignal.setExternalUserId(' + this.currentMember.jcId + ');
                     console.log('✅ OneSignal external ID set to:', this.currentMember.jcId);
                 } catch(err) {
                     console.error('Failed to set external ID:', err);
@@ -9129,7 +9129,7 @@ async function togglePushNotifications() {
     btn.textContent = '⏳ Processing...';
     
     try {
-        const isSubscribed = await window.OneSignal.Notifications.permission === "granted";
+        const isSubscribed = await window.OneSignal.isPushNotificationsEnabled();
         
         if (isSubscribed) {
             // UNSUBSCRIBE - Turn OFF
@@ -9147,7 +9147,7 @@ async function togglePushNotifications() {
             }
         } else {
             // SUBSCRIBE - Turn ON
-            const result = await window.OneSignal.Notifications.requestPermission();
+            const result = await window.OneSignal.registerForPushNotifications();
             
             if (result) {
                 // Show ON state with regular bell
@@ -9160,7 +9160,7 @@ async function togglePushNotifications() {
                         .from('members')
                         .update({ push_enabled: true })
                         .eq('jc_id', clubManager.currentMember.jcId);
-                    await window.OneSignal.User.login(clubManager.currentMember.jcId);
+                    await window.OneSignal.setExternalUserId(clubManager.currentMember.jcId);
                 }
             } else {
                 btn.textContent = '🔕 Notifications Off - Click to Enable';
@@ -9187,7 +9187,7 @@ async function updateNotificationButton() {
     }
     
     try {
-        const isSubscribed = await window.OneSignal.Notifications.permission === "granted";
+        const isSubscribed = await window.OneSignal.isPushNotificationsEnabled();
         
         if (isSubscribed) {
             // ✅ SUBSCRIBED - Bell with sound (NOTIFICATIONS ARE ON)
