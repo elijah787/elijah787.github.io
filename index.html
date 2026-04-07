@@ -2630,7 +2630,7 @@
       },
       allowLocalhostAsSecureOrigin: true,
     });
-    console.log('OK OneSignal initialized');
+    console.log('✅ OneSignal initialized');
   });
 </script>
 </head>
@@ -3466,7 +3466,7 @@
             </div>
             
 
-    <!-- OK BIRTHDAY FIELD - PUT HERE -->
+    <!-- ✅ BIRTHDAY FIELD - PUT HERE -->
     <div class="form-group">
         <label for="userBirthday">🎂 Your Birthday</label>
         <input type="date" id="userBirthday">
@@ -3581,7 +3581,7 @@
             <!-- 🔥 NEW: Resume Transaction Button (appears when there's a pending transaction) -->
             <div id="resumeTransactionSection" class="hidden" style="margin-top: 10px; margin-bottom: 20px;">
                 <div class="info-card" style="border-left-color: #28a745; background: #e8f5e8;">
-                    <h3 style="color: #28a745; margin-top: 0;">Loading Pending Transaction</h3>
+                    <h3 style="color: #28a745; margin-top: 0;">⏳ Pending Transaction</h3>
                     <p>You have an ongoing transaction that hasn't been completed.</p>
                     <button class="btn" onclick="resumeTransaction()" style="background: #28a745; width: auto; padding: 10px 20px;">
                         🔄 Resume Transaction
@@ -4328,7 +4328,7 @@ const ONESIGNAL_REST_API_KEY = 'os_v2_app_idh34p4abraqlm5kzizgoyzswb4xhwz45qnu6d
                          style="width: 250px; height: 250px; border: 2px solid #ddd; border-radius: 10px; padding: 10px; margin: 20px 0;">
                     <p style="color: #333; margin-bottom: 10px;"><strong>${clubManager.currentMember.name}</strong></p>
                     <p style="color: #666; margin-bottom: 20px;">JC ID: ${clubManager.currentMember.jcId}</p>
-                    <p style="color: #28a745; margin-bottom: 20px;">Loading Waiting for salesperson to scan...</p>
+                    <p style="color: #28a745; margin-bottom: 20px;">⏳ Waiting for salesperson to scan...</p>
                     <button onclick="this.parentElement.parentElement.remove()" 
                             class="btn" style="padding: 10px 20px;">
                         Close
@@ -4373,7 +4373,7 @@ const ONESIGNAL_REST_API_KEY = 'os_v2_app_idh34p4abraqlm5kzizgoyzswb4xhwz45qnu6d
                     <p style="color: #666; margin-bottom: 20px;">Ask member to scan this QR code to view their receipt and apply vouchers</p>
                     <img src="${qrCodeUrl}" alt="Receipt QR Code" 
                          style="width: 250px; height: 250px; border: 2px solid #28a745; border-radius: 10px; padding: 10px; margin: 20px 0;">
-                    <p style="color: #28a745; font-weight: bold; margin-bottom: 10px;" id="receiptStatus">Loading Waiting for member to scan...</p>
+                    <p style="color: #28a745; font-weight: bold; margin-bottom: 10px;" id="receiptStatus">⏳ Waiting for member to scan...</p>
                     <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Total: ${transaction.subtotal.toLocaleString()} UGX</p>
                     <button onclick="this.parentElement.parentElement.remove()" 
                             class="btn" style="padding: 10px 20px;">
@@ -4396,11 +4396,11 @@ const ONESIGNAL_REST_API_KEY = 'os_v2_app_idh34p4abraqlm5kzizgoyzswb4xhwz45qnu6d
             const viewChannel = supabase
                 .channel('receipt_view_' + transactionId)
                 .on('broadcast', { event: 'receipt_viewed' }, (payload) => {
-                    console.log("OK Member viewed receipt!", payload);
+                    console.log("✅ Member viewed receipt!", payload);
                     
                     const statusEl = document.getElementById('receiptStatus');
                     if (statusEl) {
-                        statusEl.innerHTML = 'OK Member viewed receipt!';
+                        statusEl.innerHTML = '✅ Member viewed receipt!';
                         statusEl.style.color = '#28a745';
                     }
                     
@@ -4537,7 +4537,7 @@ const ONESIGNAL_REST_API_KEY = 'os_v2_app_idh34p4abraqlm5kzizgoyzswb4xhwz45qnu6d
                     <p style="color: #666; margin-bottom: 20px;">Member must scan this QR code with their phone to join the transaction</p>
                     <img src="${qrCodeUrl}" alt="Join QR Code" 
                          style="width: 250px; height: 250px; border: 2px solid #ddd; border-radius: 10px; padding: 10px; margin: 20px 0;">
-                    <p style="color: #28a745; font-weight: bold; margin-bottom: 10px;" id="joinStatus">Loading Waiting for member to join...</p>
+                    <p style="color: #28a745; font-weight: bold; margin-bottom: 10px;" id="joinStatus">⏳ Waiting for member to join...</p>
                     <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Transaction ID: ${transaction.id}</p>
                     <button onclick="this.parentElement.parentElement.remove()" 
                             class="btn" style="padding: 10px 20px;">
@@ -4560,11 +4560,11 @@ const ONESIGNAL_REST_API_KEY = 'os_v2_app_idh34p4abraqlm5kzizgoyzswb4xhwz45qnu6d
             const joinChannel = supabase
                 .channel('transaction_join_' + transactionId)
                 .on('broadcast', { event: 'member_joined' }, (payload) => {
-                    console.log("OK Member joined!", payload);
+                    console.log("✅ Member joined!", payload);
                     
                     const statusEl = document.getElementById('joinStatus');
                     if (statusEl) {
-                        statusEl.innerHTML = 'OK Member joined! You can now add items.';
+                        statusEl.innerHTML = '✅ Member joined! You can now add items.';
                         statusEl.style.color = '#28a745';
                     }
                     
@@ -4627,7 +4627,7 @@ const ONESIGNAL_REST_API_KEY = 'os_v2_app_idh34p4abraqlm5kzizgoyzswb4xhwz45qnu6d
                     return;
                 }
                 
-                console.log("OK Transaction found:", transaction);
+                console.log("✅ Transaction found:", transaction);
                 console.log("Transaction status:", transaction.status);
                 
                 let items = [];
@@ -4677,7 +4677,7 @@ const ONESIGNAL_REST_API_KEY = 'os_v2_app_idh34p4abraqlm5kzizgoyzswb4xhwz45qnu6d
                 showMemberTransactionScreen(currentTransaction);
                 
                 showToast("Successfully joined transaction!", "success");
-                console.log("OK memberJoinTransaction completed successfully");
+                console.log("✅ memberJoinTransaction completed successfully");
                 
             } catch (error) {
                 console.error("❌ Error in memberJoinTransaction:", error);
@@ -4798,7 +4798,7 @@ const ONESIGNAL_REST_API_KEY = 'os_v2_app_idh34p4abraqlm5kzizgoyzswb4xhwz45qnu6d
                     return false;
                 }
                 
-                console.log("OK Transaction saved successfully:", transaction.id);
+                console.log("✅ Transaction saved successfully:", transaction.id);
                 return true;
                 
             } catch (error) {
@@ -5008,7 +5008,7 @@ function showMemberTransactionScreen(transaction) {
             </div>
             
             <button class="confirm-btn" onclick="memberConfirmPayment()" ${transaction.items.length === 0 ? 'disabled' : ''}>
-                OK CONFIRM PAYMENT
+                ✅ CONFIRM PAYMENT
             </button>
         ` : `
             <!-- RECEIPT SECTION - SHOWN AFTER CONFIRMATION -->
@@ -5085,17 +5085,17 @@ function showMemberTransactionScreen(transaction) {
                     style="width: 200px; height: 200px; border: 2px solid #28a745; border-radius: 10px; padding: 5px;">
                 </div>
                 <p style="color: #28a745; font-weight: bold; margin-top: 10px;">
-                    OK Total: ${finalAmount.toLocaleString()} UGX
+                    ✅ Total: ${finalAmount.toLocaleString()} UGX
                 </p>
             </div>
             
             <div class="status-message status-success" style="margin-top: 20px;">
-                OK Payment confirmed! Show the QR code above to the salesperson to complete your purchase.
+                ✅ Payment confirmed! Show the QR code above to the salesperson to complete your purchase.
             </div>
         `}
         
         <div class="status-message status-waiting" style="margin-top: 20px;">
-            Loading Status: ${transaction.status === 'pending_items' ? 'Salesperson adding items...' : 
+            ⏳ Status: ${transaction.status === 'pending_items' ? 'Salesperson adding items...' : 
                         (transaction.memberConfirmed ? 'Waiting for salesperson to complete...' : 'Awaiting your confirmation')}
         </div>
     `;
@@ -5180,7 +5180,7 @@ function showMemberTransactionScreen(transaction) {
                     </div>
                     <div class="timeline-step ${transaction.memberConfirmed ? 'completed' : (transaction.items.length > 0 ? 'active' : '')}">
                         <span class="timeline-dot"></span>
-                        <span>${transaction.memberConfirmed ? 'OK Member confirmed' : 'Loading Waiting for member confirmation'}</span>
+                        <span>${transaction.memberConfirmed ? '✅ Member confirmed' : '⏳ Waiting for member confirmation'}</span>
                     </div>
                     <div class="timeline-step ${transaction.salespersonCompleted ? 'completed' : ''}">
                         <span class="timeline-dot"></span>
@@ -5405,7 +5405,7 @@ function showMemberTransactionScreen(transaction) {
                 <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 90%;">
                     <img src="https://i.ibb.co.com/Rp9F4xBC/jeans-club.jpg" alt="Jeans Club" style="height: 50px; margin-bottom: 20px;">
                     <h3 style="margin-top: 0; color: #333;">Show this QR to the salesperson</h3>
-                    <p style="color: #28a745; margin-bottom: 20px;">OK Payment confirmed!</p>
+                    <p style="color: #28a745; margin-bottom: 20px;">✅ Payment confirmed!</p>
                     <img src="${qrCodeUrl}" alt="Confirmation QR Code" 
                          style="width: 250px; height: 250px; border: 2px solid #28a745; border-radius: 10px; padding: 10px; margin: 20px 0;">
                     <p style="color: #333; margin-bottom: 10px;"><strong>Total: ${(transaction.appliedVoucher ? transaction.finalTotal : transaction.subtotal).toLocaleString()} UGX</strong></p>
@@ -5632,7 +5632,7 @@ function showMemberTransactionScreen(transaction) {
 
         // Cancel transaction with navigation protection
         async function cancelTransaction(ignoreIfNoTransaction = false) {
-            console.log("Warning cancelTransaction called at:", new Date().toISOString());
+            console.log("⚠️ cancelTransaction called at:", new Date().toISOString());
             console.log("Current transaction:", currentTransaction);
             
             if (isNavigatingToScanner) {
@@ -6053,7 +6053,7 @@ function showMemberTransactionScreen(transaction) {
                         return false;
                     }
 
-                    console.log("OK Voucher saved to Supabase:", voucher.code);
+                    console.log("✅ Voucher saved to Supabase:", voucher.code);
                     return true;
 
                 } catch (error) {
@@ -6178,7 +6178,7 @@ function showMemberTransactionScreen(transaction) {
                         throw error;
                     }
 
-                    console.log(`OK Loaded ${members?.length || 0} members from Supabase`);
+                    console.log(`✅ Loaded ${members?.length || 0} members from Supabase`);
                     
                     const transformedMembers = members ? members.map(member => {
                         let purchaseHistory = [];
@@ -6300,7 +6300,7 @@ function showMemberTransactionScreen(transaction) {
             throw error;
         }
 
-        console.log('OK Member saved successfully to Supabase');
+        console.log('✅ Member saved successfully to Supabase');
         
         // Clear cache to force refresh
         const cache = this.getCache();
@@ -6386,7 +6386,7 @@ function showMemberTransactionScreen(transaction) {
         }
 
         if (member) {
-            console.log('OK Found member:', member.jc_id);
+            console.log('✅ Found member:', member.jc_id);
             return this.transformMemberData(member);
         }
         
@@ -6502,7 +6502,7 @@ transformMemberData(member) {
                         throw error;
                     }
 
-                    console.log('OK Newsletter unsubscribe successful');
+                    console.log('✅ Newsletter unsubscribe successful');
                     return true;
 
                 } catch (error) {
@@ -6575,7 +6575,7 @@ transformMemberData(member) {
                 return false;
             }
             
-            console.log('OK Reset token saved successfully');
+            console.log('✅ Reset token saved successfully');
             return true;
             
         } catch (error) {
@@ -6637,7 +6637,7 @@ transformMemberData(member) {
                 return false;
             }
             
-            console.log('OK Reset token cleared successfully');
+            console.log('✅ Reset token cleared successfully');
             return true;
             
         } catch (error) {
@@ -6667,7 +6667,7 @@ transformMemberData(member) {
                 return false;
             }
             
-            console.log('OK Expired tokens cleaned up');
+            console.log('✅ Expired tokens cleaned up');
             return true;
             
         } catch (error) {
@@ -6843,7 +6843,7 @@ function normalizeEmailForDatabase(email) {
         window.addEventListener('message', (event) => {
             if (event.data.ready) {
                 this.isReady = true;
-                console.log('OK Email service ready');
+                console.log('✅ Email service ready');
                 // Send any pending emails
                 this.processPending();
             }
@@ -6887,7 +6887,7 @@ function normalizeEmailForDatabase(email) {
 
                         if (response.ok) {
                             const result = await response.json();
-                            console.log('OK Email sent successfully via Google Apps Script:', result);
+                            console.log('✅ Email sent successfully via Google Apps Script:', result);
                             return result;
                         } else {
                             throw new Error(`HTTP error! status: ${response.status}`);
@@ -6904,7 +6904,7 @@ function normalizeEmailForDatabase(email) {
                             body: JSON.stringify(payload)
                         });
                         
-                        console.log('OK Email request sent (no-cors fallback mode)');
+                        console.log('✅ Email request sent (no-cors fallback mode)');
                         return { 
                             success: true, 
                             message: 'Email sent successfully (fallback mode)',
@@ -7237,7 +7237,7 @@ function normalizeEmailForDatabase(email) {
                 <html>
                 <head>
                     <meta charset="utf-8">
-                    <title>OK Password Reset Successful | Jeans Club</title>
+                    <title>✅ Password Reset Successful | Jeans Club</title>
                     <style>
                         body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
                         .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
@@ -7248,7 +7248,7 @@ function normalizeEmailForDatabase(email) {
                 <body>
                     <div class="container">
                         <div class="header">
-                            <h1>OK PASSWORD RESET SUCCESSFUL</h1>
+                            <h1>✅ PASSWORD RESET SUCCESSFUL</h1>
                         </div>
                         <div class="content" style="padding: 30px;">
                             <p>Dear <strong>${memberData.name}</strong>,</p>
@@ -7351,7 +7351,7 @@ function normalizeEmailForDatabase(email) {
                     case 'discount': return '🎫 ' + (extraData?.discountPercentage || 0) + '% Discount Voucher';
                     case 'referral': return '🎊 Referral Success! +100 Points';
                     case 'password_reset': return '🔒 Password Reset Request';
-                    case 'password_reset_success': return 'OK Password Reset Successful';
+                    case 'password_reset_success': return '✅ Password Reset Successful';
                     case 'newsletter_welcome': return "📬 Welcome to Jeans Club Newsletter!";
                     case 'newsletter': return extraData?.subject || "📰 Jeans Club Newsletter";
                     default: return '💌 Message from Jeans Club';
@@ -7481,7 +7481,7 @@ function normalizeEmailForDatabase(email) {
                 
                 this.voucherSystem = new VoucherSystem();
                 
-                console.log('OK ClubManager initialized');
+                console.log('✅ ClubManager initialized');
                 
                 window.voucherSystem = this.voucherSystem;
                 
@@ -7789,7 +7789,7 @@ function normalizeEmailForDatabase(email) {
         const jcId = this.generateJCId();
         const memberReferralCode = this.generateReferralCode();
         
-        // OK Get birthday from form
+        // ✅ Get birthday from form
         const birthday = document.getElementById('userBirthday')?.value || null;
         
         let referredBy = null;
@@ -7836,7 +7836,7 @@ function normalizeEmailForDatabase(email) {
             ip_address: clientIP,
             lastLogin: new Date().toISOString(),
             createdAt: new Date().toISOString(),
-            birthday: birthday  // OK Added birthday field
+            birthday: birthday  // ✅ Added birthday field
         };
         
         member.activityLog.unshift({
@@ -7857,17 +7857,13 @@ function normalizeEmailForDatabase(email) {
         localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
         localStorage.setItem('jeansClubIsAdmin', 'false');
         
-        // OK FIXED: Set OneSignal External ID for new member
-        setTimeout(function() {
-            if (window.OneSignal) {
-                try {
-                    window.OneSignal.login(' + member.jcId + ');
-                    console.log('OK OneSignal external ID set for new member:', member.jcId);
-                } catch(err) {
-                    console.error('Failed to set external ID:', err);
-                }
-            }
-        }, 2000);
+        // ✅ ADD ONESIGNAL SYNC RIGHT HERE (BEFORE startListeningForNotifications)
+        if (window.OneSignal) {
+            window.OneSignal.Deferred.push(function(OneSignal) {
+                OneSignal.setExternalUserId(member.jcId);
+                console.log('✅ OneSignal synced with new member:', member.jcId);
+            });
+        }
         
         if (typeof startListeningForNotifications === 'function') {
             await startListeningForNotifications();
@@ -7965,25 +7961,19 @@ async loginWithJCId(jcId, password) {
             localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
         }
         
-        // OK START LISTENING FOR NOTIFICATIONS
+        // ✅ START LISTENING FOR NOTIFICATIONS
         if (typeof startListeningForNotifications === 'function') {
             await startListeningForNotifications();
             await fetchUndeliveredNotifications();
         }
         
-        // OK FIXED: Set OneSignal External ID after login
-        setTimeout(function() {
-            if (window.OneSignal) {
-                try {
-                    window.OneSignal.login(' + this.currentMember.jcId + ');
-                    console.log('OK OneSignal external ID set to:', this.currentMember.jcId);
-                } catch(err) {
-                    console.error('Failed to set external ID:', err);
-                }
-            } else {
-                console.log('Warning OneSignal not loaded yet');
-            }
-        }.bind(this), 2000);
+        // ✅ ADD ONESIGNAL AUTO-SYNC RIGHT HERE
+        if (window.OneSignal) {
+            window.OneSignal.Deferred.push(function(OneSignal) {
+                OneSignal.setExternalUserId(this.currentMember.jcId);
+                console.log('✅ OneSignal synced with member:', this.currentMember.jcId);
+            }.bind(this));
+        }
         
         showDashboard(this.currentMember);
         showToast(`Welcome back ${member.name}!`, 'success');
@@ -8048,7 +8038,7 @@ async loginWithJCId(jcId, password) {
             points: pointsEarned
         });
         
-        // OK SEND PUSH NOTIFICATION FOR PURCHASE
+        // ✅ SEND PUSH NOTIFICATION FOR PURCHASE
        // FIND this function in your code and REPLACE the darkMessages array:
 
 const darkMessages = [
@@ -8067,7 +8057,7 @@ const darkMessages = [
         const randomMsg = darkMessages[Math.floor(Math.random() * darkMessages.length)];
         sendPushNotification('🛍️ Purchase Confirmed!', randomMsg);
         
-        // OK SEND TIER UPGRADE NOTIFICATION IF APPLICABLE
+        // ✅ SEND TIER UPGRADE NOTIFICATION IF APPLICABLE
         if (tierUpgraded) {
             const tierMessages = {
                 'BRONZE': "You're officially not a beginner anymore. The denim gods approve!",
@@ -8100,7 +8090,7 @@ const darkMessages = [
                     
                     await this.db.saveMember(referrer);
                     
-                    // OK SEND REFERRAL NOTIFICATION
+                    // ✅ SEND REFERRAL NOTIFICATION
                     sendPushNotification('🎊 Referral Success!', 
                         `${referrer.name}, ${member.name} made their first purchase! +100 points for you!`);
                     
@@ -8181,7 +8171,7 @@ const darkMessages = [
             
             if (!emailSent) {
                 // Even if email fails, we still have the token saved
-                console.warn('Warning Email sending failed but token was saved');
+                console.warn('⚠️ Email sending failed but token was saved');
                 return { 
                     success: true, 
                     message: `Reset code generated but email failed. Your reset code is: ${resetToken}. Please contact support if you didn't receive it.`,
@@ -8328,7 +8318,7 @@ const darkMessages = [
 // ===========================================
 
 
-// OK Send notification to ALL devices of a specific member
+// ✅ Send notification to ALL devices of a specific member
 async function sendToAllDevices(memberJcId, title, body, data = {}) {
     try {
         console.log(`📤 Sending notification to all devices of ${memberJcId}`);
@@ -8349,7 +8339,7 @@ async function sendToAllDevices(memberJcId, title, body, data = {}) {
             return false;
         }
         
-        console.log('OK Notification stored in Supabase - will sync to all devices');
+        console.log('✅ Notification stored in Supabase - will sync to all devices');
         
         // Also show on current device immediately
         if (pushManager && pushManager.isSubscribed) {
@@ -8380,14 +8370,14 @@ async function broadcastToAllMembersAllDevices(title, body, data = {}) {
         await new Promise(r => setTimeout(r, 100)); // Rate limiting
     }
     
-    console.log(`OK Broadcast complete! Sent to ${successCount} members`);
+    console.log(`✅ Broadcast complete! Sent to ${successCount} members`);
     return { success: true, count: successCount };
 }
 
 // Listen for incoming notifications from other devices
 let notificationChannel = null;
 
-// OK REPLACE startListeningForNotifications with this working version
+// ✅ REPLACE startListeningForNotifications with this working version
 async function startListeningForNotifications() {
     if (!clubManager || !clubManager.currentMember) {
         console.log('No member logged in, cannot listen for notifications');
@@ -8455,7 +8445,7 @@ async function markNotificationAsDelivered(notificationId) {
                 read_at: new Date().toISOString()
             })
             .eq('id', notificationId);
-        console.log('OK Notification marked as delivered');
+        console.log('✅ Notification marked as delivered');
     } catch (error) {
         console.error('Failed to mark as delivered:', error);
     }
@@ -8701,13 +8691,13 @@ async function triggerScheduledNotifications() {
         for (const member of members) {
             if (member.points > 0 && member.points < 100) {
                 const lowPointsMessages = [
-                    `Warning ${member.name}, you only have ${member.points} points left! That's like... not enough jeans. Shop more to earn more! 🛍️`,
+                    `⚠️ ${member.name}, you only have ${member.points} points left! That's like... not enough jeans. Shop more to earn more! 🛍️`,
                     `📉 ${member.name}, your points balance is looking lonely (${member.points} points). Time for a shopping spree? 👖`,
                     `🆘 ${member.name}, POINTS EMERGENCY! Only ${member.points} points remaining. Your next purchase could earn you DOUBLE!`,
                     `💀 ${member.name}, your points are almost extinct. Save them from extinction by... actually, just spend more money.`
                 ];
                 const randomMsg = lowPointsMessages[Math.floor(Math.random() * lowPointsMessages.length)];
-                await sendToAllDevices(member.jcId, 'Warning Low Points Alert!', randomMsg);
+                await sendToAllDevices(member.jcId, '⚠️ Low Points Alert!', randomMsg);
                 stats.lowPoints++;
                 await new Promise(r => setTimeout(r, 100));
             }
@@ -8781,10 +8771,10 @@ async function triggerScheduledNotifications() {
         console.log(`   👻 Inactive reminders: ${stats.inactive}`);
         console.log(`   🎂 Birthday wishes: ${stats.birthdays}`);
         console.log(`   🏆 Milestones: ${stats.milestones}`);
-        console.log(`   Warning Low points alerts: ${stats.lowPoints}`);
+        console.log(`   ⚠️ Low points alerts: ${stats.lowPoints}`);
         console.log(`   🛒 Abandoned carts: ${stats.abandonedCarts}`);
         console.log(`   💀 Dark humor: ${stats.darkHumor}`);
-        console.log('OK Scheduled notifications complete!');
+        console.log('✅ Scheduled notifications complete!');
         
     } catch (error) {
         console.error('❌ Error in scheduled notifications:', error);
@@ -8804,6 +8794,32 @@ function checkForScheduledTrigger() {
 }
 
 
+async function enablePushNotifications() {
+    if (!pushManager) {
+        await initPushNotifications();
+    }
+    
+    const result = await pushManager.subscribe();
+    
+    // Also subscribe to OneSignal
+    if (window.OneSignal) {
+        window.OneSignal.Deferred.push(function(OneSignal) {
+            OneSignal.registerForPushNotifications();
+            console.log('OneSignal subscription requested');
+        });
+    }
+    
+    if (result) {
+        console.log('✅ Notifications enabled successfully');
+        const btn = document.getElementById('notifyToggleBtn');
+        if (btn) {
+            btn.textContent = '🔕 Notifications On';
+            btn.style.background = '#28a745';
+        }
+    } else {
+        console.log('❌ Failed to enable notifications');
+    }
+}
 async function checkEnabledMembers() {
     const members = await clubManager.db.getAllMembers();
     
@@ -8816,7 +8832,7 @@ async function checkEnabledMembers() {
         const hasEnabled = member.push_enabled === true;
         if (hasEnabled) enabledCount++;
         
-        const status = hasEnabled ? 'OK ENABLED' : '❌ NOT ENABLED';
+        const status = hasEnabled ? '✅ ENABLED' : '❌ NOT ENABLED';
         console.log(`${status} | ${member.name} (${member.jcId})`);
     }
     
@@ -8861,7 +8877,7 @@ function enableNotificationsSimple() {
                         btn.textContent = '🔕 Notifications On';
                         btn.style.background = '#28a745';
                     }
-                    showToast('OK Notifications enabled!', 'success');
+                    showToast('✅ Notifications enabled!', 'success');
                 }).catch(error => {
                     console.error('Subscribe error:', error);
                     showToast('Please check browser notification settings', 'error');
@@ -8926,7 +8942,7 @@ function showMobileSettingsGuide() {
     
     modal.innerHTML = `
         <div style="background: white; padding: 25px; border-radius: 15px; max-width: 90%; margin: 20px;">
-            <h3 style="margin-top: 0; color: #333;">Warning Notifications Blocked</h3>
+            <h3 style="margin-top: 0; color: #333;">⚠️ Notifications Blocked</h3>
             <p style="color: #666;">Your browser is blocking notifications. Follow these steps to enable:</p>
             <div style="background: #f5f5f5; padding: 15px; border-radius: 10px; margin: 15px 0; text-align: left;">
                 ${instructions}
@@ -8977,14 +8993,14 @@ function requestNotificationDirect() {
                         btn.textContent = '🔕 Notifications On';
                         btn.style.background = '#28a745';
                     }
-                    alert('OK Notifications enabled! You will now receive updates.');
+                    alert('✅ Notifications enabled! You will now receive updates.');
                 }).catch(err => {
                     console.error('Subscribe error:', err);
                     alert('Error enabling notifications. Please try again.');
                 });
             });
         } else if (permission === 'denied') {
-            alert('Warning You blocked notifications. Please go to browser settings and allow notifications for this site, then refresh and try again.');
+            alert('⚠️ You blocked notifications. Please go to browser settings and allow notifications for this site, then refresh and try again.');
         } else {
             alert('Please click "Allow" in the popup to enable notifications.');
         }
@@ -9027,7 +9043,7 @@ function subscribeToPushNotifications() {
                 btn.textContent = '🔕 Notifications On';
                 btn.style.background = '#28a745';
             }
-            showToast('OK Notifications enabled!', 'success');
+            showToast('✅ Notifications enabled!', 'success');
         }).catch(error => {
             console.error('Subscription error:', error);
             showToast('Failed to enable notifications', 'error');
@@ -9106,7 +9122,7 @@ async function initPushNotifications() {
     }
   }
 }
-// OK ADD THIS FUNCTION RIGHT HERE - AFTER initPushNotifications
+// ✅ ADD THIS FUNCTION RIGHT HERE - AFTER initPushNotifications
 function requestNotificationPermission() {
     if (!pushManager) {
         initPushNotifications().then(() => {
@@ -9126,14 +9142,14 @@ async function togglePushNotifications() {
     
     const btn = document.getElementById('notifyToggleBtn');
     btn.disabled = true;
-    btn.textContent = 'Loading Processing...';
+    btn.textContent = '⏳ Processing...';
     
     try {
-        const isSubscribed = await window.OneSignal.Notifications.permission === "granted"();
+        const isSubscribed = await window.OneSignal.isPushNotificationsEnabled();
         
         if (isSubscribed) {
             // UNSUBSCRIBE - Turn OFF
-            await window.OneSignal.Notifications.setSubscription(false);
+            await window.OneSignal.setSubscription(false);
             // Show OFF state with slash bell
             btn.textContent = '🔕 Notifications Off - Click to Enable';
             btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
@@ -9147,20 +9163,20 @@ async function togglePushNotifications() {
             }
         } else {
             // SUBSCRIBE - Turn ON
-            const result = await window.OneSignal.Notifications.requestPermission();
+            const result = await window.OneSignal.registerForPushNotifications();
             
             if (result) {
                 // Show ON state with regular bell
                 btn.textContent = '🔔 Notifications On';
                 btn.style.background = '#28a745';
-                showToast('OK Notifications enabled!', 'success');
+                showToast('✅ Notifications enabled!', 'success');
                 
                 if (clubManager?.currentMember) {
                     await clubManager.db.supabase
                         .from('members')
                         .update({ push_enabled: true })
                         .eq('jc_id', clubManager.currentMember.jcId);
-                    await window.OneSignal.login(clubManager.currentMember.jcId);
+                    await window.OneSignal.setExternalUserId(clubManager.currentMember.jcId);
                 }
             } else {
                 btn.textContent = '🔕 Notifications Off - Click to Enable';
@@ -9181,16 +9197,16 @@ async function updateNotificationButton() {
     if (!btn) return;
     
     if (!window.OneSignal) {
-        btn.textContent = 'Loading Loading...';
+        btn.textContent = '⏳ Loading...';
         btn.disabled = true;
         return;
     }
     
     try {
-        const isSubscribed = await window.OneSignal.Notifications.permission === "granted"();
+        const isSubscribed = await window.OneSignal.isPushNotificationsEnabled();
         
         if (isSubscribed) {
-            // OK SUBSCRIBED - Bell with sound (NOTIFICATIONS ARE ON)
+            // ✅ SUBSCRIBED - Bell with sound (NOTIFICATIONS ARE ON)
             btn.textContent = '🔔 Notifications On';
             btn.style.background = '#28a745';
             btn.style.color = 'white';
@@ -9229,7 +9245,7 @@ function sendPushNotification(title, body, data = {}) {
     }
 }
 
-// OK NEW FUNCTION: Save notification to Supabase for all devices
+// ✅ NEW FUNCTION: Save notification to Supabase for all devices
 async function saveNotificationToSupabase(memberJcId, title, body, data = {}) {
     try {
         const { error } = await clubManager.db.supabase
@@ -9246,7 +9262,7 @@ async function saveNotificationToSupabase(memberJcId, title, body, data = {}) {
         if (error) {
             console.error('❌ Failed to save notification to Supabase:', error);
         } else {
-            console.log('OK Notification saved to Supabase for cross-device sync');
+            console.log('✅ Notification saved to Supabase for cross-device sync');
         }
     } catch (error) {
         console.error('Error saving to Supabase:', error);
@@ -9698,7 +9714,7 @@ async function updateMemberVouchers(jcId) {
             `;
         }).join('');
         
-        console.log(`OK Loaded ${vouchers.length} vouchers from Supabase`);
+        console.log(`✅ Loaded ${vouchers.length} vouchers from Supabase`);
         
     } catch (error) {
         console.error('Error loading vouchers:', error);
@@ -10071,7 +10087,7 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
                 
                 document.getElementById('discountResult').innerHTML = `
                     <div class="discount-success">
-                        <strong>OK Voucher Created Successfully!</strong><br><br>
+                        <strong>✅ Voucher Created Successfully!</strong><br><br>
                         
                         <div style="text-align: center; margin: 15px 0;">
                             <div style="background: white; padding: 15px; border-radius: 10px; display: inline-block; border: 2px solid #ddd;">
@@ -10154,7 +10170,7 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
     // Show loading state
     const toggleBtn = document.getElementById('newsletterToggle');
     const originalText = toggleBtn.textContent;
-    toggleBtn.textContent = 'Loading Updating...';
+    toggleBtn.textContent = '⏳ Updating...';
     toggleBtn.disabled = true;
     
     const success = await clubManager.toggleNewsletterSubscription(
@@ -10180,7 +10196,7 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
         updateMemberDashboard(clubManager.currentMember);
         
         showToast(
-            newStatus ? 'OK Subscribed to newsletter!' : '📧 Unsubscribed from newsletter',
+            newStatus ? '✅ Subscribed to newsletter!' : '📧 Unsubscribed from newsletter',
             'success'
         );
     } else {
@@ -10244,7 +10260,7 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
                 if (result.success) {
                     document.getElementById('voucherRedeemResult').innerHTML = `
                         <div class="success-message">
-                            <strong>OK VOUCHER REDEEMED SUCCESSFULLY!</strong><br>
+                            <strong>✅ VOUCHER REDEEMED SUCCESSFULLY!</strong><br>
                             Member: ${voucher.memberName} (${voucher.memberJCId})<br>
                             Discount: ${voucher.discountPercentage}%<br>
                             Value: ${voucher.pointsUsed * 50} UGX<br>
@@ -10441,11 +10457,11 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
                         await clubManager.db.saveMember(member);
                         updatedCount++;
                         
-                        console.log(`OK Updated ${member.jcId}: lifetimePoints=${lifetimePoints}, tier=${member.tier}`);
+                        console.log(`✅ Updated ${member.jcId}: lifetimePoints=${lifetimePoints}, tier=${member.tier}`);
                     }
                 }
                 
-                console.log(`OK Migration complete! Updated ${updatedCount} members.`);
+                console.log(`✅ Migration complete! Updated ${updatedCount} members.`);
                 showToast(`Migration complete! Updated ${updatedCount} members.`, 'success');
                 
                 if (clubManager.currentMember) {
@@ -10510,7 +10526,7 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
                 
                 const dashboard = document.getElementById('dashboardSection');
                 if (!dashboard) {
-                    console.log('Warning Dashboard section not found, retrying...');
+                    console.log('⚠️ Dashboard section not found, retrying...');
                     setTimeout(() => window.safeUpdateDashboard(member), 200);
                     return;
                 }
@@ -10596,7 +10612,7 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
                     cardDate.textContent = `${String(joinedDate.getMonth() + 1).padStart(2, '0')}/${String(joinedDate.getFullYear()).slice(-2)}`;
                 }
                 
-                console.log('OK Safe dashboard update complete');
+                console.log('✅ Safe dashboard update complete');
 
                 if (member && member.jcId) {
                     setTimeout(() => {
@@ -10650,7 +10666,7 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
                 }
             };
             
-            console.log('OK Permanent dashboard safety fixes installed');
+            console.log('✅ Permanent dashboard safety fixes installed');
         })();
 
         window.onload = function() {
@@ -10661,14 +10677,14 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
             console.log('=== PAGE LOAD START ===');
             
             clubManager = new ClubManager();
-            // OK ADD THIS LINE - Initialize push notifications
+            // ✅ ADD THIS LINE - Initialize push notifications
     setTimeout(() => {
         initPushNotifications();
     }, 2000);
              // Replace the old email service with the iframe version
     const iframeEmailService = new IframeEmailService('https://script.google.com/macros/s/AKfycbzmJS_ThUUb_FsyeuBVbLyBRdGXAD0Pj1uhv_4CCD8NtV0WCL6THqgIBIawmWK4F7CN/exec');
     clubManager.emailService = iframeEmailService;
-    console.log('OK Email service upgraded to iframe (no CORS)');
+    console.log('✅ Email service upgraded to iframe (no CORS)');
             setTimeout(() => {
                 if (clubManager) {
                     voucherSystem = clubManager.voucherSystem;
@@ -10690,7 +10706,7 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
                 
                 console.log('=== PAGE LOAD COMPLETE ===');
             }, 1000);
-        // OK PUT THE MOBILE NOTIFICATION CHECK HERE (inside window.onload, at the bottom)
+        // ✅ PUT THE MOBILE NOTIFICATION CHECK HERE (inside window.onload, at the bottom)
     setTimeout(() => {
         // Check if mobile and notification permission is already granted
         if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
@@ -10751,7 +10767,7 @@ async function syncPendingNotifications() {
         // Show notification on current device
         if (pushManager && pushManager.isSubscribed) {
             pushManager.sendNotification(notification.title, notification.body, notification.data || {});
-            console.log('OK Delivered:', notification.title);
+            console.log('✅ Delivered:', notification.title);
         } else {
             // Fallback to alert
             alert(`${notification.title}\n${notification.body}`);
@@ -10807,7 +10823,7 @@ document.addEventListener('visibilitychange', () => {
         window.addEventListener('message', (event) => {
             if (event.data && event.data.ready === true) {
                 this.isReady = true;
-                console.log('OK Email service iframe ready!');
+                console.log('✅ Email service iframe ready!');
                 this.processPending();
             }
             
@@ -10821,7 +10837,7 @@ document.addEventListener('visibilitychange', () => {
         
         setTimeout(() => {
             if (!this.isReady) {
-                console.warn('Warning Email service iframe timeout - check script URL');
+                console.warn('⚠️ Email service iframe timeout - check script URL');
             }
         }, 10000);
     }
