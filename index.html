@@ -1,4 +1,4 @@
-                         <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -2605,34 +2605,6 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Add jsQR Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<!-- OneSignal Custom Integration -->
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "40cfbe3f-800c-4105-b3aa-ca32676332b0",
-      safari_web_id: "web.onesignal.auto.6a13c381-7602-4e1d-b2a0-1098f769d9cc",
-      notifyButton: {
-        enable: true,
-        position: 'bottom-right',
-        theme: 'default',
-        size: 'medium',
-        prenotify: true,
-        showCredit: false,
-      },
-      welcomeNotification: {
-        title: "👖 JEANS CLUB",
-        message: "Thanks for subscribing! You'll get denim deals and dark humor!",
-        url: "https://elijah787.github.io/"
-      },
-      allowLocalhostAsSecureOrigin: true,
-    });
-    console.log('✅ OneSignal initialized');
-  });
-</script>
 </head>
 <body>
     <!-- Search Modal -->
@@ -2696,7 +2668,7 @@
     <header class="mercedes-header">
         <div class="header-top">
             <div class="brand-logo">
-            <img src="https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg" alt="Jeans Club Logo" class="header-logo">
+                <img src="https://i.ibb.co.com/Rp9F4xBC/jeans-club.jpg" alt="Jeans Club" class="header-logo">
             </div>
             
             <div class="header-actions">
@@ -3465,13 +3437,6 @@
                 <small style="color: #666; display: block; margin-top: 5px;">Cannot use your own referral code</small>
             </div>
             
-
-    <!-- ✅ BIRTHDAY FIELD - PUT HERE -->
-    <div class="form-group">
-        <label for="userBirthday">🎂 Your Birthday</label>
-        <input type="date" id="userBirthday">
-        <small>We'll send you a special surprise on your birthday!</small>
-    </div>
             <div class="newsletter-checkbox">
                 <input type="checkbox" id="newsletterSignup" checked>
                 <label for="newsletterSignup">Subscribe to our newsletter for exclusive deals and updates</label>
@@ -3599,7 +3564,7 @@
                 <div id="memberCard" class="member-card">
                     <div class="card-background-pattern"></div>
                     <div class="card-logo">
-                        <img src="https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg" alt="Jeans Club Logo" class="header-logo">
+                        <img src="https://i.ibb.co.com/zTqxQvwv/jeans-club.jpg" alt="JC" class="card-logo-img">
                     </div>
                     <div class="card-chip"></div>
                     <div class="card-hologram"></div>
@@ -3917,12 +3882,7 @@
         // Navigation flags to prevent transaction cancellation
         let isNavigatingToScanner = false;
         let isInTransactionFlow = false;
-        // ===========================================
-// ONESIGNAL CONFIGURATION
-// ===========================================
-
-const ONESIGNAL_APP_ID = '40cfbe3f-800c-4105-b3aa-ca32676332b0';
-const ONESIGNAL_REST_API_KEY = 'os_v2_app_idh34p4abraqlm5kzizgoyzswb4xhwz45qnu6du72szadwuaxglazhrzdezgl7xoat43nps2nojsz4j3kypjqxpty3sj7ohgi2aihki';
+        
         // ===========================
         // CAMERA SCANNER FUNCTIONALITY
         // ===========================
@@ -7751,7 +7711,7 @@ function normalizeEmailForDatabase(email) {
                 return 'PEARL';
             }
 
-            async signUpWithEmail(name, email, password, referralCode = null) {
+async signUpWithEmail(name, email, password, referralCode = null) {
     try {
         if (!name || !email || !password) {
             showToast('Please fill in all required fields', 'error');
@@ -7788,9 +7748,6 @@ function normalizeEmailForDatabase(email) {
         
         const jcId = this.generateJCId();
         const memberReferralCode = this.generateReferralCode();
-        
-        // ✅ Get birthday from form
-        const birthday = document.getElementById('userBirthday')?.value || null;
         
         let referredBy = null;
         let referralPoints = 10;
@@ -7835,8 +7792,7 @@ function normalizeEmailForDatabase(email) {
             referrals: [],
             ip_address: clientIP,
             lastLogin: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            birthday: birthday  // ✅ Added birthday field
+            createdAt: new Date().toISOString()
         };
         
         member.activityLog.unshift({
@@ -7856,29 +7812,20 @@ function normalizeEmailForDatabase(email) {
         this.isAdmin = false;
         localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
         localStorage.setItem('jeansClubIsAdmin', 'false');
-        
-        // ✅ ADD ONESIGNAL SYNC RIGHT HERE (BEFORE startListeningForNotifications)
-        if (window.OneSignal) {
-            window.OneSignal.Deferred.push(function(OneSignal) {
-                OneSignal.setExternalUserId(member.jcId);
-                console.log('✅ OneSignal synced with new member:', member.jcId);
-            });
-        }
-        
-        if (typeof startListeningForNotifications === 'function') {
-            await startListeningForNotifications();
-            await fetchUndeliveredNotifications();
-        }
-        
-        // SEND PUSH NOTIFICATION ON SIGNUP
+        // ✅ ADD THESE 3 LINES RIGHT HERE
+if (typeof startListeningForNotifications === 'function') {
+    await startListeningForNotifications();
+    await fetchUndeliveredNotifications();
+}
+        // ✅ SEND PUSH NOTIFICATION ON SIGNUP
         const darkWelcomeMessages = [
-            `💀 Welcome ${name}! You've just joined the exclusive club of people who spend too much on denim. We're your people.`,
-            `🔮 ${name}, your future includes: 1) Jeans 2) Happiness 3) Questioning your life choices. Welcome!`,
-            `🤡 ${name}, another clown joins the circus! Just kidding. But seriously, welcome to the broke-but-stylish club.`,
-            `⚰️ ${name}, your savings just filed a restraining order. Welcome to Jeans Club!`,
-            `🎪 ${name}, you've joined the greatest show on earth! Starring: Your wallet. Co-starring: Your impulse control (RIP).`
-        ];
-        const randomMsg = darkWelcomeMessages[Math.floor(Math.random() * darkWelcomeMessages.length)];
+    `💀 Welcome ${name}! You've just joined the exclusive club of people who spend too much on denim. We're your people.`,
+    `🔮 ${name}, your future includes: 1) Jeans 2) Happiness 3) Questioning your life choices. Welcome!`,
+    `🤡 ${name}, another clown joins the circus! Just kidding. But seriously, welcome to the broke-but-stylish club.`,
+    `⚰️ ${name}, your savings just filed a restraining order. Welcome to Jeans Club!`,
+    `🎪 ${name}, you've joined the greatest show on earth! Starring: Your wallet. Co-starring: Your impulse control (RIP).`
+];
+        const randomMsg = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
         sendPushNotification('👖 Welcome to Jeans Club!', randomMsg);
         
         await this.emailService.sendWelcomeEmail(email, member);
@@ -7907,85 +7854,76 @@ function normalizeEmailForDatabase(email) {
         return false;
     }
 }
-async loginWithJCId(jcId, password) {
-    try {
-        if (!jcId || !password) {
-            showToast('Please enter both JC ID and password', 'error');
-            return false;
-        }
-        
-        if (jcId.toLowerCase() === 'admin' && password === 'jeansclub2024') {
-            this.isAdmin = true;
-            this.currentMember = null;
-            this.currentSalesperson = prompt("Enter your name:", "Salesperson");
-            localStorage.setItem('jeansClubCurrentMember', '');
-            localStorage.setItem('jeansClubIsAdmin', 'true');
-            localStorage.setItem('jeansClubSalesperson', this.currentSalesperson);
-            
-            showAdminPanel();
-            showToast(`Welcome ${this.currentSalesperson}!`, 'success');
-            return true;
-        }
-        
-        const member = await this.db.getMemberByJCId(jcId.toUpperCase());
-        if (!member) {
-            showToast('Invalid JC ID or password', 'error');
-            return false;
-        }
-        
-        if (member.loginMethod === 'google') {
-            showToast('Please use Google Sign-In for this account', 'error');
-            return false;
-        }
-        
-        if (member.password !== password) {
-            showToast('Invalid JC ID or password', 'error');
-            return false;
-        }
-        
-        if (!member.lifetimePoints) {
-            member.lifetimePoints = Math.floor(member.totalSpent / 1000) + 10;
-        }
-        
-        member.lastLogin = new Date().toISOString();
-        await this.db.saveMember(member);
-        
-        this.currentMember = member;
-        this.isAdmin = false;
-        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
-        localStorage.setItem('jeansClubIsAdmin', 'false');
-        
-        const updatedMember = await this.db.getMemberByJCId(member.jcId);
-        if (updatedMember) {
-            this.currentMember = updatedMember;
-            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
-        }
-        
-        // ✅ START LISTENING FOR NOTIFICATIONS
-        if (typeof startListeningForNotifications === 'function') {
-            await startListeningForNotifications();
-            await fetchUndeliveredNotifications();
-        }
-        
-        // ✅ ADD ONESIGNAL AUTO-SYNC RIGHT HERE
-        if (window.OneSignal) {
-            window.OneSignal.Deferred.push(function(OneSignal) {
-                OneSignal.setExternalUserId(this.currentMember.jcId);
-                console.log('✅ OneSignal synced with member:', this.currentMember.jcId);
-            }.bind(this));
-        }
-        
-        showDashboard(this.currentMember);
-        showToast(`Welcome back ${member.name}!`, 'success');
-        
-        return true;
-        
-    } catch (error) {
-        console.error('Login error:', error);
-        showToast('An error occurred. Please try again.', 'error');
-        return false;
-    }
+            async loginWithJCId(jcId, password) {
+                try {
+                    if (!jcId || !password) {
+                        showToast('Please enter both JC ID and password', 'error');
+                        return false;
+                    }
+                    
+                    if (jcId.toLowerCase() === 'admin' && password === 'jeansclub2024') {
+                        this.isAdmin = true;
+                        this.currentMember = null;
+                        this.currentSalesperson = prompt("Enter your name:", "Salesperson");
+                        localStorage.setItem('jeansClubCurrentMember', '');
+                        localStorage.setItem('jeansClubIsAdmin', 'true');
+                        localStorage.setItem('jeansClubSalesperson', this.currentSalesperson);
+                        
+                        showAdminPanel();
+                        showToast(`Welcome ${this.currentSalesperson}!`, 'success');
+                        return true;
+                    }
+                    
+                    const member = await this.db.getMemberByJCId(jcId.toUpperCase());
+                    if (!member) {
+                        showToast('Invalid JC ID or password', 'error');
+                        return false;
+                    }
+                    
+                    if (member.loginMethod === 'google') {
+                        showToast('Please use Google Sign-In for this account', 'error');
+                        return false;
+                    }
+                    
+                    if (member.password !== password) {
+                        showToast('Invalid JC ID or password', 'error');
+                        return false;
+                    }
+                    
+                    if (!member.lifetimePoints) {
+                        member.lifetimePoints = Math.floor(member.totalSpent / 1000) + 10;
+                    }
+                    
+                    member.lastLogin = new Date().toISOString();
+                    await this.db.saveMember(member);
+                    
+                    this.currentMember = member;
+                    this.isAdmin = false;
+                    localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
+                    localStorage.setItem('jeansClubIsAdmin', 'false');
+                    
+                    const updatedMember = await this.db.getMemberByJCId(member.jcId);
+                    if (updatedMember) {
+                        this.currentMember = updatedMember;
+                        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
+                    }
+                    // ✅ ADD THESE 3 LINES RIGHT HERE
+if (typeof startListeningForNotifications === 'function') {
+    await startListeningForNotifications();
+    await fetchUndeliveredNotifications();
 }
+                    showDashboard(this.currentMember);
+                    showToast(`Welcome back ${member.name}!`, 'success');
+                    
+                    return true;
+                    
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showToast('An error occurred. Please try again.', 'error');
+                    return false;
+                }
+            }
+
 
             async addPurchase(jcId, amount, description) {
     try {
@@ -8544,32 +8482,22 @@ async function sendDarkHumorToAllMembers() {
     
     console.log(`💀 Sent dark humor to ${sent} members`);
     return { success: true, sent: sent };
-} 
-// ===========================================
-// COMPLETE SCHEDULED NOTIFICATIONS WITH DARK HUMOR
-// ===========================================
-
+}
+ // Handle scheduled notifications from cron-job.org
 async function triggerScheduledNotifications() {
-    console.log('⏰ Running scheduled notifications at:', new Date().toISOString());
+    console.log('⏰ Cron-job triggered notifications at:', new Date().toISOString());
     
     try {
+        // Get all members
         const members = await clubManager.db.getAllMembers();
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         
-        let stats = {
-            inactive: 0,
-            birthdays: 0,
-            milestones: 0,
-            lowPoints: 0,
-            abandonedCarts: 0,
-            darkHumor: 0
-        };
-        
         // =============================================
-        // 1. INACTIVITY REMINDERS (30+ days no purchase)
+        // PART 1: Send inactivity reminders to inactive members
         // =============================================
         for (const member of members) {
+            // Check last purchase date
             const lastPurchase = member.purchaseHistory && member.purchaseHistory.length > 0 
                 ? member.purchaseHistory[0]?.timestamp 
                 : null;
@@ -8578,208 +8506,54 @@ async function triggerScheduledNotifications() {
                 const daysInactive = Math.floor((Date.now() - new Date(lastPurchase)) / (1000 * 60 * 60 * 24));
                 
                 const darkInactiveMessages = [
-                    `⏰ ${member.name}, it's been ${daysInactive} days... Your jeans are planning a funeral. For your style. Come back! You have ${member.points} points.`,
+                    `⏰ ${member.name}, ${daysInactive} days... Your jeans are planning a funeral. For your style. Come back!`,
                     `👻 ${member.name}, your style is so dead, even ghosts are judging you. ${daysInactive} days. ${member.points} points waiting.`,
                     `🪦 ${member.name}, RIP your fashion sense (${daysInactive} days ago). Revive it with ${member.points} points!`,
                     `🤡 ${member.name}, the circus misses its main clown! ${daysInactive} days without shopping? Unacceptable.`,
                     `💀 ${member.name}, we were about to send a search party. ${daysInactive} days is too long. Your ${member.points} points are lonely!`,
+                    `🔮 ${member.name}, I see jeans in your future... but only if you come back NOW. ${daysInactive} days wasted!`,
                     `📉 ${member.name}, your style index is at an all-time low. ${daysInactive} days. ${member.points} points can fix this.`,
                     `🎪 ${member.name}, the circus is leaving without you! ${daysInactive} days. Come back before we sell your seat.`,
                     `⚰️ ${member.name}, we thought you died. ${daysInactive} days? Your ${member.points} points are still alive though.`,
                     `🍷 ${member.name}, we've been drinking wine and crying about your absence. ${daysInactive} days. Come back!`
                 ];
                 const randomMsg = darkInactiveMessages[Math.floor(Math.random() * darkInactiveMessages.length)];
-                await sendToAllDevices(member.jcId, '👖 Missing You!', randomMsg);
-                stats.inactive++;
-                await new Promise(r => setTimeout(r, 100));
-            }
-        }
-        
-        // =============================================
-        // 2. BIRTHDAY NOTIFICATIONS
-        // =============================================
-        const today = new Date();
-        const todayStr = `${today.getMonth()+1}/${today.getDate()}`;
-        
-        for (const member of members) {
-            if (member.birthday) {
-                const birthday = new Date(member.birthday);
-                const birthdayStr = `${birthday.getMonth()+1}/${birthday.getDate()}`;
                 
-                if (birthdayStr === todayStr) {
-                    const bonusPoints = member.tier === 'PLATINUM' ? 500 :
-                                       member.tier === 'GOLD' ? 300 :
-                                       member.tier === 'SILVER' ? 200 : 100;
-                    
-                    const birthdayMessages = [
-                        `🎂 HAPPY BIRTHDAY ${member.name.toUpperCase()}! 🎂\n\nYou're officially older (and wiser?). We added ${bonusPoints} bonus points to your account. Go treat yourself - you deserve it! 🎁`,
-                        `🥳 ${member.name}, it's your birthday! The jeans are throwing a party. ${bonusPoints} bonus points added! Don't spend it all on... actually, spend it all on jeans.`,
-                        `🎈 ${member.name}, you're another year closer to death. But hey, at least you'll die looking FABULOUS! ${bonusPoints} points added. 🎉`,
-                        `🎁 SURPRISE ${member.name}! Birthday bonus: ${bonusPoints} points. Your gift to yourself? More jeans, obviously.`,
-                        `🕯️ ${member.name}, blow out the candles and make a wish. We wish you... MORE JEANS! ${bonusPoints} points added. Happy birthday! 🎂`,
-                        `💀 ${member.name}, another year survived! Here's ${bonusPoints} points as a reward for not dying yet. Happy birthday! 🎉`
-                    ];
-                    const randomMsg = birthdayMessages[Math.floor(Math.random() * birthdayMessages.length)];
-                    await sendToAllDevices(member.jcId, '🎂 HAPPY BIRTHDAY! 🎂', randomMsg);
-                    
-                    // Add bonus points
-                    member.points += bonusPoints;
-                    await clubManager.db.saveMember(member);
-                    stats.birthdays++;
-                    await new Promise(r => setTimeout(r, 100));
-                }
+                // Store notification for delivery when user comes online
+                sendPushNotification('👖 Missing You!', randomMsg);
             }
         }
         
         // =============================================
-        // 3. MILESTONE NOTIFICATIONS (Spending achievements)
+        // PART 2: Send random dark humor to ALL members daily
+        // 👇 THIS IS WHERE YOU PUT THE NEW CODE 👇
         // =============================================
-        for (const member of members) {
-            const totalSpent = member.totalSpent || 0;
-            let milestoneMsg = null;
-            let bonusPoints = 0;
-            let milestoneKey = null;
+        
+        // Send random dark humor to ALL members daily
+        async function sendDailyDarkHumorToAll() {
+            const members = await clubManager.db.getAllMembers();
+            const activeMembers = members.filter(m => m.points > 0 || m.totalSpent > 0);
             
-            // Check for 1 Million UGX spent
-            if (totalSpent >= 1000000 && !member.milestone_1m) {
-                milestoneKey = 'milestone_1m';
-                bonusPoints = 500;
-                milestoneMsg = [
-                    `👑 HOLY DENIM! ${member.name}, you've spent 1,000,000 UGX! That's not shopping, that's an INVESTMENT. You're officially a denim LEGEND. +500 points! 👑`,
-                    `💰 ${member.name}, ONE MILLION spent! Your closet is worth more than some cars. We bow to you, denim royalty. +500 points!`,
-                    `🏆 ${member.name}, you've reached the million club! Your jeans are jealous of your dedication. +500 points!`,
-                    `💎 ${member.name}, MILLIONAIRE STATUS! Not in your bank account, but definitely in your wardrobe. Priorities, right? +500 points!`
-                ];
-            }
-            // Check for 500,000 UGX spent
-            else if (totalSpent >= 500000 && !member.milestone_500k) {
-                milestoneKey = 'milestone_500k';
-                bonusPoints = 250;
-                milestoneMsg = [
-                    `🎯 ${member.name}, 500,000 UGX spent! Your wallet is crying, but your drip is IMMACULATE. +250 points!`,
-                    `💪 ${member.name}, half a million! You're basically a denim celebrity now. Autographs? +250 points!`,
-                    `🔥 ${member.name}, 500k club! Your financial advisor is concerned, but your mirror is HAPPY. +250 points!`
-                ];
-            }
-            // Check for 100,000 UGX spent
-            else if (totalSpent >= 100000 && !member.milestone_100k) {
-                milestoneKey = 'milestone_100k';
-                bonusPoints = 100;
-                milestoneMsg = [
-                    `⭐ ${member.name}, 100,000 UGX spent! You're officially not a beginner anymore. The denim gods approve. +100 points!`,
-                    `🎉 ${member.name}, you've joined the 100k club! Your jeans are proud of you (your bank account, not so much). +100 points!`,
-                    `🌟 ${member.name}, six figures spent! At this rate, your closet might need its own zip code. +100 points!`
-                ];
+            for (const member of activeMembers) {
+                const randomMsg = darkHumorMessages[Math.floor(Math.random() * darkHumorMessages.length)];
+                sendPushNotification(randomMsg.title, randomMsg.body);
+                await new Promise(resolve => setTimeout(resolve, 200));
             }
             
-            if (milestoneMsg && milestoneKey) {
-                const randomMsg = milestoneMsg[Math.floor(Math.random() * milestoneMsg.length)];
-                await sendToAllDevices(member.jcId, '🏆 MILESTONE UNLOCKED! 🏆', randomMsg);
-                
-                // Update milestone and add points
-                member[milestoneKey] = true;
-                member.points += bonusPoints;
-                await clubManager.db.saveMember(member);
-                stats.milestones++;
-                await new Promise(r => setTimeout(r, 100));
-            }
+            console.log(`💀 Sent daily dark humor to ${activeMembers.length} members`);
         }
         
-        // =============================================
-        // 4. LOW POINTS ALERT (Less than 100 points)
-        // =============================================
-        for (const member of members) {
-            if (member.points > 0 && member.points < 100) {
-                const lowPointsMessages = [
-                    `⚠️ ${member.name}, you only have ${member.points} points left! That's like... not enough jeans. Shop more to earn more! 🛍️`,
-                    `📉 ${member.name}, your points balance is looking lonely (${member.points} points). Time for a shopping spree? 👖`,
-                    `🆘 ${member.name}, POINTS EMERGENCY! Only ${member.points} points remaining. Your next purchase could earn you DOUBLE!`,
-                    `💀 ${member.name}, your points are almost extinct. Save them from extinction by... actually, just spend more money.`
-                ];
-                const randomMsg = lowPointsMessages[Math.floor(Math.random() * lowPointsMessages.length)];
-                await sendToAllDevices(member.jcId, '⚠️ Low Points Alert!', randomMsg);
-                stats.lowPoints++;
-                await new Promise(r => setTimeout(r, 100));
-            }
-        }
+        // 👇 CALL THE FUNCTION HERE 👇
+        await sendDailyDarkHumorToAll();
         
-        // =============================================
-        // 5. ABANDONED CART REMINDERS
-        // =============================================
-        try {
-            const { data: carts, error } = await clubManager.db.supabase
-                .from('transactions')
-                .select('*')
-                .eq('status', 'pending_items')
-                .lt('created_at', new Date(Date.now() - 3600000).toISOString());
-            
-            if (carts && carts.length > 0) {
-                for (const cart of carts) {
-                    const items = JSON.parse(cart.items || '[]');
-                    const itemNames = items.map(i => i.name).join(', ');
-                    
-                    const abandonMessages = [
-                        `🛒 ${cart.member_name}, your cart is crying! You left ${itemNames} behind. Come back and complete your purchase!`,
-                        `👀 ${cart.member_name}, we noticed you left some items in your cart. Your jeans are waiting for you! 👖`,
-                        `🎪 ${cart.member_name}, the circus called. Your abandoned cart is the main attraction! Come get your items!`,
-                        `💀 ${cart.member_name}, your cart items are getting lonely. They miss you. Come back before they unionize.`
-                    ];
-                    const randomMsg = abandonMessages[Math.floor(Math.random() * abandonMessages.length)];
-                    await sendToAllDevices(cart.member_jc_id, '🛒 Your Cart Misses You!', randomMsg);
-                    stats.abandonedCarts++;
-                    await new Promise(r => setTimeout(r, 100));
-                }
-            }
-        } catch (err) {
-            console.log('Abandoned cart check:', err.message);
-        }
-        
-        // =============================================
-        // 6. DAILY DARK HUMOR FOR EVERYONE
-        // =============================================
-        const darkHumorMessagesList = [
-            { title: "💀 Existential Crisis Alert", body: "Your jeans will outlive you. Make sure they're stylish ones." },
-            { title: "🔮 Your Future", body: "I see jeans in your future. And debt. Mostly debt. But worth it!" },
-            { title: "⚰️ Breaking News", body: "Local person spends money they don't have on jeans they don't need. More at 11." },
-            { title: "👻 Spooky Fact", body: "Your money isn't gone... it's just... fashionably late. Forever." },
-            { title: "🤡 Clown Update", body: "You're one step closer to looking like a million bucks. Too bad you spent it all on jeans." },
-            { title: "📉 Financial Advice", body: "They say money can't buy happiness. But it can buy jeans, which is basically the same thing." },
-            { title: "🍷 Poor Decisions", body: "Remember: Every great love story starts with a bad decision. And these jeans are BEAUTIFUL." },
-            { title: "🎪 Circus Alert", body: "Your financial literacy left the chat. But your drip? IMMACULATE." },
-            { title: "🪦 Epitaph", body: "Here lies your savings. Cause of death: 'But they were on sale!'" },
-            { title: "📢 PSA", body: "Warning: Excessive denim consumption may lead to happiness, confidence, and bankruptcy." },
-            { title: "🎭 Therapy Session", body: "Therapist: 'Why do you need more jeans?' You: 'You wouldn't understand.'" },
-            { title: "📊 Stock Market", body: "The only thing going up faster than your style is your credit card balance." },
-            { title: "🎰 Gambling", body: "Buying jeans is just gambling with extra steps. Will they fit? Will I regret it? WHO CARES!" },
-            { title: "💀 Death & Taxes", body: "Two things are certain: Death, taxes, and you buying more jeans." },
-            { title: "🔄 Vicious Cycle", body: "Buy jeans → Feel broke → Buy more jeans to feel better → Repeat." }
-        ];
-        
-        for (const member of members) {
-            if (member.push_enabled === true) {
-                const randomMsg = darkHumorMessagesList[Math.floor(Math.random() * darkHumorMessagesList.length)];
-                await sendToAllDevices(member.jcId, randomMsg.title, randomMsg.body);
-                stats.darkHumor++;
-                await new Promise(r => setTimeout(r, 50));
-            }
-        }
-        
-        // =============================================
-        // SUMMARY
-        // =============================================
-        console.log('📊 Scheduled Notifications Summary:');
-        console.log(`   👻 Inactive reminders: ${stats.inactive}`);
-        console.log(`   🎂 Birthday wishes: ${stats.birthdays}`);
-        console.log(`   🏆 Milestones: ${stats.milestones}`);
-        console.log(`   ⚠️ Low points alerts: ${stats.lowPoints}`);
-        console.log(`   🛒 Abandoned carts: ${stats.abandonedCarts}`);
-        console.log(`   💀 Dark humor: ${stats.darkHumor}`);
-        console.log('✅ Scheduled notifications complete!');
+        console.log('✅ Scheduled notifications triggered successfully');
         
     } catch (error) {
         console.error('❌ Error in scheduled notifications:', error);
     }
 }
+
+// Check URL params on page load
 function checkForScheduledTrigger() {
     const urlParams = new URLSearchParams(window.location.search);
     const action = urlParams.get('action');
@@ -8793,7 +8567,239 @@ function checkForScheduledTrigger() {
     return false;
 }
 
+// Call this at the beginning of your onload
+  // ===========================================
+// PUSH NOTIFICATION MANAGER
+// ===========================================
 
+class PushNotificationManager {
+  constructor() {
+    this.swRegistration = null;
+    this.isSubscribed = false;
+    this.isSupported = false;
+  }
+
+  async init() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.log('Push notifications not supported');
+        this.isSupported = false;
+        return false;
+    }
+
+    this.isSupported = true;
+
+    try {
+      // Register service worker
+      this.swRegistration = await navigator.serviceWorker.register('/jeans-club/sw.js');
+      console.log('✅ Service Worker registered');
+
+      // Check if already subscribed
+      const subscription = await this.swRegistration.pushManager.getSubscription();
+      this.isSubscribed = subscription !== null;
+
+        // ✅ CHECK DATABASE FOR PUSH ENABLED STATUS
+        if (clubManager && clubManager.currentMember) {
+            const { data: member } = await clubManager.db.supabase
+                .from('members')
+                .select('push_enabled')
+                .eq('jc_id', clubManager.currentMember.jcId)
+                .single();
+            
+            if (member && member.push_enabled === true && !this.isSubscribed) {
+                console.log('Member has push enabled in DB but not subscribed - resubscribing');
+                await this.subscribe();
+            } else if (member && member.push_enabled === true) {
+                this.isSubscribed = true;
+                localStorage.setItem('pushEnabled', 'true');
+                console.log('✅ Push already enabled for this member');
+            }
+        }
+      // Check saved preference
+      const savedPref = localStorage.getItem('pushEnabled');
+      if (savedPref === 'true' && !this.isSubscribed) {
+        await this.subscribe();
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Push init error:', error);
+      return false;
+    }
+  }
+async subscribe() {
+    console.log('🔔 Starting notification subscription...');
+    
+    if (!this.isSupported) {
+        showToast('Push notifications not supported on this browser', 'error');
+        return false;
+    }
+
+    try {
+        let permission = Notification.permission;
+        
+        if (permission !== 'granted') {
+            console.log('Requesting permission...');
+            permission = await Notification.requestPermission();
+        }
+        
+        if (permission !== 'granted') {
+            showToast('Please allow notifications in browser settings', 'error');
+            return false;
+        }
+        
+        console.log('✅ Permission granted');
+
+        if (!this.swRegistration) {
+            this.swRegistration = await navigator.serviceWorker.ready;
+        }
+        
+        const VAPID_PUBLIC_KEY = 'BCMfJoj4xAtWeOJS4PPdu1K5YtH1qs_Q-QbZT_DMPSmxyqtagJvBW77cOGXKE7_OaTneeor7fOUt6z_lWljy68U';
+        
+        let existingSubscription = await this.swRegistration.pushManager.getSubscription();
+        if (existingSubscription) {
+            console.log('Unsubscribing existing subscription...');
+            await existingSubscription.unsubscribe();
+        }
+        
+        console.log('Creating push subscription...');
+        const subscription = await this.swRegistration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+        
+        console.log('✅ Push subscription created');
+        
+        localStorage.setItem('pushEnabled', 'true');
+        this.isSubscribed = true;
+        
+        // ✅ CRITICAL: SAVE TO DATABASE
+        if (clubManager && clubManager.currentMember) {
+            console.log('💾 Saving to database for member:', clubManager.currentMember.jcId);
+            
+            const { data, error } = await clubManager.db.supabase
+                .from('members')
+                .update({ 
+                    push_enabled: true,
+                    push_subscription: subscription,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('jc_id', clubManager.currentMember.jcId);
+            
+            if (error) {
+                console.error('❌ Database save error:', error);
+                showToast('Notifications enabled but failed to save preference', 'warning');
+            } else {
+                console.log('✅ Database updated successfully! push_enabled = true');
+                showToast('🔔 Notifications enabled and saved!', 'success');
+            }
+        } else {
+            console.log('⚠️ No current member - cannot save to database');
+        }
+        
+        const btn = document.getElementById('notifyToggleBtn');
+        if (btn) {
+            btn.textContent = '🔕 Notifications On';
+            btn.style.background = '#28a745';
+        }
+        
+        // Send test notification
+        setTimeout(() => {
+            this.sendNotification('✅ Success!', 'Your notifications are now active and saved to your account!');
+        }, 1000);
+        
+        return true;
+
+    } catch (error) {
+        console.error('Subscribe error:', error);
+        showToast('Failed to enable notifications: ' + error.message, 'error');
+        return false;
+    }
+}
+ async unsubscribe() {
+    try {
+        const subscription = await this.swRegistration.pushManager.getSubscription();
+        if (subscription) {
+            await subscription.unsubscribe();
+        }
+        
+        localStorage.setItem('pushEnabled', 'false');
+        localStorage.setItem(`pushEnabled_${clubManager.currentMember?.jcId}`, 'false');
+        this.isSubscribed = false;
+        
+        // ✅ UPDATE DATABASE
+        if (clubManager && clubManager.currentMember) {
+            await clubManager.db.supabase
+                .from('members')
+                .update({ 
+                    push_enabled: false,
+                    push_subscription: null
+                })
+                .eq('jc_id', clubManager.currentMember.jcId);
+        }
+        
+        showToast('Notifications disabled', 'info');
+        return true;
+    } catch (error) {
+        console.error('Unsubscribe error:', error);
+        return false;
+    }
+}
+
+  // Send immediate notification (for when user is on site)
+  sendNotification(title, body, data = {}) {
+    if (!this.swRegistration || !this.swRegistration.active) {
+      console.log('No active service worker');
+      return false;
+    }
+
+    this.swRegistration.active.postMessage({
+      type: 'SHOW_NOTIFICATION',
+      notification: {
+        title: title,
+        body: body,
+        data: data,
+        icon: 'https://i.ibb.co.com/Rp9F4xBC/jeans-club.jpg'
+      }
+    });
+    return true;
+  }
+
+  // Store notification for later (when user comes back)
+  storeNotification(title, body, data = {}) {
+    const pending = JSON.parse(localStorage.getItem('pendingNotifications') || '[]');
+    pending.push({
+      id: Date.now(),
+      title: title,
+      body: body,
+      data: data,
+      timestamp: Date.now()
+    });
+    localStorage.setItem('pendingNotifications', JSON.stringify(pending));
+    console.log('📦 Notification stored for later');
+  }
+
+  // Process stored notifications
+  processStoredNotifications() {
+    const pending = JSON.parse(localStorage.getItem('pendingNotifications') || '[]');
+    if (pending.length > 0 && this.isSubscribed) {
+      console.log(`📬 Processing ${pending.length} stored notifications`);
+      pending.forEach(notif => {
+        this.sendNotification(notif.title, notif.body, notif.data);
+      });
+      localStorage.removeItem('pendingNotifications');
+    }
+  }
+  urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+}
 async function enablePushNotifications() {
     if (!pushManager) {
         await initPushNotifications();
@@ -8801,16 +8807,9 @@ async function enablePushNotifications() {
     
     const result = await pushManager.subscribe();
     
-    // Also subscribe to OneSignal
-    if (window.OneSignal) {
-        window.OneSignal.Deferred.push(function(OneSignal) {
-            OneSignal.registerForPushNotifications();
-            console.log('OneSignal subscription requested');
-        });
-    }
-    
     if (result) {
         console.log('✅ Notifications enabled successfully');
+        // Update button
         const btn = document.getElementById('notifyToggleBtn');
         if (btn) {
             btn.textContent = '🔕 Notifications On';
@@ -9132,97 +9131,40 @@ function requestNotificationPermission() {
         pushManager.subscribe();
     }
 }
+// Toggle push notifications
 async function togglePushNotifications() {
-    console.log('🔄 Toggle OneSignal notifications');
+    console.log('🔄 Toggle notifications called');
     
-    if (!window.OneSignal) {
-        showToast('OneSignal loading, please wait...', 'info');
-        return;
+    if (!pushManager) {
+        await initPushNotifications();
     }
     
-    const btn = document.getElementById('notifyToggleBtn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Processing...';
-    
-    try {
-        const isSubscribed = await window.OneSignal.isPushNotificationsEnabled();
-        
-        if (isSubscribed) {
-            // UNSUBSCRIBE - Turn OFF
-            await window.OneSignal.setSubscription(false);
-            // Show OFF state with slash bell
-            btn.textContent = '🔕 Notifications Off - Click to Enable';
-            btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    if (pushManager.isSubscribed) {
+        // Unsubscribe
+        console.log('Turning OFF notifications...');
+        const result = await pushManager.unsubscribe();
+        if (result) {
+            const btn = document.getElementById('notifyToggleBtn');
+            if (btn) {
+                btn.textContent = '🔔 Enable Notifications';
+                btn.style.background = '';
+            }
             showToast('Notifications disabled', 'info');
-            
-            if (clubManager?.currentMember) {
-                await clubManager.db.supabase
-                    .from('members')
-                    .update({ push_enabled: false })
-                    .eq('jc_id', clubManager.currentMember.jcId);
-            }
-        } else {
-            // SUBSCRIBE - Turn ON
-            const result = await window.OneSignal.registerForPushNotifications();
-            
-            if (result) {
-                // Show ON state with regular bell
-                btn.textContent = '🔔 Notifications On';
+        }
+    } else {
+        // Subscribe
+        console.log('Turning ON notifications...');
+        const result = await pushManager.subscribe();
+        if (result) {
+            const btn = document.getElementById('notifyToggleBtn');
+            if (btn) {
+                btn.textContent = '🔕 Notifications On';
                 btn.style.background = '#28a745';
-                showToast('✅ Notifications enabled!', 'success');
-                
-                if (clubManager?.currentMember) {
-                    await clubManager.db.supabase
-                        .from('members')
-                        .update({ push_enabled: true })
-                        .eq('jc_id', clubManager.currentMember.jcId);
-                    await window.OneSignal.setExternalUserId(clubManager.currentMember.jcId);
-                }
-            } else {
-                btn.textContent = '🔕 Notifications Off - Click to Enable';
-                btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                showToast('Please allow notifications in browser settings', 'error');
             }
         }
-    } catch (error) {
-        console.error('Toggle error:', error);
-        showToast('Something went wrong. Please try again.', 'error');
-        await updateNotificationButton();
-    } finally {
-        btn.disabled = false;
     }
 }
-async function updateNotificationButton() {
-    const btn = document.getElementById('notifyToggleBtn');
-    if (!btn) return;
-    
-    if (!window.OneSignal) {
-        btn.textContent = '⏳ Loading...';
-        btn.disabled = true;
-        return;
-    }
-    
-    try {
-        const isSubscribed = await window.OneSignal.isPushNotificationsEnabled();
-        
-        if (isSubscribed) {
-            // ✅ SUBSCRIBED - Bell with sound (NOTIFICATIONS ARE ON)
-            btn.textContent = '🔔 Notifications On';
-            btn.style.background = '#28a745';
-            btn.style.color = 'white';
-        } else {
-            // ❌ NOT SUBSCRIBED - Bell with slash (NOTIFICATIONS ARE OFF)
-            btn.textContent = '🔕 Notifications Off - Click to Enable';
-            btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-            btn.style.color = 'white';
-        }
-        btn.disabled = false;
-    } catch (error) {
-        console.error('Error checking subscription:', error);
-        btn.textContent = '🔔 Enable Notifications';
-        btn.disabled = false;
-    }
-}
+
 // ===========================================
 // REPLACE sendPushNotification with this Supabase version
 // ===========================================
@@ -11051,4 +10993,4 @@ document.addEventListener('visibilitychange', () => {
 }
     </script>
 </body>
-</html> 
+</html>
