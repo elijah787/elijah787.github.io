@@ -8669,7 +8669,7 @@ async subscribe() {
        // ========== ADD ONESIGNAL REGISTRATION ==========
 try {
     const onesignalData = {
-        app_id: 'YOUR_ONESIGNAL_APP_ID', // Replace with your OneSignal App ID
+        app_id: '40cfbe3f-800c-4105-b3aa-ca32676332b0', // Replace with your OneSignal App ID
         identifier: subscription.endpoint,
         external_id: clubManager.currentMember.jcId, // ← THIS IS WHERE JC ID GOES!
         device_type: this.getDeviceType(),
@@ -8686,7 +8686,7 @@ try {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'os_v2_app_idh34p4abraqlm5kzizgoyzswctghhxlqqjeocnauuxkf7awhwjkmdv5rfub5sdugvd2au5z5p7xdcnd7pvaifndnicqnrnpuxgtqbi' // Replace with your REST API Key
+            'Authorization': 'os_v2_app_idh34p4abraqlm5kzizgoyzswbrhwatczonunc5zcmrzwpzdcrqirgaqaiqcyfhu5gfrvazgznkki5jdxq2qxa2sevjt3eyy4i6mpwq' // Replace with your REST API Key
         },
         body: JSON.stringify(onesignalData)
     });
