@@ -7857,13 +7857,17 @@ function normalizeEmailForDatabase(email) {
         localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
         localStorage.setItem('jeansClubIsAdmin', 'false');
         
-        // ✅ ADD ONESIGNAL SYNC RIGHT HERE (BEFORE startListeningForNotifications)
-        if (window.OneSignal) {
-            window.OneSignal.Deferred.push(function(OneSignal) {
-                OneSignal.setExternalUserId(member.jcId);
-                console.log('✅ OneSignal synced with new member:', member.jcId);
-            });
-        }
+        // ✅ FIXED: Set OneSignal External ID for new member
+        setTimeout(function() {
+            if (window.OneSignal) {
+                try {
+                    window.OneSignal.login(' + member.jcId + ');
+                    console.log('✅ OneSignal external ID set for new member:', member.jcId);
+                } catch(err) {
+                    console.error('Failed to set external ID:', err);
+                }
+            }
+        }, 2000);
         
         if (typeof startListeningForNotifications === 'function') {
             await startListeningForNotifications();
@@ -7967,13 +7971,19 @@ async loginWithJCId(jcId, password) {
             await fetchUndeliveredNotifications();
         }
         
-        // ✅ ADD ONESIGNAL AUTO-SYNC RIGHT HERE
-        if (window.OneSignal) {
-            window.OneSignal.Deferred.push(function(OneSignal) {
-                OneSignal.setExternalUserId(this.currentMember.jcId);
-                console.log('✅ OneSignal synced with member:', this.currentMember.jcId);
-            }.bind(this));
-        }
+        // ✅ FIXED: Set OneSignal External ID after login
+        setTimeout(function() {
+            if (window.OneSignal) {
+                try {
+                    window.OneSignal.login(' + this.currentMember.jcId + ');
+                    console.log('✅ OneSignal external ID set to:', this.currentMember.jcId);
+                } catch(err) {
+                    console.error('Failed to set external ID:', err);
+                }
+            } else {
+                console.log('⚠️ OneSignal not loaded yet');
+            }
+        }.bind(this), 2000);
         
         showDashboard(this.currentMember);
         showToast(`Welcome back ${member.name}!`, 'success');
@@ -8794,32 +8804,6 @@ function checkForScheduledTrigger() {
 }
 
 
-async function enablePushNotifications() {
-    if (!pushManager) {
-        await initPushNotifications();
-    }
-    
-    const result = await pushManager.subscribe();
-    
-    // Also subscribe to OneSignal
-    if (window.OneSignal) {
-        window.OneSignal.Deferred.push(function(OneSignal) {
-            OneSignal.registerForPushNotifications();
-            console.log('OneSignal subscription requested');
-        });
-    }
-    
-    if (result) {
-        console.log('✅ Notifications enabled successfully');
-        const btn = document.getElementById('notifyToggleBtn');
-        if (btn) {
-            btn.textContent = '🔕 Notifications On';
-            btn.style.background = '#28a745';
-        }
-    } else {
-        console.log('❌ Failed to enable notifications');
-    }
-}
 async function checkEnabledMembers() {
     const members = await clubManager.db.getAllMembers();
     
@@ -9176,7 +9160,7 @@ async function togglePushNotifications() {
                         .from('members')
                         .update({ push_enabled: true })
                         .eq('jc_id', clubManager.currentMember.jcId);
-                    await window.OneSignal.setExternalUserId(clubManager.currentMember.jcId);
+                    await window.OneSignal.login(clubManager.currentMember.jcId);
                 }
             } else {
                 btn.textContent = '🔕 Notifications Off - Click to Enable';
