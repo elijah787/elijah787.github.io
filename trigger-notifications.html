@@ -2,73 +2,136 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Jeans Club - Sarcastic Notifications</title>
+    <title>Jeans Club - Personalized Notifications</title>
     <style>
-        body { font-family: monospace; background: #0a0a0a; color: #00ff00; padding: 20px; }
-        .log { background: #1a1a1a; padding: 15px; border-radius: 5px; white-space: pre-wrap; font-size: 12px; max-height: 400px; overflow-y: auto; }
-        button { background: #00ff00; color: #000; border: none; padding: 10px 20px; margin: 10px; cursor: pointer; font-weight: bold; border-radius: 5px; }
-        button:hover { background: #ff6600; color: white; }
+        body { background: #0a0a0a; color: #00ff00; font-family: monospace; padding: 20px; }
+        pre { background: #1a1a1a; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+        .stats { background: #1a1a1a; padding: 10px; border-radius: 5px; margin: 10px 0; }
     </style>
 </head>
 <body>
-    <h1>Ì±ñ Jeans Club - WITTY & SARCASTIC NOTIFICATIONS</h1>
-    <p>Status: <span style="color: #00ff00;">Ìø¢ RUNNING Every 30 minutes</span></p>
-    <div style="margin: 20px 0;">
-        <button onclick="sendTestNotification()">Ì¥î TEST NOW</button>
-        <button onclick="sendSarcasticNow()">Ì≤Ä SEND SARCASTIC NOW</button>
-    </div>
-    <div class="log" id="log">Starting witty notification service...</div>
+    <h1>Ì±ñ Jeans Club - Personalized Notifications</h1>
+    <div class="stats" id="stats">Loading member data from Supabase...</div>
+    <pre id="log">Starting...</pre>
 
     <script>
+    const SUPABASE_URL = 'https://uoyzsyxjrfygrsfzhlao.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVveXpzeXhqcmZ5Z3JzZnpobGFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxMDA0OTAsImV4cCI6MjA3OTY3NjQ5MH0.XOVNKt2JoLsjakjarq_wdt-PQKBI-8HpyBZmQZpznac';
+    
     const ONESIGNAL_APP_ID = '40cfbe3f-800c-4105-b3aa-ca32676332b0';
-    const ONESIGNAL_API_KEY = 'os_v2_app_idh34p4abraqlm5kzizgoyzswb4xhwz45qnu6du72szadwuaxglazhrzdezgl7xoat43nps2nojsz4j3kypjqxpty3sj7ohgi2aihki';
-
-    // WITTY, SARCASTIC, TEASING MESSAGES - NO FLASH SALES
-    const SARCASTIC_MESSAGES = [
-        { title: "Ì≤Ä Congratulations!", body: "You've survived another day without buying jeans. We're not impressed." },
-        { title: "Ì¥Æ Fortune Cookie", body: "Your future includes jeans. And debt. Mostly debt. But hey, style!" },
-        { title: "Ì¥° Clown Alert", body: "Another day, another person who hasn't bought jeans. The circus is disappointed." },
-        { title: "Ì≥â Financial Expert", body: "Your bank account called. It's feeling neglected. Buy something." },
-        { title: "Ì±ª Spooky News", body: "Your money isn't gone... it's just... fashionably late. Forever." },
-        { title: "Ìæ™ Circus Update", body: "The main clown (you) hasn't been to the jeans circus today. We're worried." },
-        { title: "‚ö∞Ô∏è RIP", body: "Your savings account died of loneliness. Cause: No jeans purchases." },
-        { title: "ÌΩ∑ Bad Decisions", body: "Remember: Every great love story starts with a bad decision. These jeans are waiting." },
-        { title: "Ì∫¶ Epitaph", body: "Here lies your impulse control. It died waiting for you to buy jeans." },
-        { title: "Ì≥¢ PSA", body: "Warning: Not buying jeans may lead to happiness? No wait, that's wrong. Buy jeans." },
-        { title: "Ìæ≠ Therapy Session", body: "Therapist: 'Why do you need more jeans?' You: 'You wouldn't understand.'" },
-        { title: "Ì≥ä Stock Market", body: "The only thing going up is your need for jeans. Everything else? Down." },
-        { title: "Ìæ∞ Gambling", body: "Buying jeans is gambling with extra steps. Will they fit? Who cares! YOLO." },
-        { title: "Ì≤Ä Death & Taxes", body: "Two things are certain: Death, taxes, and you needing more jeans." },
-        { title: "Ì¥Ñ Vicious Cycle", body: "Not buying jeans ‚Üí Sad ‚Üí Buy jeans ‚Üí Happy ‚Üí Broke ‚Üí Buy more jeans to feel better." },
-        { title: "Ìæ™ Welcome to the Circus", body: "You're the main attraction! Starring: Your wallet. Co-starring: Your impulse control (very small role)." },
-        { title: "Ì¥° Honk Honk!", body: "This is your clown nose. Ì±É Buy jeans or we take it back." },
-        { title: "Ì≥â Financial Forecast", body: "Cloudy with a chance of... MORE JEANS! Your points are waiting to be spent." },
-        { title: "Ì¥î Reality Check", body: "You don't need jeans. But you also don't need happiness. Your choice." },
-        { title: "Ì≤Ö Confidence Issue", body: "Your confidence is low. Jeans are high. Do the math." },
-        { title: "Ìµ∞Ô∏è Time Machine", body: "In 10 years, you won't remember the price. You'll just remember how COOL you looked." },
-        { title: "ÌæØ Life Goals", body: "Some people save for retirement. You could save for jeans. Priorities." },
-        { title: "Ì¥• Hot Take", body: "Money can be earned again. Limited edition jeans cannot. You do the math." },
-        { title: "Ì±ñ Intervention", body: "This is an intervention! ...Just kidding, buy more jeans." },
-        { title: "Ì≤Ä Existential Crisis", body: "Your jeans will outlive you. Make sure they're stylish ones." },
-        { title: "Ì¥° Self-Awareness", body: "You have a problem. The problem is: not enough jeans." },
-        { title: "Ìæ™ Join the Circus", body: "We have cookies. And jeans. Mostly jeans though. Still interested?" },
-        { title: "Ì≥â Poor Decisions", body: "Your financial advisor is crying. But your mirror is smiling. Worth it?" },
-        { title: "Ì±ª Ghosted", body: "Your money ghosted you. It's with us now. At the jeans store." },
-        { title: "Ì≤Ä Final Warning", body: "This is your conscience speaking. Buy the jeans. Do it. No regrets." }
-    ];
-
-    function addLog(message) {
-        const log = document.getElementById('log');
+    const ONESIGNAL_API_KEY = 'mnauelxvguqlmnyogt55cfj6u';
+    
+    const logElement = document.getElementById('log');
+    const statsElement = document.getElementById('stats');
+    
+    function addLog(msg, isError = false) {
         const timestamp = new Date().toLocaleString();
-        log.innerHTML += `\n[${timestamp}] ${message}`;
-        log.scrollTop = log.scrollHeight;
-        console.log(message);
+        const color = isError ? '#ff4444' : '#00ff00';
+        logElement.innerHTML += `<div style="color: ${color};">[${timestamp}] ${msg}</div>`;
+        logElement.scrollTop = logElement.scrollHeight;
+        console.log(msg);
     }
-
-    async function sendNotification(title, body) {
+    
+    // Generate PERSONALIZED message based on member data
+    function generatePersonalizedMessage(member) {
+        const name = member.name.split(' ')[0];
+        const points = member.points || 0;
+        const totalSpent = member.total_spent || 0;
+        const tier = member.tier || 'PEARL';
+        const daysInactive = member.last_login ? Math.floor((Date.now() - new Date(member.last_login)) / (1000 * 60 * 60 * 24)) : 999;
+        
+        // TIER-BASED SARCASM
+        const tierMessages = {
+            'PLATINUM': `Ì±ë Oh look, ${name} the PLATINUM has arrived! Your highness, care to buy more jeans? Your throne is getting lonely.`,
+            'SAPPHIRE': `Ì≤é ${name}, you're SAPPHIRE! That's just a fancy way of saying "spends too much on jeans." We respect that.`,
+            'GOLD': `Ìµá ${name} is GOLD! Not Olympic gold, just "broke-but-stylish" gold. Still counts!`,
+            'RUBY': `‚ù§Ô∏è ${name} hit RUBY! Your wallet is bleeding, but at least you look good doing it.`,
+            'SILVER': `Ìµà ${name}, you're SILVER. That's just a nicer word for "getting there... slowly."`,
+            'BRONZE': `Ìµâ ${name} is BRONZE! The participation trophy of jeans buying. Step it up!`,
+            'PEARL': `Ì∂™ ${name}, you're a PEARL. That's just a fancy rock. Spend more to become an actual gem.`
+        };
+        
+        // POINTS-BASED TEASING
+        let pointsMessage = '';
+        if (points >= 500) {
+            pointsMessage = `Ì≤∞ Points HOARDER! ${name} has ${points} points burning a hole in their pocket. Spend them before we donate them to charity (jk... unless?).`;
+        } else if (points >= 200) {
+            pointsMessage = `Ì≤∏ ${name} has ${points} points. That's like... 10,000 UGX discount. Not bad, not great. Middle child energy.`;
+        } else if (points >= 50) {
+            pointsMessage = `‚ö†Ô∏è ${name}, you have ${points} points. That's cute. Almost enough to buy... nothing. Keep shopping.`;
+        } else if (points < 50 && points > 0) {
+            pointsMessage = `Ì¥° ${name} has ${points} points. That's embarrassing. Did you even try? The circus is disappointed.`;
+        } else {
+            pointsMessage = `Ì≤Ä ${name} has ZERO points. How? Why? We're not mad, just disappointed. Go spend something.`;
+        }
+        
+        // SPENDING-BASED ROASTING
+        let spendingMessage = '';
+        if (totalSpent >= 1000000) {
+            spendingMessage = `Ì≤∞ MILLIONAIRE ALERT! ${name} has spent ${(totalSpent/1000).toFixed(0)}K UGX on jeans. Your wallet is crying. We're laughing.`;
+        } else if (totalSpent >= 500000) {
+            spendingMessage = `Ì≤™ ${name} spent ${(totalSpent/1000).toFixed(0)}K UGX. That's... respectable. Your bank account is concerned but impressed.`;
+        } else if (totalSpent >= 100000) {
+            spendingMessage = `Ì≥â ${name} spent ${(totalSpent/1000).toFixed(0)}K UGX. Rookie numbers. Call us when you hit 500K.`;
+        } else if (totalSpent > 0) {
+            spendingMessage = `Ì∂ê ${name} spent only ${(totalSpent/1000).toFixed(0)}K UGX. That's shrimp change. The big spenders are laughing at you.`;
+        } else {
+            spendingMessage = `ÌΩø ${name} has spent ZERO UGX. Are you even a member or just here for the free entertainment? Buy something.`;
+        }
+        
+        // INACTIVITY SHAMING
+        let inactivityMessage = '';
+        if (daysInactive > 60) {
+            inactivityMessage = `Ì≤Ä ${name}, it's been ${daysInactive} days! We thought you died. Your jeans are planning a funeral for your style. Come back!`;
+        } else if (daysInactive > 30) {
+            inactivityMessage = `Ì±ª ${name}, ${daysInactive} days? Ghosting us? Your jeans miss you. We miss your money. Come back.`;
+        } else if (daysInactive > 14) {
+            inactivityMessage = `‚è∞ ${name}, ${daysInactive} days no purchase. Your style is getting dusty. Time for a refresh.`;
+        }
+        
+        // Combine messages based on what's relevant
+        let finalMessage = '';
+        
+        if (daysInactive > 30) {
+            finalMessage = inactivityMessage;
+        } else if (points === 0 && totalSpent === 0) {
+            finalMessage = `Ì¥° HEY ${name.toUpperCase()}! You joined and did NOTHING. What's the point? Buy jeans or we're revoking your membership. Ì±ñ`;
+        } else if (totalSpent >= 1000000) {
+            finalMessage = `${tierMessages[tier]} ${spendingMessage}`;
+        } else if (points >= 200) {
+            finalMessage = `${pointsMessage} ${tierMessages[tier]}`;
+        } else {
+            finalMessage = `${spendingMessage} ${pointsMessage}`;
+        }
+        
+        return {
+            title: getTitleForMember(member, points, totalSpent),
+            body: finalMessage.substring(0, 200) // Max length
+        };
+    }
+    
+    function getTitleForMember(member, points, totalSpent) {
+        const name = member.name.split(' ')[0];
+        
+        if (member.tier === 'PLATINUM') return `Ì±ë PLATINUM ROYALTY: ${name}`;
+        if (totalSpent >= 1000000) return `Ì≤∞ MILLIONAIRE ALERT: ${name}`;
+        if (points >= 500) return `Ì≤é POINTS HOARDER: ${name}`;
+        if (points === 0 && totalSpent === 0) return `Ì¥° DO SOMETHING: ${name}`;
+        if (points < 50) return `‚ö†Ô∏è BROKE ALERT: ${name}`;
+        
+        const sarcasticTitles = [
+            `Ì≤Ä ${name}, we need to talk`,
+            `Ì¥° CLOWN OF THE DAY: ${name}`,
+            `Ì≥â FINANCIAL DISASTER: ${name}`,
+            `Ìæ™ CIRCUS MEMBER: ${name}`,
+            `Ì≤∏ POVERTY UPDATE: ${name}`
+        ];
+        
+        return sarcasticTitles[Math.floor(Math.random() * sarcasticTitles.length)];
+    }
+    
+    async function sendToOneSignal(externalUserId, title, body) {
         try {
-            addLog(`Ì≥§ Sending: "${title}"`);
-            
             const response = await fetch('https://onesignal.com/api/v1/notifications', {
                 method: 'POST',
                 headers: {
@@ -79,75 +142,83 @@
                     app_id: ONESIGNAL_APP_ID,
                     headings: { en: title },
                     contents: { en: body },
-                    included_segments: ['Subscribed Users'],
+                    include_external_user_ids: [externalUserId],
                     priority: 10,
                     ttl: 86400,
                     chrome_web_icon: 'https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg'
                 })
             });
-            
-            const result = await response.json();
-            if (result.id) {
-                addLog(`‚úÖ SENT! ID: ${result.id}`);
-            } else {
-                addLog(`‚ö†Ô∏è Response: ${JSON.stringify(result)}`);
-            }
-            return result;
+            return await response.json();
         } catch (error) {
-            addLog(`‚ùå ERROR: ${error.message}`);
             return null;
         }
     }
-
-    // Manual test buttons
-    window.sendTestNotification = async function() {
-        addLog('Ì¥î TEST BUTTON CLICKED');
-        await sendNotification(
-            'Ì¥î JEANS CLUB TEST', 
-            'If you see this, the sarcasm engine is working! Prepare to be roasted every 30 minutes. Ì±ñ'
-        );
-    };
     
-    window.sendSarcasticNow = async function() {
-        addLog('Ì≤Ä SARCASTIC BUTTON CLICKED');
-        const randomMsg = SARCASTIC_MESSAGES[Math.floor(Math.random() * SARCASTIC_MESSAGES.length)];
-        await sendNotification(randomMsg.title, randomMsg.body);
-    };
-
-    // 30-MINUTE SCHEDULE - ONLY SARCASTIC/WITTY MESSAGES
-    let lastSentSlot = -1;
-
-    async function runEvery30Minutes() {
-        const now = new Date();
-        const hour = now.getHours();
-        const minute = now.getMinutes();
-        const currentSlot = Math.floor(minute / 30);
+    async function sendPersonalizedNotifications() {
+        addLog('ÌæØ Fetching members from Supabase...');
         
-        // Check if we already sent this slot
-        if (lastSentSlot === currentSlot && lastSentSlot !== -1) {
-            return;
+        try {
+            // Get ALL members from Supabase
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/members?select=*`, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
+            
+            const members = await response.json();
+            addLog(`Ì≥ä Found ${members.length} members in Supabase`);
+            
+            let sentCount = 0;
+            let failCount = 0;
+            
+            statsElement.innerHTML = `
+                Ì≥ä <strong>Supabase Members:</strong> ${members.length}<br>
+                Ì≥± <strong>Sending personalized notifications...</strong>
+            `;
+            
+            for (const member of members) {
+                // Only send to members with push_enabled = true
+                if (member.push_enabled !== true) {
+                    addLog(`‚è≠Ô∏è Skipping ${member.name} (push not enabled)`);
+                    continue;
+                }
+                
+                const { title, body } = generatePersonalizedMessage(member);
+                addLog(`Ì≥§ Sending to ${member.name} (${member.jc_id})`);
+                addLog(`   Title: ${title}`);
+                addLog(`   Body: ${body.substring(0, 80)}...`);
+                
+                const result = await sendToOneSignal(member.jc_id, title, body);
+                
+                if (result && result.id) {
+                    sentCount++;
+                    addLog(`   ‚úÖ Sent! ID: ${result.id}`);
+                } else {
+                    failCount++;
+                    addLog(`   ‚ùå Failed: ${JSON.stringify(result)}`, true);
+                }
+                
+                // Small delay to avoid rate limiting
+                await new Promise(r => setTimeout(r, 500));
+            }
+            
+            statsElement.innerHTML = `
+                Ì≥ä <strong>SUMMARY:</strong><br>
+                ‚úÖ Sent: ${sentCount} members<br>
+                ‚ùå Failed: ${failCount} members<br>
+                ÌæØ Total processed: ${members.filter(m => m.push_enabled === true).length} push-enabled members
+            `;
+            
+            addLog(`‚úÖ Complete! Sent to ${sentCount} members, failed ${failCount}`);
+            
+        } catch (error) {
+            addLog(`‚ùå Supabase error: ${error.message}`, true);
         }
-        
-        addLog(`‚è∞ 30-MINUTE TRIGGER at ${hour}:${minute}`);
-        
-        // Pick a random sarcastic message
-        const randomMsg = SARCASTIC_MESSAGES[Math.floor(Math.random() * SARCASTIC_MESSAGES.length)];
-        
-        addLog(`Ì≤Ä Selected: "${randomMsg.title}"`);
-        await sendNotification(randomMsg.title, randomMsg.body);
-        
-        lastSentSlot = currentSlot;
-        addLog(`‚úÖ Next sarcastic notification in 30 minutes`);
     }
-
-    // Run immediately and then every 30 minutes
-    setTimeout(runEvery30Minutes, 1000);
-    setInterval(runEvery30Minutes, 30 * 60 * 1000);
     
-    addLog('Ì∫Ä SARCASTIC NOTIFICATION SERVICE ACTIVE');
-    addLog('Ì≤Ä Sending witty, sarcastic, teasing messages every 30 minutes');
-    addLog('‚è∞ No flash sales - just pure sarcasm');
-    addLog(`Ì≥ö Loaded ${SARCASTIC_MESSAGES.length} sarcastic messages`);
+    // Run immediately
+    sendPersonalizedNotifications();
     </script>
 </body>
 </html>
