@@ -9171,6 +9171,7 @@ function requestNotificationPermission() {
         pushManager.subscribe();
     }
 }
+
 async function togglePushNotifications() {
     console.log('🔄 Toggle OneSignal notifications');
     
@@ -9184,8 +9185,10 @@ async function togglePushNotifications() {
     btn.textContent = '⏳ Processing...';
     
     try {
-        const subscription = await OneSignal.User.PushSubscription.get();
-        const isSubscribed = subscription && subscription.optedIn === true;
+        // Direct access - no .get() needed (using the working v16 approach)
+        const subscription = OneSignal.User.PushSubscription;
+        const isSubscribed = subscription && subscription._e === true;
+        const subscriptionId = subscription ? subscription.fe : null;
         
         if (isSubscribed) {
             // UNSUBSCRIBE - Turn OFF
@@ -9201,9 +9204,7 @@ async function togglePushNotifications() {
                     .update({ push_enabled: false })
                     .eq('jc_id', clubManager.currentMember.jcId);
                 
-                // ✅ Save to push_subscriptions table - Get subscription ID
-                const sub = await OneSignal.User.PushSubscription.get();
-                const subscriptionId = sub ? sub.id : null;
+                // Save to push_subscriptions table
                 await savePushSubscriptionToSupabase(clubManager.currentMember.jcId, subscriptionId, 'inactive');
             }
         } else {
@@ -9229,10 +9230,10 @@ async function togglePushNotifications() {
                         .update({ push_enabled: true })
                         .eq('jc_id', clubManager.currentMember.jcId);
                     
-                    // ✅ Save to push_subscriptions table - Get subscription ID
-                    const sub = await OneSignal.User.PushSubscription.get();
-                    const subscriptionId = sub ? sub.id : null;
-                    await savePushSubscriptionToSupabase(clubManager.currentMember.jcId, subscriptionId, 'active');
+                    // Get fresh subscription after enabling
+                    const newSubscription = OneSignal.User.PushSubscription;
+                    const newSubscriptionId = newSubscription ? newSubscription.fe : null;
+                    await savePushSubscriptionToSupabase(clubManager.currentMember.jcId, newSubscriptionId, 'active');
                 }
             } else {
                 btn.textContent = '🔔 Enable Notifications';
@@ -9247,7 +9248,6 @@ async function togglePushNotifications() {
         btn.disabled = false;
     }
 }
-
 // ===========================================
 // REPLACE sendPushNotification with this Supabase version
 // ===========================================
