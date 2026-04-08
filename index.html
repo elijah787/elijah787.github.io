@@ -9160,37 +9160,78 @@ function requestNotificationPermission() {
         pushManager.subscribe();
     }
 }
-// Toggle push notifications
 async function togglePushNotifications() {
-    console.log('🔄 Toggle notifications called');
+    console.log('🔄 Toggle OneSignal notifications');
     
-    if (!pushManager) {
-        await initPushNotifications();
+    if (!window.OneSignal) {
+        showToast('OneSignal loading, please wait...', 'info');
+        return;
     }
     
-    if (pushManager.isSubscribed) {
-        // Unsubscribe
-        console.log('Turning OFF notifications...');
-        const result = await pushManager.unsubscribe();
-        if (result) {
-            const btn = document.getElementById('notifyToggleBtn');
-            if (btn) {
-                btn.textContent = '🔔 Enable Notifications';
-                btn.style.background = '';
-            }
+    const btn = document.getElementById('notifyToggleBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Processing...';
+    
+    try {
+        const subscription = await OneSignal.User.PushSubscription.get();
+        const isSubscribed = subscription && subscription.optedIn === true;
+        
+        if (isSubscribed) {
+            // UNSUBSCRIBE - Turn OFF
+            await OneSignal.User.PushSubscription.optOut();
+            btn.textContent = '🔔 Enable Notifications';
+            btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
             showToast('Notifications disabled', 'info');
-        }
-    } else {
-        // Subscribe
-        console.log('Turning ON notifications...');
-        const result = await pushManager.subscribe();
-        if (result) {
-            const btn = document.getElementById('notifyToggleBtn');
-            if (btn) {
+            
+            // Update members table
+            if (clubManager?.currentMember) {
+                await clubManager.db.supabase
+                    .from('members')
+                    .update({ push_enabled: false })
+                    .eq('jc_id', clubManager.currentMember.jcId);
+                
+                // ✅ Save to push_subscriptions table
+                const onesignalId = await OneSignal.User.getOnesignalId();
+                await savePushSubscriptionToSupabase(clubManager.currentMember.jcId, onesignalId, 'inactive');
+            }
+        } else {
+            // SUBSCRIBE - Turn ON
+            const permission = await OneSignal.Notifications.requestPermission();
+            
+            if (permission === true) {
+                await OneSignal.login(clubManager.currentMember.jcId);
+                await OneSignal.User.addTags({
+                    tier: clubManager.currentMember.tier,
+                    points: clubManager.currentMember.points.toString(),
+                    name: clubManager.currentMember.name
+                });
+                
                 btn.textContent = '🔕 Notifications On';
                 btn.style.background = '#28a745';
+                showToast('✅ Notifications enabled!', 'success');
+                
+                // Update members table
+                if (clubManager?.currentMember) {
+                    await clubManager.db.supabase
+                        .from('members')
+                        .update({ push_enabled: true })
+                        .eq('jc_id', clubManager.currentMember.jcId);
+                    
+                    // ✅ Save to push_subscriptions table
+                    const onesignalId = await OneSignal.User.getOnesignalId();
+                    await savePushSubscriptionToSupabase(clubManager.currentMember.jcId, onesignalId, 'active');
+                }
+            } else {
+                btn.textContent = '🔔 Enable Notifications';
+                btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                showToast('Please allow notifications in browser settings', 'error');
             }
         }
+    } catch (error) {
+        console.error('Toggle error:', error);
+        showToast('Something went wrong. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
     }
 }
 
@@ -9237,6 +9278,67 @@ async function saveNotificationToSupabase(memberJcId, title, body, data = {}) {
         }
     } catch (error) {
         console.error('Error saving to Supabase:', error);
+    }
+}
+// ✅ Save push subscription to Supabase
+async function savePushSubscriptionToSupabase(memberJcId, onesignalId, status) {
+    if (!clubManager?.db) {
+        console.log('⚠️ ClubManager not ready');
+        return false;
+    }
+    
+    try {
+        const deviceInfo = {
+            device_type: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+            browser: (function() {
+                const ua = navigator.userAgent;
+                if (ua.includes('Chrome')) return 'Chrome';
+                if (ua.includes('Firefox')) return 'Firefox';
+                if (ua.includes('Safari')) return 'Safari';
+                if (ua.includes('Edge')) return 'Edge';
+                return 'Unknown';
+            })(),
+            os: (function() {
+                const ua = navigator.userAgent;
+                if (ua.includes('Windows')) return 'Windows';
+                if (ua.includes('Mac')) return 'Mac';
+                if (ua.includes('Linux')) return 'Linux';
+                if (ua.includes('Android')) return 'Android';
+                if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
+                return 'Unknown';
+            })()
+        };
+        
+        const now = new Date().toISOString();
+        
+        const { data, error } = await clubManager.db.supabase
+            .from('push_subscriptions')
+            .upsert({
+                member_jc_id: memberJcId,
+                onesignal_id: onesignalId,
+                status: status,
+                device_type: deviceInfo.device_type,
+                browser: deviceInfo.browser,
+                os: deviceInfo.os,
+                subscribed_at: status === 'active' ? now : null,
+                unsubscribed_at: status === 'inactive' ? now : null,
+                last_active: now,
+                updated_at: now
+            }, { 
+                onConflict: 'member_jc_id, onesignal_id'
+            });
+        
+        if (error) {
+            console.error('❌ Error saving push subscription:', error);
+            return false;
+        }
+        
+        console.log('✅ Push subscription saved to Supabase:', { memberJcId, status });
+        return true;
+        
+    } catch (err) {
+        console.error('❌ Failed to save subscription:', err);
+        return false;
     }
 }
         // ===========================
