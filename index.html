@@ -9190,9 +9190,10 @@ async function togglePushNotifications() {
                     .update({ push_enabled: false })
                     .eq('jc_id', clubManager.currentMember.jcId);
                 
-                // ✅ Save to push_subscriptions table
-                const onesignalId = await OneSignal.User.getOnesignalId();
-                await savePushSubscriptionToSupabase(clubManager.currentMember.jcId, onesignalId, 'inactive');
+                // ✅ Save to push_subscriptions table - Get subscription ID
+                const sub = await OneSignal.User.PushSubscription.get();
+                const subscriptionId = sub ? sub.id : null;
+                await savePushSubscriptionToSupabase(clubManager.currentMember.jcId, subscriptionId, 'inactive');
             }
         } else {
             // SUBSCRIBE - Turn ON
@@ -9217,9 +9218,10 @@ async function togglePushNotifications() {
                         .update({ push_enabled: true })
                         .eq('jc_id', clubManager.currentMember.jcId);
                     
-                    // ✅ Save to push_subscriptions table
-                    const onesignalId = await OneSignal.User.getOnesignalId();
-                    await savePushSubscriptionToSupabase(clubManager.currentMember.jcId, onesignalId, 'active');
+                    // ✅ Save to push_subscriptions table - Get subscription ID
+                    const sub = await OneSignal.User.PushSubscription.get();
+                    const subscriptionId = sub ? sub.id : null;
+                    await savePushSubscriptionToSupabase(clubManager.currentMember.jcId, subscriptionId, 'active');
                 }
             } else {
                 btn.textContent = '🔔 Enable Notifications';
@@ -9280,8 +9282,8 @@ async function saveNotificationToSupabase(memberJcId, title, body, data = {}) {
         console.error('Error saving to Supabase:', error);
     }
 }
-// ✅ Save push subscription to Supabase
-async function savePushSubscriptionToSupabase(memberJcId, onesignalId, status) {
+// ✅ Save push subscription to Supabase (corrected)
+async function savePushSubscriptionToSupabase(memberJcId, subscriptionId, status) {
     if (!clubManager?.db) {
         console.log('⚠️ ClubManager not ready');
         return false;
@@ -9315,7 +9317,7 @@ async function savePushSubscriptionToSupabase(memberJcId, onesignalId, status) {
             .from('push_subscriptions')
             .upsert({
                 member_jc_id: memberJcId,
-                onesignal_id: onesignalId,
+                subscription_id: subscriptionId,
                 status: status,
                 device_type: deviceInfo.device_type,
                 browser: deviceInfo.browser,
@@ -9325,7 +9327,7 @@ async function savePushSubscriptionToSupabase(memberJcId, onesignalId, status) {
                 last_active: now,
                 updated_at: now
             }, { 
-                onConflict: 'member_jc_id, onesignal_id'
+                onConflict: 'member_jc_id, subscription_id'
             });
         
         if (error) {
@@ -9341,7 +9343,7 @@ async function savePushSubscriptionToSupabase(memberJcId, onesignalId, status) {
         return false;
     }
 }
-        // ===========================
+  // ===========================
         // UTILITY FUNCTIONS
         // ===========================
         
