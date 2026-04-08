@@ -9185,10 +9185,9 @@ async function togglePushNotifications() {
     btn.textContent = '⏳ Processing...';
     
     try {
-        // Direct access - no .get() needed (using the working v16 approach)
+        // ✅ DIRECT ACCESS - NO .get() NEEDED (v16 way)
         const subscription = OneSignal.User.PushSubscription;
         const isSubscribed = subscription && subscription._e === true;
-        const subscriptionId = subscription ? subscription.fe : null;
         
         if (isSubscribed) {
             // UNSUBSCRIBE - Turn OFF
@@ -9197,43 +9196,54 @@ async function togglePushNotifications() {
             btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
             showToast('Notifications disabled', 'info');
             
-            // Update members table
+            // Update database
             if (clubManager?.currentMember) {
                 await clubManager.db.supabase
                     .from('members')
                     .update({ push_enabled: false })
                     .eq('jc_id', clubManager.currentMember.jcId);
                 
-                // Save to push_subscriptions table
-                await savePushSubscriptionToSupabase(clubManager.currentMember.jcId, subscriptionId, 'inactive');
+                // Save to push_subscriptions
+                await savePushSubscriptionToSupabase(
+                    clubManager.currentMember.jcId, 
+                    subscription?.fe, 
+                    'inactive'
+                );
             }
         } else {
             // SUBSCRIBE - Turn ON
             const permission = await OneSignal.Notifications.requestPermission();
             
             if (permission === true) {
+                // ✅ CRITICAL: This sets the External ID (JC ID)
                 await OneSignal.login(clubManager.currentMember.jcId);
+                
+                // Add user tags
                 await OneSignal.User.addTags({
                     tier: clubManager.currentMember.tier,
                     points: clubManager.currentMember.points.toString(),
-                    name: clubManager.currentMember.name
+                    name: clubManager.currentMember.name,
+                    jcId: clubManager.currentMember.jcId
                 });
                 
                 btn.textContent = '🔕 Notifications On';
                 btn.style.background = '#28a745';
                 showToast('✅ Notifications enabled!', 'success');
                 
-                // Update members table
+                // Update database
                 if (clubManager?.currentMember) {
                     await clubManager.db.supabase
                         .from('members')
                         .update({ push_enabled: true })
                         .eq('jc_id', clubManager.currentMember.jcId);
                     
-                    // Get fresh subscription after enabling
-                    const newSubscription = OneSignal.User.PushSubscription;
-                    const newSubscriptionId = newSubscription ? newSubscription.fe : null;
-                    await savePushSubscriptionToSupabase(clubManager.currentMember.jcId, newSubscriptionId, 'active');
+                    // Get fresh subscription and save
+                    const newSub = OneSignal.User.PushSubscription;
+                    await savePushSubscriptionToSupabase(
+                        clubManager.currentMember.jcId, 
+                        newSub?.fe, 
+                        'active'
+                    );
                 }
             } else {
                 btn.textContent = '🔔 Enable Notifications';
@@ -9245,6 +9255,35 @@ async function togglePushNotifications() {
         console.error('Toggle error:', error);
         showToast('Something went wrong. Please try again.', 'error');
     } finally {
+        btn.disabled = false;
+    }
+}
+async function updateNotificationButton() {
+    const btn = document.getElementById('notifyToggleBtn');
+    if (!btn) return;
+    
+    if (!window.OneSignal) {
+        btn.textContent = '⏳ Loading...';
+        btn.disabled = true;
+        return;
+    }
+    
+    try {
+        // ✅ DIRECT ACCESS
+        const subscription = OneSignal.User.PushSubscription;
+        const isSubscribed = subscription && subscription._e === true;
+        
+        if (isSubscribed) {
+            btn.textContent = '🔕 Notifications On';
+            btn.style.background = '#28a745';
+        } else {
+            btn.textContent = '🔔 Enable Notifications';
+            btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
+        btn.disabled = false;
+    } catch (error) {
+        console.error('Error checking subscription:', error);
+        btn.textContent = '🔔 Enable Notifications';
         btn.disabled = false;
     }
 }
