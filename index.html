@@ -8641,7 +8641,6 @@ async subscribe() {
         let permission = Notification.permission;
         
         if (permission !== 'granted') {
-            console.log('Requesting permission...');
             permission = await Notification.requestPermission();
         }
         
@@ -8650,8 +8649,6 @@ async subscribe() {
             return false;
         }
         
-        console.log('✅ Permission granted');
-
         if (!this.swRegistration) {
             this.swRegistration = await navigator.serviceWorker.ready;
         }
@@ -8660,72 +8657,47 @@ async subscribe() {
         
         let existingSubscription = await this.swRegistration.pushManager.getSubscription();
         if (existingSubscription) {
-            console.log('Unsubscribing existing subscription...');
             await existingSubscription.unsubscribe();
         }
         
-        console.log('Creating push subscription...');
         const subscription = await this.swRegistration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
         });
-       // ========== ADD ONESIGNAL REGISTRATION ==========
-try {
-    const onesignalData = {
-        app_id: '40cfbe3f-800c-4105-b3aa-ca32676332b0', // Replace with your OneSignal App ID
-        identifier: subscription.endpoint,
-        external_id: clubManager.currentMember.jcId, // ← THIS IS WHERE JC ID GOES!
-        device_type: this.getDeviceType(),
-        language: 'en',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        tags: {
-            tier: clubManager.currentMember.tier,
-            jcId: clubManager.currentMember.jcId,
-            name: clubManager.currentMember.name
-        }
-    };
-    
-    const response = await fetch('https://onesignal.com/api/v1/players', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'os_v2_app_idh34p4abraqlm5kzizgoyzswbrhwatczonunc5zcmrzwpzdcrqirgaqaiqcyfhu5gfrvazgznkki5jdxq2qxa2sevjt3eyy4i6mpwq' // Replace with your REST API Key
-        },
-        body: JSON.stringify(onesignalData)
-    });
-    
-    const result = await response.json();
-    console.log('✅ OneSignal registration:', result);
-} catch (error) {
-    console.error('OneSignal registration failed:', error);
-}
-        console.log('✅ Push subscription created');
         
         localStorage.setItem('pushEnabled', 'true');
         this.isSubscribed = true;
         
-        // ✅ CRITICAL: SAVE TO DATABASE
-        if (clubManager && clubManager.currentMember) {
-            console.log('💾 Saving to database for member:', clubManager.currentMember.jcId);
-            
-            const { data, error } = await clubManager.db.supabase
-                .from('members')
-                .update({ 
-                    push_enabled: true,
-                    push_subscription: subscription,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('jc_id', clubManager.currentMember.jcId);
-            
-            if (error) {
-                console.error('❌ Database save error:', error);
-                showToast('Notifications enabled but failed to save preference', 'warning');
-            } else {
-                console.log('✅ Database updated successfully! push_enabled = true');
-                showToast('🔔 Notifications enabled and saved!', 'success');
+        // ✅ FIXED ONESIGNAL REGISTRATION
+        if (clubManager && clubManager.currentMember && window.OneSignal) {
+            try {
+                // First, ensure OneSignal is initialized
+                await OneSignal.Notifications.requestPermission();
+                
+                // Set external ID (JC ID)
+                await OneSignal.login(clubManager.currentMember.jcId);
+                
+                // Add tags
+                await OneSignal.User.addTags({
+                    tier: clubManager.currentMember.tier,
+                    points: clubManager.currentMember.points.toString(),
+                    name: clubManager.currentMember.name
+                });
+                
+                console.log('✅ OneSignal registration successful');
+                showToast('Notifications enabled!', 'success');
+            } catch(onesignalError) {
+                console.error('OneSignal error:', onesignalError);
+                showToast('OneSignal registration failed, but browser notifications are on', 'warning');
             }
-        } else {
-            console.log('⚠️ No current member - cannot save to database');
+        }
+        
+        // Update database
+        if (clubManager && clubManager.currentMember) {
+            await clubManager.db.supabase
+                .from('members')
+                .update({ push_enabled: true })
+                .eq('jc_id', clubManager.currentMember.jcId);
         }
         
         const btn = document.getElementById('notifyToggleBtn');
@@ -8733,11 +8705,6 @@ try {
             btn.textContent = ' Notifications On';
             btn.style.background = '#28a745';
         }
-        
-        // Send test notification
-        setTimeout(() => {
-            this.sendNotification('✅ Success!', 'Your notifications are now active and saved to your account!');
-        }, 1000);
         
         return true;
 
