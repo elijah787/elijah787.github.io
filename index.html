@@ -3807,24 +3807,6 @@
             </div>
         </div>
 
-        <!-- Delete Member Section -->
-        <div id="deleteMemberSection" class="card hidden">
-            <div class="nav-buttons">
-                <button class="btn secondary" onclick="showAdminPanel()">Back to Admin</button>
-            </div>
-
-            <h2 class="section-title">Delete Member Account</h2>
-            
-            <div class="info-card" style="border-left-color: #dc3545;">
-                <h3 style="color: #dc3545;">Warning: This action cannot be undone</h3>
-                <div class="form-group">
-                    <label for="deleteJCId">Member JC ID to Delete</label>
-                    <input type="text" id="deleteJCId" placeholder="Enter JC ID to delete">
-                </div>
-                <button class="btn" style="background: #dc3545;" onclick="confirmDeleteMember()">Delete Member Account</button>
-                <div id="deleteResult" style="margin-top: 10px;"></div>
-            </div>
-        </div>
 
         <!-- Voucher Management Section -->
         <div id="voucherManagementSection" class="card hidden">
@@ -3853,7 +3835,7 @@
         <!-- QR Code Section -->
         <div class="card qr-share-section" style="text-align: center; margin-top: 20px;">
             <h3 style="color: #333; margin-bottom: 20px;">Share Jeans Club</h3>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://elijah787.github.io/jeans-club" 
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://elijah787.github.io/" 
                  alt="QR Code for Jeans Club"
                  style="border: 2px solid #ddd; border-radius: 10px; padding: 10px; display: block; margin: 0 auto;">
             <p style="color: #666; margin-top: 15px;">Scan to share with friends</p>
