@@ -9548,6 +9548,114 @@ async function runAutoSyncAfterLogin() {
     }, 5000);
 }
 // ===========================================
+// AUTOMATIC SAVE TO push_subscriptions TABLE
+// ===========================================
+
+async function savePushSubscriptionToSupabaseAuto(memberJcId, status) {
+    if (!clubManager?.db) {
+        console.log('⚠️ Database not ready');
+        return false;
+    }
+    
+    if (!memberJcId) {
+        console.error('❌ No member JC ID');
+        return false;
+    }
+    
+    try {
+        const now = new Date().toISOString();
+        
+        // Get device info
+        const deviceInfo = {
+            device_type: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+            browser: (function() {
+                const ua = navigator.userAgent;
+                if (ua.includes('Chrome')) return 'Chrome';
+                if (ua.includes('Firefox')) return 'Firefox';
+                if (ua.includes('Safari')) return 'Safari';
+                if (ua.includes('Edge')) return 'Edge';
+                return 'Unknown';
+            })(),
+            os: (function() {
+                const ua = navigator.userAgent;
+                if (ua.includes('Windows')) return 'Windows';
+                if (ua.includes('Mac')) return 'Mac';
+                if (ua.includes('Linux')) return 'Linux';
+                if (ua.includes('Android')) return 'Android';
+                if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
+                return 'Unknown';
+            })()
+        };
+        
+        // Get OneSignal player ID
+        let playerId = null;
+        try {
+            const subscription = OneSignal.User.PushSubscription;
+            playerId = subscription?.id || subscription?.subscriptionId || null;
+        } catch(e) {
+            console.log('Could not get player ID:', e);
+        }
+        
+        // Check if record exists
+        const { data: existing } = await clubManager.db.supabase
+            .from('push_subscriptions')
+            .select('id')
+            .eq('member_jc_id', memberJcId)
+            .maybeSingle();
+        
+        if (existing) {
+            // UPDATE existing record
+            const { error } = await clubManager.db.supabase
+                .from('push_subscriptions')
+                .update({
+                    status: status,
+                    subscription_id: playerId,
+                    device_type: deviceInfo.device_type,
+                    browser: deviceInfo.browser,
+                    os: deviceInfo.os,
+                    last_active: now,
+                    updated_at: now,
+                    ...(status === 'active' ? { subscribed_at: now } : { unsubscribed_at: now })
+                })
+                .eq('member_jc_id', memberJcId);
+            
+            if (error) throw error;
+            console.log(`✅ Updated ${memberJcId} in push_subscriptions (${status})`);
+        } else {
+            // INSERT new record
+            const { error } = await clubManager.db.supabase
+                .from('push_subscriptions')
+                .insert({
+                    member_jc_id: memberJcId,
+                    subscription_id: playerId,
+                    status: status,
+                    device_type: deviceInfo.device_type,
+                    browser: deviceInfo.browser,
+                    os: deviceInfo.os,
+                    subscribed_at: status === 'active' ? now : null,
+                    last_active: now,
+                    created_at: now,
+                    updated_at: now
+                });
+            
+            if (error) throw error;
+            console.log(`✅ Inserted ${memberJcId} into push_subscriptions (${status})`);
+        }
+        
+        // Also update members table
+        await clubManager.db.supabase
+            .from('members')
+            .update({ push_enabled: status === 'active' })
+            .eq('jc_id', memberJcId);
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Auto-save error:', error);
+        return false;
+    }
+}
+// ===========================================
 // PUSH SUBSCRIPTION MANAGEMENT FUNCTIONS
 // ===========================================
 
