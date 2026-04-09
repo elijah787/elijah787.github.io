@@ -9547,6 +9547,180 @@ async function runAutoSyncAfterLogin() {
         }
     }, 5000);
 }
+// ===========================================
+// PUSH SUBSCRIPTION MANAGEMENT FUNCTIONS
+// ===========================================
+
+// Add a single member to push_subscriptions
+async function addToPushSubscriptions(memberJcId, playerId = null, status = 'active') {
+    if (!memberJcId) {
+        console.error('❌ Member JC ID is required');
+        showToast('Member JC ID is required', 'error');
+        return false;
+    }
+    
+    if (!clubManager?.db) {
+        console.error('❌ Database not ready');
+        showToast('Database not ready. Please refresh and try again.', 'error');
+        return false;
+    }
+    
+    try {
+        const now = new Date().toISOString();
+        
+        const deviceInfo = {
+            device_type: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+            browser: (function() {
+                const ua = navigator.userAgent;
+                if (ua.includes('Chrome')) return 'Chrome';
+                if (ua.includes('Firefox')) return 'Firefox';
+                if (ua.includes('Safari')) return 'Safari';
+                if (ua.includes('Edge')) return 'Edge';
+                return 'Unknown';
+            })(),
+            os: (function() {
+                const ua = navigator.userAgent;
+                if (ua.includes('Windows')) return 'Windows';
+                if (ua.includes('Mac')) return 'Mac';
+                if (ua.includes('Linux')) return 'Linux';
+                if (ua.includes('Android')) return 'Android';
+                if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
+                return 'Unknown';
+            })()
+        };
+        
+        // Check if member exists
+        const { data: existingMember } = await clubManager.db.supabase
+            .from('members')
+            .select('jc_id')
+            .eq('jc_id', memberJcId)
+            .maybeSingle();
+        
+        if (!existingMember) {
+            showToast(`Member ${memberJcId} not found`, 'error');
+            return false;
+        }
+        
+        // Delete if exists (avoid duplicates)
+        await clubManager.db.supabase
+            .from('push_subscriptions')
+            .delete()
+            .eq('member_jc_id', memberJcId);
+        
+        // Insert new record
+        const { error: insertError } = await clubManager.db.supabase
+            .from('push_subscriptions')
+            .insert({
+                member_jc_id: memberJcId,
+                subscription_id: playerId,
+                status: status,
+                device_type: deviceInfo.device_type,
+                browser: deviceInfo.browser,
+                os: deviceInfo.os,
+                subscribed_at: status === 'active' ? now : null,
+                last_active: now,
+                created_at: now,
+                updated_at: now
+            });
+        
+        if (insertError) {
+            console.error('Insert error:', insertError);
+            showToast(`Failed to add ${memberJcId}`, 'error');
+            return false;
+        }
+        
+        // Update members table
+        await clubManager.db.supabase
+            .from('members')
+            .update({ push_enabled: status === 'active' })
+            .eq('jc_id', memberJcId);
+        
+        showToast(`✅ ${memberJcId} added to push subscriptions`, 'success');
+        return true;
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error adding member', 'error');
+        return false;
+    }
+}
+
+// Bulk add multiple members
+async function bulkAddToPushSubscriptions(membersList) {
+    if (!membersList || membersList.length === 0) {
+        showToast('No members provided', 'error');
+        return { success: 0, failed: 0 };
+    }
+    
+    showToast(`Adding ${membersList.length} members...`, 'info');
+    let successCount = 0;
+    
+    for (const member of membersList) {
+        const jcId = typeof member === 'string' ? member : member.jcId;
+        const playerId = typeof member === 'object' ? member.playerId : null;
+        
+        const result = await addToPushSubscriptions(jcId, playerId, 'active');
+        if (result) successCount++;
+        await new Promise(r => setTimeout(r, 200));
+    }
+    
+    showToast(`Added ${successCount}/${membersList.length} members`, 'success');
+    return { success: successCount, failed: membersList.length - successCount };
+}
+
+// View all push subscriptions
+async function viewPushSubscriptions() {
+    if (!clubManager?.db) {
+        showToast('Database not ready', 'error');
+        return;
+    }
+    
+    const { data, error } = await clubManager.db.supabase
+        .from('push_subscriptions')
+        .select('member_jc_id, status, subscribed_at, last_active')
+        .order('subscribed_at', { ascending: false });
+    
+    if (error) {
+        showToast('Error fetching subscriptions', 'error');
+        console.error(error);
+    } else {
+        console.table(data);
+        showToast(`Found ${data.length} push subscriptions`, 'info');
+        return data;
+    }
+}
+
+// Remove member from push subscriptions
+async function removeFromPushSubscriptions(memberJcId) {
+    if (!memberJcId) {
+        showToast('Member JC ID required', 'error');
+        return false;
+    }
+    
+    const { error } = await clubManager.db.supabase
+        .from('push_subscriptions')
+        .delete()
+        .eq('member_jc_id', memberJcId);
+    
+    if (error) {
+        showToast(`Failed to remove ${memberJcId}`, 'error');
+        return false;
+    }
+    
+    await clubManager.db.supabase
+        .from('members')
+        .update({ push_enabled: false })
+        .eq('jc_id', memberJcId);
+    
+    showToast(`✅ ${memberJcId} removed`, 'success');
+    return true;
+}
+
+// Make functions available globally
+window.addToPushSubscriptions = addToPushSubscriptions;
+window.bulkAddToPushSubscriptions = bulkAddToPushSubscriptions;
+window.viewPushSubscriptions = viewPushSubscriptions;
+window.removeFromPushSubscriptions = removeFromPushSubscriptions;
   // ===========================
         // UTILITY FUNCTIONS
         // ===========================
