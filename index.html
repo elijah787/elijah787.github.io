@@ -9342,14 +9342,15 @@ async function saveNotificationToSupabase(memberJcId, title, body, data = {}) {
         console.error('Error saving to Supabase:', error);
     }
 }
-// ✅ Save push subscription to Supabase (corrected)
-async function savePushSubscriptionToSupabase(memberJcId, subscriptionId, status) {
+// ✅ CORRECTED: Save push subscription to Supabase
+async function savePushSubscriptionToSupabase(memberJcId, subscription, status) {
     if (!clubManager?.db) {
         console.log('⚠️ ClubManager not ready');
         return false;
     }
     
     try {
+        // Get device info
         const deviceInfo = {
             device_type: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
             browser: (function() {
@@ -9373,25 +9374,57 @@ async function savePushSubscriptionToSupabase(memberJcId, subscriptionId, status
         
         const now = new Date().toISOString();
         
-        const { data, error } = await clubManager.db.supabase
-            .from('push_subscriptions')
-            .upsert({
-                member_jc_id: memberJcId,
-                subscription_id: subscriptionId,
-                status: status,
-                device_type: deviceInfo.device_type,
-                browser: deviceInfo.browser,
-                os: deviceInfo.os,
-                subscribed_at: status === 'active' ? now : null,
-                unsubscribed_at: status === 'inactive' ? now : null,
-                last_active: now,
-                updated_at: now
-            }, { 
-                onConflict: 'member_jc_id, subscription_id'
-            });
+        // Extract subscription ID correctly for OneSignal v16
+        let subscriptionId = null;
+        if (subscription && typeof subscription === 'object') {
+            // OneSignal v16 stores subscription ID in different places
+            subscriptionId = subscription.subscriptionId || 
+                           subscription.id || 
+                           (subscription._e ? JSON.stringify(subscription) : null);
+        }
         
-        if (error) {
-            console.error('❌ Error saving push subscription:', error);
+        // First check if record exists
+        const { data: existing, error: checkError } = await clubManager.db.supabase
+            .from('push_subscriptions')
+            .select('id')
+            .eq('member_jc_id', memberJcId)
+            .maybeSingle();
+        
+        let result;
+        if (existing) {
+            // Update existing
+            result = await clubManager.db.supabase
+                .from('push_subscriptions')
+                .update({
+                    status: status,
+                    subscription_id: subscriptionId,
+                    device_type: deviceInfo.device_type,
+                    browser: deviceInfo.browser,
+                    os: deviceInfo.os,
+                    last_active: now,
+                    updated_at: now
+                })
+                .eq('member_jc_id', memberJcId);
+        } else {
+            // Insert new
+            result = await clubManager.db.supabase
+                .from('push_subscriptions')
+                .insert({
+                    member_jc_id: memberJcId,
+                    subscription_id: subscriptionId,
+                    status: status,
+                    device_type: deviceInfo.device_type,
+                    browser: deviceInfo.browser,
+                    os: deviceInfo.os,
+                    subscribed_at: status === 'active' ? now : null,
+                    last_active: now,
+                    created_at: now,
+                    updated_at: now
+                });
+        }
+        
+        if (result.error) {
+            console.error('❌ Error saving push subscription:', result.error);
             return false;
         }
         
