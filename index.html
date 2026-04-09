@@ -2612,8 +2612,34 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "40cfbe3f-800c-4105-b3aa-ca32676332b0",
+      safari_web_id: "web.onesignal.auto.6a13c381-7602-4e1d-b2a0-1098f769d9cc",
+      // ✅ This shows a native-looking prompt
+      promptOptions: {
+        autoPrompt: true,  // Shows the browser's native notification prompt
+        customlink: {
+          enabled: true,
+          text: 'Enable Notifications'
+        }
+      },
+      welcomeNotification: {
+        title: "👖 JEANS CLUB",
+        message: "Thanks for subscribing! You'll get denim deals and dark humor!",
+        url: "https://elijah787.github.io/"
+      }
     });
-    console.log('✅ OneSignal initialized');
+    
+    // ✅ CRITICAL: Auto-set External ID when user subscribes via the prompt
+    OneSignal.User.PushSubscription.addEventListener("change", async (subscription) => {
+      if (subscription && subscription.optedIn && clubManager?.currentMember) {
+        await OneSignal.login(clubManager.currentMember.jcId);
+        await OneSignal.User.addTags({
+          tier: clubManager.currentMember.tier,
+          points: clubManager.currentMember.points.toString(),
+          name: clubManager.currentMember.name
+        });
+        console.log('✅ Auto-set External ID from subscription change:', clubManager.currentMember.jcId);
+      }
+    });
   });
 </script>
 </head>
