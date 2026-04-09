@@ -3678,8 +3678,8 @@
                 </button>
             </div>
 <div class="info-card">
-    <h3>🔔 Push Notifications</h3>
-    <p>Get notifications even when your browser is closed!</p>
+    <h3>🔔 Notifications</h3>
+    <p>Get notifications for exclusive perks</p>
    <button class="btn" onclick="togglePushNotifications()" id="notifyToggleBtn">
     🔔 Enable Notifications
 </button>
@@ -7877,7 +7877,8 @@ if (typeof startListeningForNotifications === 'function') {
         
         await showDashboard(member);
         showToast(`Welcome to Jeans Club ${name}!`, 'success');
-        
+        // ✅ ADD THIS LINE
+    runAutoSyncAfterLogin();
         // Initialize push notifications after signup
         setTimeout(() => {
             initPushNotifications();
@@ -7951,7 +7952,8 @@ if (typeof startListeningForNotifications === 'function') {
 }
                     showDashboard(this.currentMember);
                     showToast(`Welcome back ${member.name}!`, 'success');
-                    
+                    // ✅ ADD THIS LINE
+    runAutoSyncAfterLogin();
                     return true;
                     
                 } catch (error) {
@@ -9419,6 +9421,117 @@ async function savePushSubscriptionToSupabase(memberJcId, subscriptionId, status
         return false;
     }
 }
+// ===========================================
+// AUTO-SYNC EXISTING ONESIGNAL SUBSCRIBERS
+// ===========================================
+
+async function autoSyncExistingSubscribers() {
+    console.log('🔄 Checking for OneSignal subscribers without External IDs...');
+    
+    if (!clubManager?.db) {
+        console.log('❌ ClubManager not ready');
+        return;
+    }
+    
+    try {
+        // 1. Get all OneSignal players
+        const response = await fetch('https://onesignal.com/api/v1/players?app_id=40cfbe3f-800c-4105-b3aa-ca32676332b0&limit=50', {
+            headers: { 'Authorization': 'Key os_v2_app_idh34p4abraqlm5kzizgoyzswde52qbujhbebz4h6h3yvmwbi3ugnvgx5gp5blfnv52n4ibfslnielkfmkvvljhpj2ujzyidy2mcv7a' }
+        });
+        const data = await response.json();
+        
+        // 2. Find players without External IDs
+        const playersWithoutExternalId = data.players.filter(p => !p.external_user_id);
+        
+        if (playersWithoutExternalId.length === 0) {
+            console.log('✅ All OneSignal subscribers already have External IDs');
+            return;
+        }
+        
+        console.log(`📱 Found ${playersWithoutExternalId.length} subscribers without External IDs`);
+        
+        // 3. Get all members from Supabase
+        const { data: members } = await clubManager.db.supabase
+            .from('members')
+            .select('jc_id, name, last_login');
+        
+        // 4. Match players to members by last_active time
+        const matches = [];
+        
+        for (const player of playersWithoutExternalId) {
+            const playerDate = new Date(player.last_active * 1000);
+            let bestMatch = null;
+            let smallestDiff = 60; // 60 minutes threshold
+            
+            for (const member of members) {
+                if (member.last_login) {
+                    const memberDate = new Date(member.last_login);
+                    const diffMinutes = Math.abs(playerDate - memberDate) / (1000 * 60);
+                    
+                    if (diffMinutes < smallestDiff) {
+                        smallestDiff = diffMinutes;
+                        bestMatch = member;
+                    }
+                }
+            }
+            
+            if (bestMatch) {
+                matches.push({
+                    playerId: player.id,
+                    jcId: bestMatch.jc_id,
+                    name: bestMatch.name,
+                    diffMinutes: smallestDiff
+                });
+            }
+        }
+        
+        console.log(`🎯 Found ${matches.length} potential matches`);
+        
+        // 5. Set External IDs for matched players
+        for (const match of matches) {
+            console.log(`Setting External ID for ${match.name} (${match.jcId}) - matched within ${match.diffMinutes.toFixed(1)} minutes`);
+            
+            const setResponse = await fetch(`https://onesignal.com/api/v1/players/${match.playerId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Key os_v2_app_idh34p4abraqlm5kzizgoyzswde52qbujhbebz4h6h3yvmwbi3ugnvgx5gp5blfnv52n4ibfslnielkfmkvvljhpj2ujzyidy2mcv7a'
+                },
+                body: JSON.stringify({
+                    app_id: '40cfbe3f-800c-4105-b3aa-ca32676332b0',
+                    external_user_id: match.jcId
+                })
+            });
+            
+            const result = await setResponse.json();
+            
+            if (result.success) {
+                // Update Supabase
+                await clubManager.db.supabase
+                    .from('members')
+                    .update({ push_enabled: true })
+                    .eq('jc_id', match.jcId);
+                    
+                console.log(`✅ Synced ${match.name} (${match.jcId})`);
+            }
+        }
+        
+        console.log('✅ Auto-sync complete!');
+        
+    } catch (error) {
+        console.error('Auto-sync error:', error);
+    }
+}
+
+// Run auto-sync after login
+async function runAutoSyncAfterLogin() {
+    // Wait a few seconds for everything to load
+    setTimeout(async () => {
+        if (clubManager?.currentMember && window.OneSignal) {
+            await autoSyncExistingSubscribers();
+        }
+    }, 5000);
+}
   // ===========================
         // UTILITY FUNCTIONS
         // ===========================
@@ -10820,137 +10933,136 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
             console.log('✅ Permanent dashboard safety fixes installed');
         })();
 
-        window.onload = function() {
-             // Check if this is a cron-job trigger
+  window.onload = function() {
+    // Check if this is a cron-job trigger
     if (checkForScheduledTrigger()) {
         return; // Stop normal page load
     }
-            console.log('=== PAGE LOAD START ===');
-            
-            clubManager = new ClubManager();
-            // ✅ ADD THIS LINE - Initialize push notifications
+    console.log('=== PAGE LOAD START ===');
+    
+    clubManager = new ClubManager();
+    
     setTimeout(() => {
         initPushNotifications();
     }, 2000);
-             // Replace the old email service with the iframe version
+    
     const iframeEmailService = new IframeEmailService('https://script.google.com/macros/s/AKfycbzmJS_ThUUb_FsyeuBVbLyBRdGXAD0Pj1uhv_4CCD8NtV0WCL6THqgIBIawmWK4F7CN/exec');
     clubManager.emailService = iframeEmailService;
     console.log('✅ Email service upgraded to iframe (no CORS)');
-            setTimeout(() => {
-                if (clubManager) {
-                    voucherSystem = clubManager.voucherSystem;
-                    console.log('Systems initialized');
-                }
-                
-                const urlParams = new URLSearchParams(window.location.search);
-                const action = urlParams.get('action');
-                
-                if (action === 'login') {
-                    showLoginScreen();
-                } else if (action === 'signup') {
-                    showSignupScreen();
-                } else if (action === 'admin') {
-                    showAdminLogin();
-                } else if (action === 'tutorial') {
-                    showTutorial();
-                }
-                
-                console.log('=== PAGE LOAD COMPLETE ===');
-            }, 1000);
-        // ✅ PUT THE MOBILE NOTIFICATION CHECK HERE (inside window.onload, at the bottom)
+    
     setTimeout(() => {
-        // Check if mobile and notification permission is already granted
+        if (clubManager) {
+            voucherSystem = clubManager.voucherSystem;
+            console.log('Systems initialized');
+        }
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+        
+        if (action === 'login') {
+            showLoginScreen();
+        } else if (action === 'signup') {
+            showSignupScreen();
+        } else if (action === 'admin') {
+            showAdminLogin();
+        } else if (action === 'tutorial') {
+            showTutorial();
+        }
+        
+        console.log('=== PAGE LOAD COMPLETE ===');
+    }, 1000);
+    
+    setTimeout(() => {
         if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            // Check if already granted
             if (Notification.permission === 'granted') {
                 subscribeToPushNotifications();
             } else if (Notification.permission === 'default') {
-                // Don't auto-request on mobile - wait for button click
                 console.log('Mobile detected - waiting for user to tap enable button');
             }
         }
-    }, 2000); // Wait 2 seconds for everything to load
-            const searchModal = document.getElementById('searchModal');
-            if (searchModal) {
-                searchModal.addEventListener('click', function(e) {
-                    if (e.target === this) {
-                        hideSearch();
-                    }
-                });
+    }, 2000);
+    
+    const searchModal = document.getElementById('searchModal');
+    if (searchModal) {
+        searchModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideSearch();
             }
-            
-            const cameraModal = document.getElementById('cameraScannerModal');
-            if (cameraModal) {
-                cameraModal.addEventListener('click', function(e) {
-                    if (e.target === this) {
-                        closeCameraScanner();
-                    }
-                });
+        });
+    }
+    
+    const cameraModal = document.getElementById('cameraScannerModal');
+    if (cameraModal) {
+        cameraModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCameraScanner();
             }
-          // Start listening for cross-device notifications after login
+        });
+    }
+    
     setTimeout(async () => {
         if (clubManager.currentMember) {
             await startListeningForNotifications();
             await fetchUndeliveredNotifications();
+            
+            // ✅ ADD THIS LINE RIGHT HERE - Auto-sync existing OneSignal subscribers after login
+            if (typeof runAutoSyncAfterLogin === 'function') {
+                await runAutoSyncAfterLogin();
+            }
         }
     }, 3000);
-    // Add this function to your main HTML - it will auto-run on page load
-async function syncPendingNotifications() {
-    if (!clubManager || !clubManager.currentMember) return;
     
-    console.log('🔄 Syncing pending notifications for:', clubManager.currentMember.jcId);
-    
-    const { data: notifications, error } = await clubManager.db.supabase
-        .from('push_notifications')
-        .select('*')
-        .eq('member_jc_id', clubManager.currentMember.jcId)
-        .eq('delivered', false)
-        .order('created_at', { ascending: true });
-    
-    if (error) {
-        console.error('Sync error:', error);
-        return;
-    }
-    
-    console.log(`📬 Found ${notifications?.length || 0} pending notifications`);
-    
-    for (const notification of notifications || []) {
-        // Show notification on current device
-        if (pushManager && pushManager.isSubscribed) {
-            pushManager.sendNotification(notification.title, notification.body, notification.data || {});
-            console.log('✅ Delivered:', notification.title);
-        } else {
-            // Fallback to alert
-            alert(`${notification.title}\n${notification.body}`);
+    async function syncPendingNotifications() {
+        if (!clubManager || !clubManager.currentMember) return;
+        
+        console.log('🔄 Syncing pending notifications for:', clubManager.currentMember.jcId);
+        
+        const { data: notifications, error } = await clubManager.db.supabase
+            .from('push_notifications')
+            .select('*')
+            .eq('member_jc_id', clubManager.currentMember.jcId)
+            .eq('delivered', false)
+            .order('created_at', { ascending: true });
+        
+        if (error) {
+            console.error('Sync error:', error);
+            return;
         }
         
-        // Mark as delivered
-        await clubManager.db.supabase
-            .from('push_notifications')
-            .update({ 
-                delivered: true, 
-                read_at: new Date().toISOString(),
-                delivered_on_device: navigator.userAgent
-            })
-            .eq('id', notification.id);
+        console.log(`📬 Found ${notifications?.length || 0} pending notifications`);
         
-        await new Promise(r => setTimeout(r, 1000));
+        for (const notification of notifications || []) {
+            if (pushManager && pushManager.isSubscribed) {
+                pushManager.sendNotification(notification.title, notification.body, notification.data || {});
+                console.log('✅ Delivered:', notification.title);
+            } else {
+                alert(`${notification.title}\n${notification.body}`);
+            }
+            
+            await clubManager.db.supabase
+                .from('push_notifications')
+                .update({ 
+                    delivered: true, 
+                    read_at: new Date().toISOString(),
+                    delivered_on_device: navigator.userAgent
+                })
+                .eq('id', notification.id);
+            
+            await new Promise(r => setTimeout(r, 1000));
+        }
     }
-}
-
-// Auto-sync on page load and every 30 seconds
-setInterval(() => {
-    syncPendingNotifications();
-}, 30000);
-
-// Also sync when page becomes visible again
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-        console.log('📱 Page visible - syncing notifications');
+    
+    setInterval(() => {
         syncPendingNotifications();
-    }
-});
-}   
+    }, 30000);
+    
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            console.log('📱 Page visible - syncing notifications');
+            syncPendingNotifications();
+        }
+    });
+}
  
         
      
