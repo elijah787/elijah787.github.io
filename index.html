@@ -2700,7 +2700,34 @@
             </div>
         </div>
     </div>
-
+<!-- Birthday Modal -->
+<div class="camera-scanner-modal" id="birthdayModal" style="display: none;">
+    <div class="camera-container" style="max-width: 500px;">
+        <div class="scanner-header">
+            <h2>🎂 Your Birthday</h2>
+            <p>Help us celebrate your special day!</p>
+        </div>
+        
+        <div style="padding: 30px;">
+            <div class="form-group">
+                <label for="birthdayInput">Select your birthday:</label>
+                <input type="date" id="birthdayInput" max="2010-12-31" min="1950-01-01" style="width: 100%; padding: 12px; font-size: 16px;">
+                <small style="color: #666; display: block; margin-top: 5px;">We'll send you a special birthday surprise!</small>
+            </div>
+            
+            <div id="birthdayMessage" style="margin: 15px 0;"></div>
+            
+            <div class="camera-buttons" style="margin-top: 20px;">
+                <button class="camera-btn start" onclick="saveBirthday()" style="background: #28a745;">
+                    💾 Save Birthday
+                </button>
+                <button class="camera-btn close" onclick="closeBirthdayModal()">
+                    ✖ Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
     <!-- Mercedes-Benz Inspired Header -->
     <header class="mercedes-header">
         <div class="header-top">
@@ -3677,6 +3704,15 @@
                     Subscribe to Newsletter
                 </button>
             </div>
+            <div class="info-card">
+    <h3>🎂 Birthday Information</h3>
+    <div id="birthdayDisplay">
+        <!-- Will show current birthday or prompt to add -->
+    </div>
+    <button class="btn" onclick="showBirthdayModal()" id="birthdayBtn">
+        📅 Add/Update Birthday
+    </button>
+</div>
 <div class="info-card">
     <h3>🔔 Notifications</h3>
     <p>Get notifications for exclusive perks</p>
@@ -9916,6 +9952,10 @@ window.removeFromPushSubscriptions = removeFromPushSubscriptions;
                             setTimeout(() => updateMemberDashboard(freshMember), 200);
                         }
                     }
+                    // Add this after updating the dashboard
+if (typeof initBirthdayFeatures === 'function') {
+    initBirthdayFeatures();
+}
                 } else {
                     if (typeof updateMemberDashboard === 'function') {
                         setTimeout(() => updateMemberDashboard(member), 200);
@@ -10123,6 +10163,8 @@ window.removeFromPushSubscriptions = removeFromPushSubscriptions;
             updateActivityLog(member);
             updateMemberVouchers(member.jcId);
             updateMemberCard(member);
+            // Add this line at the end of updateMemberDashboard function
+updateBirthdayDisplay();
         }
 
         function updateMemberCard(member) {
@@ -11229,7 +11271,281 @@ sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
             
             console.log('✅ Permanent dashboard safety fixes installed');
         })();
+// ===========================================
+// BIRTHDAY MANAGEMENT FUNCTIONS
+// ===========================================
 
+// Show birthday modal
+function showBirthdayModal() {
+    const modal = document.getElementById('birthdayModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+    // Pre-fill if birthday exists
+    if (clubManager.currentMember && clubManager.currentMember.birthday) {
+        document.getElementById('birthdayInput').value = clubManager.currentMember.birthday;
+    } else {
+        document.getElementById('birthdayInput').value = '';
+    }
+    
+    // Clear previous messages
+    document.getElementById('birthdayMessage').innerHTML = '';
+}
+
+// Close birthday modal
+function closeBirthdayModal() {
+    const modal = document.getElementById('birthdayModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Save birthday to database
+async function saveBirthday() {
+    const birthday = document.getElementById('birthdayInput').value;
+    const messageDiv = document.getElementById('birthdayMessage');
+    
+    if (!birthday) {
+        messageDiv.innerHTML = '<div class="error-message">Please select your birthday</div>';
+        return;
+    }
+    
+    // Validate age (must be at least 13 years old)
+    const birthDate = new Date(birthday);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    if (age < 13) {
+        messageDiv.innerHTML = '<div class="error-message">You must be at least 13 years old</div>';
+        return;
+    }
+    
+    if (age > 120) {
+        messageDiv.innerHTML = '<div class="error-message">Please enter a valid birthday</div>';
+        return;
+    }
+    
+    messageDiv.innerHTML = '<div class="info-message">Saving...</div>';
+    
+    try {
+        // Update Supabase
+        const { error } = await clubManager.db.supabase
+            .from('members')
+            .update({ 
+                birthday: birthday,
+                updated_at: new Date().toISOString()
+            })
+            .eq('jc_id', clubManager.currentMember.jcId);
+        
+        if (error) throw error;
+        
+        // Update local member object
+        clubManager.currentMember.birthday = birthday;
+        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(clubManager.currentMember));
+        
+        // Update birthday display
+        updateBirthdayDisplay();
+        
+        // Show success message
+        const isNew = !clubManager.currentMember.birthday;
+        messageDiv.innerHTML = `<div class="success-message">✅ Birthday ${isNew ? 'added' : 'updated'} successfully!</div>`;
+        
+        // Calculate if birthday is soon
+        const nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+        if (nextBirthday < today) {
+            nextBirthday.setFullYear(today.getFullYear() + 1);
+        }
+        const daysUntilBirthday = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntilBirthday <= 30) {
+            messageDiv.innerHTML += `<div class="info-message" style="margin-top: 10px;">
+                🎉 Only ${daysUntilBirthday} days until your birthday! We'll have a special surprise ready!
+            </div>`;
+        }
+        
+        // Send push notification
+        sendPushNotification('🎂 Birthday Added!', 
+            `Thanks for sharing your birthday! We'll have something special waiting for you on ${birthDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}!`);
+        
+        // Close modal after 2 seconds
+        setTimeout(() => {
+            closeBirthdayModal();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error saving birthday:', error);
+        messageDiv.innerHTML = '<div class="error-message">Failed to save birthday. Please try again.</div>';
+    }
+}
+
+// Update birthday display on dashboard
+function updateBirthdayDisplay() {
+    const container = document.getElementById('birthdayDisplay');
+    if (!container) return;
+    
+    const birthday = clubManager.currentMember?.birthday;
+    const birthdayBtn = document.getElementById('birthdayBtn');
+    
+    if (birthday) {
+        const birthDate = new Date(birthday);
+        const today = new Date();
+        
+        let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+        if (nextBirthday < today) {
+            nextBirthday.setFullYear(today.getFullYear() + 1);
+        }
+        const daysUntilBirthday = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+        
+        const formattedBirthday = birthDate.toLocaleDateString('en-US', { 
+            month: 'long', 
+            day: 'numeric',
+            year: 'numeric'
+        });
+        
+        container.innerHTML = `
+            <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); padding: 15px; border-radius: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="font-size: 24px;">🎂</span>
+                        <strong style="margin-left: 10px;">${formattedBirthday}</strong>
+                    </div>
+                    <div style="background: #ffc107; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                        ${daysUntilBirthday === 0 ? '🎉 TODAY! 🎉' : `${daysUntilBirthday} days until birthday`}
+                    </div>
+                </div>
+                <p style="margin: 10px 0 0 0; font-size: 12px; color: #856404;">
+                    ✨ You'll receive a special birthday reward on your special day!
+                </p>
+            </div>
+        `;
+        birthdayBtn.textContent = '✏️ Update Birthday';
+        birthdayBtn.style.background = '#6c757d';
+    } else {
+        container.innerHTML = `
+            <div style="background: #e7f3ff; padding: 15px; border-radius: 10px;">
+                <p style="margin: 0; color: #2196F3;">
+                    🎂 <strong>We'd love to celebrate your birthday!</strong><br>
+                    <small>Add your birthday to receive special rewards and surprises on your special day.</small>
+                </p>
+            </div>
+        `;
+        birthdayBtn.textContent = '➕ Add Birthday';
+        birthdayBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    }
+}
+
+// Check for birthdays today and give rewards
+async function checkAndRewardBirthdays() {
+    if (!clubManager?.db) return;
+    
+    const today = new Date();
+    const todayStr = `${today.getMonth() + 1}-${today.getDate()}`;
+    
+    try {
+        const { data: members, error } = await clubManager.db.supabase
+            .from('members')
+            .select('*')
+            .not('birthday', 'is', null);
+        
+        if (error) throw error;
+        
+        for (const member of members) {
+            const birthDate = new Date(member.birthday);
+            const birthdayStr = `${birthDate.getMonth() + 1}-${birthDate.getDate()}`;
+            
+            if (birthdayStr === todayStr) {
+                const lastRewardYear = member.last_birthday_reward_year;
+                const currentYear = today.getFullYear();
+                
+                if (lastRewardYear !== currentYear) {
+                    const bonusPoints = 100;
+                    
+                    const updatedPoints = (member.points || 0) + bonusPoints;
+                    const updatedLifetime = (member.lifetime_points || 0) + bonusPoints;
+                    
+                    await clubManager.db.supabase
+                        .from('members')
+                        .update({
+                            points: updatedPoints,
+                            lifetime_points: updatedLifetime,
+                            last_birthday_reward_year: currentYear,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('jc_id', member.jc_id);
+                    
+                    sendPushNotification('🎂 HAPPY BIRTHDAY!', 
+                        `🎉 ${bonusPoints} bonus points have been added to your account as a birthday gift! 🎉`);
+                    
+                    console.log(`🎂 Birthday reward given to ${member.name} (${member.jc_id})`);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error checking birthdays:', error);
+    }
+}
+
+// Add gentle prompt for users who haven't added birthday
+function showBirthdayPrompt() {
+    if (!clubManager.currentMember) return;
+    if (clubManager.currentMember.birthday) return;
+    
+    const lastPrompt = localStorage.getItem('birthdayPromptShown');
+    if (lastPrompt) {
+        const daysSince = (Date.now() - parseInt(lastPrompt)) / (1000 * 60 * 60 * 24);
+        if (daysSince < 30) return;
+    }
+    
+    localStorage.setItem('birthdayPromptShown', Date.now().toString());
+    
+    const promptDiv = document.createElement('div');
+    promptDiv.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        max-width: 350px;
+        z-index: 10000;
+        border-left: 4px solid #FFD700;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    promptDiv.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <span style="font-size: 30px;">🎂</span>
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="background: none; border: none; font-size: 20px; cursor: pointer;">×</button>
+        </div>
+        <h3 style="margin: 10px 0;">We'd love to celebrate you!</h3>
+        <p style="color: #666; margin-bottom: 15px;">Add your birthday to receive special surprises and bonus points on your special day!</p>
+        <button onclick="this.parentElement.parentElement.remove(); showBirthdayModal();" 
+                style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; width: 100%;">
+            📅 Add My Birthday
+        </button>
+    `;
+    
+    document.body.appendChild(promptDiv);
+    
+    setTimeout(() => {
+        if (promptDiv.parentNode) promptDiv.remove();
+    }, 10000);
+}
+
+// Initialize birthday features
+function initBirthdayFeatures() {
+    updateBirthdayDisplay();
+    checkAndRewardBirthdays();
+    setTimeout(() => {
+        showBirthdayPrompt();
+    }, 5000);
+    setInterval(checkAndRewardBirthdays, 24 * 60 * 60 * 1000);
+}
   window.onload = function() {
     // Check if this is a cron-job trigger
     if (checkForScheduledTrigger()) {
