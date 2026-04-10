@@ -3500,7 +3500,14 @@
                 <input type="text" id="referralCode" placeholder="Enter referral code if any" autocomplete="off">
                 <small style="color: #666; display: block; margin-top: 5px;">Cannot use your own referral code</small>
             </div>
-            
+            <!-- Add this inside the signupSection card, after the referral code field -->
+<div class="form-group">
+    <label for="userBirthday">🎂 Your Birthday (Optional)</label>
+    <input type="date" id="userBirthday" max="2010-12-31" min="1950-01-01">
+    <small style="color: #666; display: block; margin-top: 5px;">
+        We'll send you a special birthday surprise! 
+    </small>
+</div>
             <div class="newsletter-checkbox">
                 <input type="checkbox" id="newsletterSignup" checked>
                 <label for="newsletterSignup">Subscribe to our newsletter for exclusive deals and updates</label>
@@ -6293,6 +6300,7 @@ function showMemberTransactionScreen(transaction) {
             joined_date: member.joinedDate || new Date().toISOString(),
             total_spent: member.totalSpent || 0,
             newsletter_subscribed: member.newsletterSubscribed !== false,
+             birthday: member.birthday || null,
             purchasehistory: JSON.stringify(member.purchaseHistory || []),
             activitylog: JSON.stringify(member.activityLog || []),
             challenges: JSON.stringify(member.challenges || []),
@@ -7765,8 +7773,7 @@ function normalizeEmailForDatabase(email) {
                 if (points >= 7500) return 'BRONZE';
                 return 'PEARL';
             }
-
-async signUpWithEmail(name, email, password, referralCode = null) {
+async signUpWithEmail(name, email, password, referralCode = null, birthday = null) {
     try {
         if (!name || !email || !password) {
             showToast('Please fill in all required fields', 'error');
@@ -7777,6 +7784,27 @@ async signUpWithEmail(name, email, password, referralCode = null) {
         if (!emailValidation.valid) {
             showToast(emailValidation.message, 'error');
             return false;
+        }
+        
+        // Validate birthday if provided
+        if (birthday) {
+            const birthDate = new Date(birthday);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            
+            if (age < 13) {
+                showToast('You must be at least 13 years old to join', 'error');
+                return false;
+            }
+            
+            if (age > 120) {
+                showToast('Please enter a valid birthday', 'error');
+                return false;
+            }
         }
         
         const normalizedEmail = normalizeEmailForDatabase(email);
@@ -7841,6 +7869,7 @@ async signUpWithEmail(name, email, password, referralCode = null) {
             joinedDate: new Date().toISOString(),
             totalSpent: 0,
             newsletterSubscribed: document.getElementById('newsletterSignup')?.checked || true,
+            birthday: birthday || null,  // ADD THIS LINE
             purchaseHistory: [],
             activityLog: [],
             challenges: [],
@@ -7853,7 +7882,7 @@ async signUpWithEmail(name, email, password, referralCode = null) {
         member.activityLog.unshift({
             timestamp: new Date().toISOString(),
             action: 'account_created',
-            description: 'Account created with email',
+            description: 'Account created with email' + (birthday ? ' (birthday added)' : ''),
             points: referralPoints
         });
         
@@ -7867,20 +7896,26 @@ async signUpWithEmail(name, email, password, referralCode = null) {
         this.isAdmin = false;
         localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
         localStorage.setItem('jeansClubIsAdmin', 'false');
-        // ✅ ADD THESE 3 LINES RIGHT HERE
-if (typeof startListeningForNotifications === 'function') {
-    await startListeningForNotifications();
-    await fetchUndeliveredNotifications();
-}
-        // ✅ SEND PUSH NOTIFICATION ON SIGNUP
+        
+        // Send birthday notification if provided
+        if (birthday) {
+            const birthDate = new Date(birthday);
+            const formattedBirthday = birthDate.toLocaleDateString('en-US', { 
+                month: 'long', 
+                day: 'numeric'
+            });
+            sendPushNotification('🎂 Birthday Added!', 
+                `Thanks for sharing your birthday! We'll have something special waiting for you on ${formattedBirthday}!`);
+        }
+        
         const darkWelcomeMessages = [
-    `💀 Welcome ${name}! You've just joined the exclusive club of people who spend too much on denim. We're your people.`,
-    `🔮 ${name}, your future includes: 1) Jeans 2) Happiness 3) Questioning your life choices. Welcome!`,
-    `🤡 ${name}, another clown joins the circus! Just kidding. But seriously, welcome to the broke-but-stylish club.`,
-    `⚰️ ${name}, your savings just filed a restraining order. Welcome to Jeans Club!`,
-    `🎪 ${name}, you've joined the greatest show on earth! Starring: Your wallet. Co-starring: Your impulse control (RIP).`
-];
-        const randomMsg = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+            `💀 Welcome ${name}! You've just joined the exclusive club of people who spend too much on denim. We're your people.`,
+            `🔮 ${name}, your future includes: 1) Jeans 2) Happiness 3) Questioning your life choices. Welcome!`,
+            `🤡 ${name}, another clown joins the circus! Just kidding. But seriously, welcome to the broke-but-stylish club.`,
+            `⚰️ ${name}, your savings just filed a restraining order. Welcome to Jeans Club!`,
+            `🎪 ${name}, you've joined the greatest show on earth! Starring: Your wallet. Co-starring: Your impulse control (RIP).`
+        ];
+        const randomMsg = darkWelcomeMessages[Math.floor(Math.random() * darkWelcomeMessages.length)];
         sendPushNotification('👖 Welcome to Jeans Club!', randomMsg);
         
         await this.emailService.sendWelcomeEmail(email, member);
@@ -7895,9 +7930,8 @@ if (typeof startListeningForNotifications === 'function') {
         
         await showDashboard(member);
         showToast(`Welcome to Jeans Club ${name}!`, 'success');
-        // ✅ ADD THIS LINE
-    runAutoSyncAfterLogin();
-        // Initialize push notifications after signup
+        runAutoSyncAfterLogin();
+        
         setTimeout(() => {
             initPushNotifications();
         }, 1000);
@@ -10481,20 +10515,28 @@ async function updateMemberVouchers(jcId) {
         // ===========================
         // EVENT HANDLERS
         // ===========================
-        
-        function signUpWithEmail() {
-            const name = document.getElementById('userName').value.trim();
-            const email = document.getElementById('userEmail').value.trim();
-            const password = document.getElementById('userPassword').value;
-            const referralCode = document.getElementById('referralCode').value.trim().toUpperCase();
-            
-            if (!name || !email || !password) {
-                showToast('Please fill in all required fields', 'error');
-                return;
-            }
-            
-            clubManager.signUpWithEmail(name, email, password, referralCode);
+       function signUpWithEmail() {
+    const name = document.getElementById('userName').value.trim();
+    const email = document.getElementById('userEmail').value.trim();
+    const password = document.getElementById('userPassword').value;
+    const referralCode = document.getElementById('referralCode').value.trim().toUpperCase();
+    const birthday = document.getElementById('userBirthday').value;  // ADD THIS LINE
+    
+    if (!name || !email || !password) {
+        showToast('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    // Optional: Show birthday reminder if not provided
+    if (!birthday) {
+        if (confirm("Would you like to add your birthday to receive special rewards on your special day?\n\nClick OK to add birthday, Cancel to continue without.")) {
+            document.getElementById('userBirthday').focus();
+            return;
         }
+    }
+    
+    clubManager.signUpWithEmail(name, email, password, referralCode, birthday);
+} 
 
         function loginWithCredentials() {
             const jcId = document.getElementById('loginJCId').value.trim().toUpperCase();
