@@ -7765,685 +7765,672 @@ class GoogleAppsEmailService {
         }
     }
 }
-
-        // ===========================
-        // CLUB MANAGER IMPLEMENTATION
-        // ===========================
+class ClubManager {
+    constructor(emailService = null) {
+        this.db = new SupabaseDB();
+        // Use provided email service or default to GoogleAppsEmailService
+        this.emailService = emailService || new GoogleAppsEmailService();
+        this.currentMember = null;
+        this.isAdmin = false;
+        this.currentSalesperson = null;
         
-        class ClubManager {
-            constructor() {
-                this.db = new SupabaseDB();
-                this.emailService = new GoogleAppsEmailService();
-                this.currentMember = null;
-                this.isAdmin = false;
-                this.currentSalesperson = null;
-                
-                this.voucherSystem = new VoucherSystem();
-                
-                console.log('✅ ClubManager initialized');
-                
-                window.voucherSystem = this.voucherSystem;
-                
-                this.init();
-            }
+        this.voucherSystem = new VoucherSystem();
+        
+        console.log('✅ ClubManager initialized with email service:', this.emailService.constructor.name);
+        
+        window.voucherSystem = this.voucherSystem;
+        
+        this.init();
+    }
 
-            async init() {
+    async init() {
+        try {
+            const savedMember = localStorage.getItem('jeansClubCurrentMember');
+            const adminStatus = localStorage.getItem('jeansClubIsAdmin');
+            const salesperson = localStorage.getItem('jeansClubSalesperson');
+            
+            if (savedMember && savedMember !== '') {
                 try {
-                    const savedMember = localStorage.getItem('jeansClubCurrentMember');
-                    const adminStatus = localStorage.getItem('jeansClubIsAdmin');
-                    const salesperson = localStorage.getItem('jeansClubSalesperson');
+                    this.currentMember = JSON.parse(savedMember);
+                    this.isAdmin = adminStatus === 'true';
+                    this.currentSalesperson = salesperson;
                     
-                    if (savedMember && savedMember !== '') {
-                        try {
-                            this.currentMember = JSON.parse(savedMember);
-                            this.isAdmin = adminStatus === 'true';
-                            this.currentSalesperson = salesperson;
-                            
-                            const freshMember = await this.db.getMemberByJCId(this.currentMember.jcId);
-                            
-                            if (freshMember) {
-                                this.currentMember = freshMember;
-                                localStorage.setItem('jeansClubCurrentMember', JSON.stringify(freshMember));
-                                
-                                if (this.isAdmin) {
-                                    showAdminPanel();
-                                } else {
-                                    setTimeout(() => showDashboard(this.currentMember), 100);
-                                }
-                            } else {
-                                localStorage.removeItem('jeansClubCurrentMember');
-                                localStorage.removeItem('jeansClubIsAdmin');
-                                localStorage.removeItem('jeansClubSalesperson');
-                                showSignupScreen();
-                            }
-                        } catch (parseError) {
-                            console.error('Error parsing saved member:', parseError);
-                            localStorage.removeItem('jeansClubCurrentMember');
-                            showSignupScreen();
+                    const freshMember = await this.db.getMemberByJCId(this.currentMember.jcId);
+                    
+                    if (freshMember) {
+                        this.currentMember = freshMember;
+                        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(freshMember));
+                        
+                        if (this.isAdmin) {
+                            showAdminPanel();
+                        } else {
+                            setTimeout(() => showDashboard(this.currentMember), 100);
                         }
                     } else {
+                        localStorage.removeItem('jeansClubCurrentMember');
+                        localStorage.removeItem('jeansClubIsAdmin');
+                        localStorage.removeItem('jeansClubSalesperson');
                         showSignupScreen();
                     }
-                    
-                    this.voucherSystem.updateVoucherStatuses();
-                    
-                    setTimeout(() => this.initializeGoogleSignIn(), 500);
-                    
-                } catch (error) {
-                    console.error('Init error:', error);
+                } catch (parseError) {
+                    console.error('Error parsing saved member:', parseError);
+                    localStorage.removeItem('jeansClubCurrentMember');
                     showSignupScreen();
                 }
-            }
-
-            initializeGoogleSignIn() {
-                if (!window.googleInitialized) {
-                    google.accounts.id.initialize({
-                        client_id: '607807821474-43243foqc9ml9eq3e0ugu04fnsigbqc5.apps.googleusercontent.com',
-                        callback: (response) => {
-                            if (!document.getElementById('loginSection').classList.contains('hidden')) {
-                                this.handleGoogleLogin(response);
-                            } else {
-                                this.handleGoogleSignIn(response);
-                            }
-                        },
-                        ux_mode: 'popup'
-                    });
-                    window.googleInitialized = true;
-                }
-                
-                setTimeout(() => {
-                    const signupButton = document.querySelector('.google-signin-button');
-                    const loginButton = document.querySelector('.google-login-button');
-                    
-                    if (signupButton && signupButton.children.length === 0) {
-                        try {
-                            google.accounts.id.renderButton(
-                                signupButton,
-                                { 
-                                    theme: 'outline',
-                                    size: 'large',
-                                    width: 280,
-                                    text: 'signup_with'
-                                }
-                            );
-                        } catch (e) {
-                            console.log('Signup button render error:', e);
-                        }
-                    }
-                    
-                    if (loginButton && loginButton.children.length === 0) {
-                        try {
-                            google.accounts.id.renderButton(
-                                loginButton,
-                                { 
-                                    theme: 'outline',
-                                    size: 'large',
-                                    width: 280,
-                                    text: 'signin_with'
-                                }
-                            );
-                        } catch (e) {
-                            console.log('Login button render error:', e);
-                        }
-                    }
-                }, 500);
-            }
-
-            async handleGoogleSignIn(response) {
-                try {
-                    console.log('Google Sign-In response:', response);
-                    
-                    const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                    const email = payload.email;
-                    const name = payload.name;
-                    const googleId = payload.sub;
-                    
-                    const emailValidation = isValidEmailWithFraudPrevention(email);
-                    if (!emailValidation.valid) {
-                        showToast(emailValidation.message, 'error');
-                        return;
-                    }
-                    
-                    let member = await this.db.getMemberByEmail(email);
-                    
-                    if (member) {
-                        this.currentMember = member;
-                        this.isAdmin = false;
-                        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
-                        localStorage.setItem('jeansClubIsAdmin', 'false');
-                        
-                        member.lastLogin = new Date().toISOString();
-                        await this.db.saveMember(member);
-                        
-                        const updatedMember = await this.db.getMemberByJCId(member.jcId);
-                        if (updatedMember) {
-                            this.currentMember = updatedMember;
-                            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
-                        }
-                        
-                        showDashboard(this.currentMember);
-                        showToast(`Welcome back ${member.name}!`, 'success');
-                    } else {
-                        const jcId = this.generateJCId();
-                        const referralCode = this.generateReferralCode();
-                        
-                        member = {
-                            jcId: jcId,
-                            email: email,
-                            name: name,
-                            googleId: googleId,
-                            loginMethod: 'google',
-                            points: 10,
-                            lifetimePoints: 10,
-                            tier: 'PEARL',
-                            referralCode: referralCode,
-                            joinedDate: new Date().toISOString(),
-                            totalSpent: 0,
-                            newsletterSubscribed: true,
-                            purchaseHistory: [],
-                            activityLog: [],
-                            challenges: [],
-                            referrals: [],
-                            lastLogin: new Date().toISOString(),
-                            createdAt: new Date().toISOString()
-                        };
-                        
-                        member.activityLog.unshift({
-                            timestamp: new Date().toISOString(),
-                            action: 'account_created',
-                            description: 'Account created via Google Sign-In',
-                            points: 10
-                        });
-                        
-                        const saved = await this.db.saveMember(member);
-                        if (saved) {
-                            this.currentMember = member;
-                            this.isAdmin = false;
-                            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
-                            localStorage.setItem('jeansClubIsAdmin', 'false');
-                            
-                            this.emailService.sendWelcomeEmail(email, member);
-                            this.db.subscribeToNewsletter(email, name);
-                            
-                            showDashboard(member);
-                            showToast(`Welcome to Jeans Club ${name}!`, 'success');
-                        } else {
-                            showToast('Failed to create account. Please try again.', 'error');
-                        }
-                    }
-                    
-                } catch (error) {
-                    console.error('Google Sign-In error:', error);
-                    showToast('Google Sign-In failed. Please try again.', 'error');
-                }
-            }
-
-            async handleGoogleLogin(response) {
-                try {
-                    console.log('Google Login response:', response);
-                    
-                    const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                    const email = payload.email;
-                    
-                    const member = await this.db.getMemberByEmail(email);
-                    
-                    if (member) {
-                        if (member.loginMethod === 'email') {
-                            showToast('Please use email/password to login to this account.', 'error');
-                            return;
-                        }
-                        
-                        member.lastLogin = new Date().toISOString();
-                        await this.db.saveMember(member);
-                        
-                        this.currentMember = member;
-                        this.isAdmin = false;
-                        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
-                        localStorage.setItem('jeansClubIsAdmin', 'false');
-                        
-                        const updatedMember = await this.db.getMemberByJCId(member.jcId);
-                        if (updatedMember) {
-                            this.currentMember = updatedMember;
-                            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
-                        }
-                        
-                        showDashboard(this.currentMember);
-                        showToast(`Welcome back ${member.name}!`, 'success');
-                    } else {
-                        showToast('No account found with this Google email. Please sign up first.', 'error');
-                        showSignupScreen();
-                    }
-                    
-                } catch (error) {
-                    console.error('Google Login error:', error);
-                    showToast('Google Login failed. Please try again.', 'error');
-                }
-            }
-
-            generateJCId() {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                let id = 'JC';
-                for (let i = 0; i < 4; i++) {
-                    id += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return id;
-            }
-
-            generateReferralCode() {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                let code = '';
-                for (let i = 0; i < 6; i++) {
-                    code += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return code;
-            }
-
-            calculateTier(member) {
-                const points = member.lifetimePoints || 0;
-                
-                if (points >= 1000000) return 'PLATINUM';
-                if (points >= 500000) return 'SAPPHIRE';
-                if (points >= 250000) return 'GOLD';
-                if (points >= 100000) return 'RUBY';
-                if (points >= 25000) return 'SILVER';
-                if (points >= 7500) return 'BRONZE';
-                return 'PEARL';
-            }
-async signUpWithEmail(name, email, password, referralCode = null, birthday = null) {
-    try {
-        if (!name || !email || !password) {
-            showToast('Please fill in all required fields', 'error');
-            return false;
-        }
-        
-        const emailValidation = isValidEmailWithFraudPrevention(email);
-        if (!emailValidation.valid) {
-            showToast(emailValidation.message, 'error');
-            return false;
-        }
-        
-        // Validate birthday if provided
-        if (birthday) {
-            const birthDate = new Date(birthday);
-            const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-            
-            if (age < 13) {
-                showToast('You must be at least 13 years old to join', 'error');
-                return false;
-            }
-            
-            if (age > 120) {
-                showToast('Please enter a valid birthday', 'error');
-                return false;
-            }
-        }
-        
-        const normalizedEmail = normalizeEmailForDatabase(email);
-        
-        const existingMember = await this.db.getMemberByEmail(email);
-        if (existingMember) {
-            showToast('An account with this email already exists', 'error');
-            return false;
-        }
-        
-        const allMembers = await this.db.getAllMembers();
-        
-        if (referralCode && isSelfReferral(referralCode, email)) {
-            showToast('You cannot use your own referral code', 'error');
-            return false;
-        }
-        
-        const clientIP = await getClientIP();
-        const ipCheck = await checkMultipleAccountsFromIP(email, clientIP);
-        if (!ipCheck.allowed) {
-            showToast(ipCheck.reason, 'error');
-            return false;
-        }
-        
-        const jcId = this.generateJCId();
-        const memberReferralCode = this.generateReferralCode();
-        
-        let referredBy = null;
-        let referralPoints = 10;
-        
-        if (referralCode) {
-            const referrer = allMembers.find(m => m.referralCode === referralCode);
-            
-            if (referrer) {
-                referredBy = referrer.jcId;
-                referralPoints = 20;
-                
-                referrer.referrals.push({
-                    referredJCId: jcId,
-                    referredName: name,
-                    referralDate: new Date().toISOString(),
-                    status: 'pending'
-                });
-                await this.db.saveMember(referrer);
             } else {
-                showToast('Invalid referral code', 'error');
-                return false;
+                showSignupScreen();
             }
+            
+            this.voucherSystem.updateVoucherStatuses();
+            
+            setTimeout(() => this.initializeGoogleSignIn(), 500);
+            
+        } catch (error) {
+            console.error('Init error:', error);
+            showSignupScreen();
         }
-        
-        const member = {
-            jcId: jcId,
-            email: email,
-            name: name.trim(),
-            password: password,
-            loginMethod: 'email',
-            points: referralPoints,
-            lifetimePoints: referralPoints,
-            tier: 'PEARL',
-            referralCode: memberReferralCode,
-            referredBy: referredBy,
-            joinedDate: new Date().toISOString(),
-            totalSpent: 0,
-            newsletterSubscribed: document.getElementById('newsletterSignup')?.checked || true,
-            birthday: birthday || null,  // ADD THIS LINE
-            purchaseHistory: [],
-            activityLog: [],
-            challenges: [],
-            referrals: [],
-            ip_address: clientIP,
-            lastLogin: new Date().toISOString(),
-            createdAt: new Date().toISOString()
-        };
-        
-        member.activityLog.unshift({
-            timestamp: new Date().toISOString(),
-            action: 'account_created',
-            description: 'Account created with email' + (birthday ? ' (birthday added)' : ''),
-            points: referralPoints
-        });
-        
-        const saved = await this.db.saveMember(member);
-        if (!saved) {
-            showToast('Failed to create account. Please try again.', 'error');
-            return false;
-        }
-        
-        this.currentMember = member;
-        this.isAdmin = false;
-        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
-        localStorage.setItem('jeansClubIsAdmin', 'false');
-        
-        // Send birthday notification if provided
-        if (birthday) {
-            const birthDate = new Date(birthday);
-            const formattedBirthday = birthDate.toLocaleDateString('en-US', { 
-                month: 'long', 
-                day: 'numeric'
+    }
+
+    initializeGoogleSignIn() {
+        if (!window.googleInitialized) {
+            google.accounts.id.initialize({
+                client_id: '607807821474-43243foqc9ml9eq3e0ugu04fnsigbqc5.apps.googleusercontent.com',
+                callback: (response) => {
+                    if (!document.getElementById('loginSection').classList.contains('hidden')) {
+                        this.handleGoogleLogin(response);
+                    } else {
+                        this.handleGoogleSignIn(response);
+                    }
+                },
+                ux_mode: 'popup'
             });
-            sendPushNotification('🎂 Birthday Added!', 
-                `Thanks for sharing your birthday! We'll have something special waiting for you on ${formattedBirthday}!`);
+            window.googleInitialized = true;
         }
-        
-        const darkWelcomeMessages = [
-            `💀 Welcome ${name}! You've just joined the exclusive club of people who spend too much on denim. We're your people.`,
-            `🔮 ${name}, your future includes: 1) Jeans 2) Happiness 3) Questioning your life choices. Welcome!`,
-            `🤡 ${name}, another clown joins the circus! Just kidding. But seriously, welcome to the broke-but-stylish club.`,
-            `⚰️ ${name}, your savings just filed a restraining order. Welcome to Jeans Club!`,
-            `🎪 ${name}, you've joined the greatest show on earth! Starring: Your wallet. Co-starring: Your impulse control (RIP).`
-        ];
-        const randomMsg = darkWelcomeMessages[Math.floor(Math.random() * darkWelcomeMessages.length)];
-        sendPushNotification('👖 Welcome to Jeans Club!', randomMsg);
-        
-        await this.emailService.sendWelcomeEmail(email, member);
-        
-        if (member.newsletterSubscribed) {
-            await this.db.subscribeToNewsletter(email, name);
-            await this.emailService.sendNewsletterWelcomeEmail(email, member, {
-                subject: "Welcome to Jeans Club Newsletter!",
-                message: "Thank you for subscribing!"
-            });
-        }
-        
-        await showDashboard(member);
-        showToast(`Welcome to Jeans Club ${name}!`, 'success');
-        runAutoSyncAfterLogin();
         
         setTimeout(() => {
-            initPushNotifications();
-        }, 1000);
-        
-        return true;
-        
-    } catch (error) {
-        console.error('Sign up error:', error);
-        showToast('An error occurred. Please try again.', 'error');
-        return false;
-    }
-}
-            async loginWithJCId(jcId, password) {
+            const signupButton = document.querySelector('.google-signin-button');
+            const loginButton = document.querySelector('.google-login-button');
+            
+            if (signupButton && signupButton.children.length === 0) {
                 try {
-                    if (!jcId || !password) {
-                        showToast('Please enter both JC ID and password', 'error');
-                        return false;
-                    }
-                    
-                    if (jcId.toLowerCase() === 'admin' && password === 'jeansclub2024') {
-                        this.isAdmin = true;
-                        this.currentMember = null;
-                        this.currentSalesperson = prompt("Enter your name:", "Salesperson");
-                        localStorage.setItem('jeansClubCurrentMember', '');
-                        localStorage.setItem('jeansClubIsAdmin', 'true');
-                        localStorage.setItem('jeansClubSalesperson', this.currentSalesperson);
-                        
-                        showAdminPanel();
-                        showToast(`Welcome ${this.currentSalesperson}!`, 'success');
-                        return true;
-                    }
-                    
-                    const member = await this.db.getMemberByJCId(jcId.toUpperCase());
-                    if (!member) {
-                        showToast('Invalid JC ID or password', 'error');
-                        return false;
-                    }
-                    
-                    if (member.loginMethod === 'google') {
-                        showToast('Please use Google Sign-In for this account', 'error');
-                        return false;
-                    }
-                    
-                    if (member.password !== password) {
-                        showToast('Invalid JC ID or password', 'error');
-                        return false;
-                    }
-                    
-                    if (!member.lifetimePoints) {
-                        member.lifetimePoints = Math.floor(member.totalSpent / 1000) + 10;
-                    }
-                    
-                    member.lastLogin = new Date().toISOString();
-                    await this.db.saveMember(member);
-                    
+                    google.accounts.id.renderButton(
+                        signupButton,
+                        { 
+                            theme: 'outline',
+                            size: 'large',
+                            width: 280,
+                            text: 'signup_with'
+                        }
+                    );
+                } catch (e) {
+                    console.log('Signup button render error:', e);
+                }
+            }
+            
+            if (loginButton && loginButton.children.length === 0) {
+                try {
+                    google.accounts.id.renderButton(
+                        loginButton,
+                        { 
+                            theme: 'outline',
+                            size: 'large',
+                            width: 280,
+                            text: 'signin_with'
+                        }
+                    );
+                } catch (e) {
+                    console.log('Login button render error:', e);
+                }
+            }
+        }, 500);
+    }
+
+    async handleGoogleSignIn(response) {
+        try {
+            console.log('Google Sign-In response:', response);
+            
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            const email = payload.email;
+            const name = payload.name;
+            const googleId = payload.sub;
+            
+            const emailValidation = isValidEmailWithFraudPrevention(email);
+            if (!emailValidation.valid) {
+                showToast(emailValidation.message, 'error');
+                return;
+            }
+            
+            let member = await this.db.getMemberByEmail(email);
+            
+            if (member) {
+                this.currentMember = member;
+                this.isAdmin = false;
+                localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
+                localStorage.setItem('jeansClubIsAdmin', 'false');
+                
+                member.lastLogin = new Date().toISOString();
+                await this.db.saveMember(member);
+                
+                const updatedMember = await this.db.getMemberByJCId(member.jcId);
+                if (updatedMember) {
+                    this.currentMember = updatedMember;
+                    localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
+                }
+                
+                showDashboard(this.currentMember);
+                showToast(`Welcome back ${member.name}!`, 'success');
+            } else {
+                const jcId = this.generateJCId();
+                const referralCode = this.generateReferralCode();
+                
+                member = {
+                    jcId: jcId,
+                    email: email,
+                    name: name,
+                    googleId: googleId,
+                    loginMethod: 'google',
+                    points: 10,
+                    lifetimePoints: 10,
+                    tier: 'PEARL',
+                    referralCode: referralCode,
+                    joinedDate: new Date().toISOString(),
+                    totalSpent: 0,
+                    newsletterSubscribed: true,
+                    purchaseHistory: [],
+                    activityLog: [],
+                    challenges: [],
+                    referrals: [],
+                    lastLogin: new Date().toISOString(),
+                    createdAt: new Date().toISOString()
+                };
+                
+                member.activityLog.unshift({
+                    timestamp: new Date().toISOString(),
+                    action: 'account_created',
+                    description: 'Account created via Google Sign-In',
+                    points: 10
+                });
+                
+                const saved = await this.db.saveMember(member);
+                if (saved) {
                     this.currentMember = member;
                     this.isAdmin = false;
                     localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
                     localStorage.setItem('jeansClubIsAdmin', 'false');
                     
-                    const updatedMember = await this.db.getMemberByJCId(member.jcId);
-                    if (updatedMember) {
-                        this.currentMember = updatedMember;
-                        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
-                    }
-                    // ✅ ADD THESE 3 LINES RIGHT HERE
-if (typeof startListeningForNotifications === 'function') {
-    await startListeningForNotifications();
-    await fetchUndeliveredNotifications();
-}
-                    showDashboard(this.currentMember);
-                    showToast(`Welcome back ${member.name}!`, 'success');
-                    // ✅ ADD THIS LINE
-    runAutoSyncAfterLogin();
-                    return true;
+                    this.emailService.sendWelcomeEmail(email, member);
+                    this.db.subscribeToNewsletter(email, name);
                     
-                } catch (error) {
-                    console.error('Login error:', error);
-                    showToast('An error occurred. Please try again.', 'error');
+                    showDashboard(member);
+                    showToast(`Welcome to Jeans Club ${name}!`, 'success');
+                } else {
+                    showToast('Failed to create account. Please try again.', 'error');
+                }
+            }
+            
+        } catch (error) {
+            console.error('Google Sign-In error:', error);
+            showToast('Google Sign-In failed. Please try again.', 'error');
+        }
+    }
+
+    async handleGoogleLogin(response) {
+        try {
+            console.log('Google Login response:', response);
+            
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            const email = payload.email;
+            
+            const member = await this.db.getMemberByEmail(email);
+            
+            if (member) {
+                if (member.loginMethod === 'email') {
+                    showToast('Please use email/password to login to this account.', 'error');
+                    return;
+                }
+                
+                member.lastLogin = new Date().toISOString();
+                await this.db.saveMember(member);
+                
+                this.currentMember = member;
+                this.isAdmin = false;
+                localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
+                localStorage.setItem('jeansClubIsAdmin', 'false');
+                
+                const updatedMember = await this.db.getMemberByJCId(member.jcId);
+                if (updatedMember) {
+                    this.currentMember = updatedMember;
+                    localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
+                }
+                
+                showDashboard(this.currentMember);
+                showToast(`Welcome back ${member.name}!`, 'success');
+            } else {
+                showToast('No account found with this Google email. Please sign up first.', 'error');
+                showSignupScreen();
+            }
+            
+        } catch (error) {
+            console.error('Google Login error:', error);
+            showToast('Google Login failed. Please try again.', 'error');
+        }
+    }
+
+    generateJCId() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let id = 'JC';
+        for (let i = 0; i < 4; i++) {
+            id += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return id;
+    }
+
+    generateReferralCode() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+    }
+
+    calculateTier(member) {
+        const points = member.lifetimePoints || 0;
+        
+        if (points >= 1000000) return 'PLATINUM';
+        if (points >= 500000) return 'SAPPHIRE';
+        if (points >= 250000) return 'GOLD';
+        if (points >= 100000) return 'RUBY';
+        if (points >= 25000) return 'SILVER';
+        if (points >= 7500) return 'BRONZE';
+        return 'PEARL';
+    }
+
+    async signUpWithEmail(name, email, password, referralCode = null, birthday = null) {
+        try {
+            if (!name || !email || !password) {
+                showToast('Please fill in all required fields', 'error');
+                return false;
+            }
+            
+            const emailValidation = isValidEmailWithFraudPrevention(email);
+            if (!emailValidation.valid) {
+                showToast(emailValidation.message, 'error');
+                return false;
+            }
+            
+            // Validate birthday if provided
+            if (birthday) {
+                const birthDate = new Date(birthday);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                
+                if (age < 13) {
+                    showToast('You must be at least 13 years old to join', 'error');
+                    return false;
+                }
+                
+                if (age > 120) {
+                    showToast('Please enter a valid birthday', 'error');
                     return false;
                 }
             }
-
-
-            async addPurchase(jcId, amount, description) {
-    try {
-        if (!jcId || !amount || amount <= 0) {
-            return { success: false, message: 'Invalid purchase data' };
-        }
-        
-        const member = await this.db.getMemberByJCId(jcId.toUpperCase());
-        if (!member) {
-            return { success: false, message: 'Member not found' };
-        }
-        
-        const pointsEarned = Math.floor(amount / 1000);
-        const oldTier = member.tier;
-        
-        member.points += pointsEarned;
-        member.lifetimePoints = (member.lifetimePoints || 0) + pointsEarned;
-        member.totalSpent += amount;
-        
-        const tiers = [
-            { name: 'PEARL', min: 0, max: 7499 },
-            { name: 'BRONZE', min: 7500, max: 24999 },
-            { name: 'SILVER', min: 25000, max: 99999 },
-            { name: 'RUBY', min: 100000, max: 249999 },
-            { name: 'GOLD', min: 250000, max: 499999 },
-            { name: 'SAPPHIRE', min: 500000, max: 999999 },
-            { name: 'PLATINUM', min: 1000000, max: Infinity }
-        ];
-        
-        for (const tier of tiers) {
-            if (member.lifetimePoints >= tier.min && member.lifetimePoints <= tier.max) {
-                member.tier = tier.name;
-                break;
+            
+            const normalizedEmail = normalizeEmailForDatabase(email);
+            
+            const existingMember = await this.db.getMemberByEmail(email);
+            if (existingMember) {
+                showToast('An account with this email already exists', 'error');
+                return false;
             }
-        }
-        
-        const tierUpgraded = oldTier !== member.tier;
-        
-        member.purchaseHistory.unshift({
-            timestamp: new Date().toISOString(),
-            amount: amount,
-            description: description || 'Purchase',
-            pointsEarned: pointsEarned
-        });
-        
-        member.activityLog.unshift({
-            timestamp: new Date().toISOString(),
-            action: 'purchase',
-            description: `Purchase: ${description || 'Item'} - ${amount.toLocaleString()} UGX`,
-            points: pointsEarned
-        });
-        
-        // ✅ SEND PUSH NOTIFICATION FOR PURCHASE
-       // FIND this function in your code and REPLACE the darkMessages array:
-
-const darkMessages = [
-    // DARK HUMOR PURCHASE MESSAGES
-    `💀 ${member.name}, you just spent ${amount.toLocaleString()} UGX. Your ancestors are disappointed, but your jeans look FIRE. +${pointsEarned} points.`,
-    `🔮 ${member.name}, I see debt in your future... but also really nice jeans. ${amount.toLocaleString()} UGX gone. +${pointsEarned} points.`,
-    `⚰️ ${member.name}, your wallet has been officially declared dead at ${amount.toLocaleString()} UGX. Funeral expenses: 0 (you spent it all on jeans). +${pointsEarned} points.`,
-    `👻 ${member.name}, SPOOKY season came early! Your money just vanished like a ghost. ${amount.toLocaleString()} UGX gone. +${pointsEarned} points. Boo-tyful purchase!`,
-    `🤡 ${member.name}, congratulations! You're now officially broke but stylish. ${amount.toLocaleString()} UGX spent. +${pointsEarned} points. Honk honk!`,
-    `📉 ${member.name}, your bank account graph just went 📉 but your style graph went 📈. ${amount.toLocaleString()} UGX. +${pointsEarned} points.`,
-    `🍷 ${member.name}, poor decisions make great stories. ${amount.toLocaleString()} UGX on jeans? Legendary. +${pointsEarned} points.`,
-    `🎪 ${member.name}, welcome to the circus! You're the main attraction with that ${amount.toLocaleString()} UGX purchase. +${pointsEarned} points.`,
-    `🪦 ${member.name}, RIP your savings (${member.joinedDate} - today). Cause of death: Denim addiction. ${amount.toLocaleString()} UGX. +${pointsEarned} points.`,
-    `📢 ${member.name}, this is an intervention! ...Just kidding, spend more! ${amount.toLocaleString()} UGX. +${pointsEarned} points.`
-];
-        const randomMsg = darkMessages[Math.floor(Math.random() * darkMessages.length)];
-        sendPushNotification('🛍️ Purchase Confirmed!', randomMsg);
-        
-        // ✅ SEND TIER UPGRADE NOTIFICATION IF APPLICABLE
-        if (tierUpgraded) {
-            const tierMessages = {
-                'BRONZE': "You're officially not a beginner anymore. The denim gods approve!",
-                'SILVER': "You're now in the top tier of denim enthusiasts. Your jeans are jealous of you!",
-                'RUBY': "At this rate, your closet might need a separate zip code. Keep going!",
-                'GOLD': "You've achieved what many only dream of. The denim throne awaits...",
-                'SAPPHIRE': "You're basically a denim celebrity now. Autographs?",
-                'PLATINUM': "You've reached the peak. Denim royalty, we bow to you."
-            };
-            const tierMsg = tierMessages[member.tier] || `Welcome to ${member.tier} tier!`;
-            sendPushNotification(`🏆 TIER UPGRADE: ${member.tier}!`, tierMsg);
-        }
-        
-        if (member.referredBy) {
-            const referrer = await this.db.getMemberByJCId(member.referredBy);
-            if (referrer) {
-                const referral = referrer.referrals.find(r => r.referredJCId === member.jcId);
-                if (referral && referral.status === 'pending') {
-                    referral.status = 'completed';
-                    referral.completionDate = new Date().toISOString();
+            
+            const allMembers = await this.db.getAllMembers();
+            
+            if (referralCode && isSelfReferral(referralCode, email)) {
+                showToast('You cannot use your own referral code', 'error');
+                return false;
+            }
+            
+            const clientIP = await getClientIP();
+            const ipCheck = await checkMultipleAccountsFromIP(email, clientIP);
+            if (!ipCheck.allowed) {
+                showToast(ipCheck.reason, 'error');
+                return false;
+            }
+            
+            const jcId = this.generateJCId();
+            const memberReferralCode = this.generateReferralCode();
+            
+            let referredBy = null;
+            let referralPoints = 10;
+            
+            if (referralCode) {
+                const referrer = allMembers.find(m => m.referralCode === referralCode);
+                
+                if (referrer) {
+                    referredBy = referrer.jcId;
+                    referralPoints = 20;
                     
-                    referrer.points += 100;
-                    referrer.lifetimePoints = (referrer.lifetimePoints || 0) + 100;
-                    referrer.activityLog.unshift({
-                        timestamp: new Date().toISOString(),
-                        action: 'referral_completed',
-                        description: `Referral completed: ${member.name}`,
-                        points: 100
+                    referrer.referrals.push({
+                        referredJCId: jcId,
+                        referredName: name,
+                        referralDate: new Date().toISOString(),
+                        status: 'pending'
                     });
-                    
                     await this.db.saveMember(referrer);
-                    
-                    // ✅ SEND REFERRAL NOTIFICATION
-                    sendPushNotification('🎊 Referral Success!', 
-                        `${referrer.name}, ${member.name} made their first purchase! +100 points for you!`);
-                    
-                    await this.emailService.sendReferralEmail(referrer.email, referrer, {
-                        referredName: member.name,
-                        pointsEarned: 100
-                    });
+                } else {
+                    showToast('Invalid referral code', 'error');
+                    return false;
                 }
             }
-        }
-        
-        await this.db.saveMember(member);
-        
-        await this.emailService.sendPurchaseEmail(member.email, member, {
-            amount: amount,
-            description: description,
-            pointsEarned: pointsEarned,
-            newBalance: member.points
-        });
-        
-        return {
-            success: true,
-            message: `Purchase recorded! ${pointsEarned} points added.`,
-            member: member
-        };
-        
-    } catch (error) {
-        console.error('Add purchase error:', error);
-        return { success: false, message: 'Failed to record purchase' };
-    }
-}
-
-            logout() {
-                this.currentMember = null;
-                this.isAdmin = false;
-                this.currentSalesperson = null;
-                localStorage.removeItem('jeansClubCurrentMember');
-                localStorage.removeItem('jeansClubIsAdmin');
-                localStorage.removeItem('jeansClubSalesperson');
-                
-                showSignupScreen();
-                showToast('Logged out successfully', 'success');
-            }
-
-           
             
-          
-    
+            const member = {
+                jcId: jcId,
+                email: email,
+                name: name.trim(),
+                password: password,
+                loginMethod: 'email',
+                points: referralPoints,
+                lifetimePoints: referralPoints,
+                tier: 'PEARL',
+                referralCode: memberReferralCode,
+                referredBy: referredBy,
+                joinedDate: new Date().toISOString(),
+                totalSpent: 0,
+                newsletterSubscribed: document.getElementById('newsletterSignup')?.checked || true,
+                birthday: birthday || null,
+                purchaseHistory: [],
+                activityLog: [],
+                challenges: [],
+                referrals: [],
+                ip_address: clientIP,
+                lastLogin: new Date().toISOString(),
+                createdAt: new Date().toISOString()
+            };
+            
+            member.activityLog.unshift({
+                timestamp: new Date().toISOString(),
+                action: 'account_created',
+                description: 'Account created with email' + (birthday ? ' (birthday added)' : ''),
+                points: referralPoints
+            });
+            
+            const saved = await this.db.saveMember(member);
+            if (!saved) {
+                showToast('Failed to create account. Please try again.', 'error');
+                return false;
+            }
+            
+            this.currentMember = member;
+            this.isAdmin = false;
+            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
+            localStorage.setItem('jeansClubIsAdmin', 'false');
+            
+            // Send birthday notification if provided
+            if (birthday) {
+                const birthDate = new Date(birthday);
+                const formattedBirthday = birthDate.toLocaleDateString('en-US', { 
+                    month: 'long', 
+                    day: 'numeric'
+                });
+                sendPushNotification('🎂 Birthday Added!', 
+                    `Thanks for sharing your birthday! We'll have something special waiting for you on ${formattedBirthday}!`);
+            }
+            
+            const darkWelcomeMessages = [
+                `💀 Welcome ${name}! You've just joined the exclusive club of people who spend too much on denim. We're your people.`,
+                `🔮 ${name}, your future includes: 1) Jeans 2) Happiness 3) Questioning your life choices. Welcome!`,
+                `🤡 ${name}, another clown joins the circus! Just kidding. But seriously, welcome to the broke-but-stylish club.`,
+                `⚰️ ${name}, your savings just filed a restraining order. Welcome to Jeans Club!`,
+                `🎪 ${name}, you've joined the greatest show on earth! Starring: Your wallet. Co-starring: Your impulse control (RIP).`
+            ];
+            const randomMsg = darkWelcomeMessages[Math.floor(Math.random() * darkWelcomeMessages.length)];
+            sendPushNotification('👖 Welcome to Jeans Club!', randomMsg);
+            
+            await this.emailService.sendWelcomeEmail(email, member);
+            
+            if (member.newsletterSubscribed) {
+                await this.db.subscribeToNewsletter(email, name);
+                await this.emailService.sendNewsletterWelcomeEmail(email, member, {
+                    subject: "Welcome to Jeans Club Newsletter!",
+                    message: "Thank you for subscribing!"
+                });
+            }
+            
+            await showDashboard(member);
+            showToast(`Welcome to Jeans Club ${name}!`, 'success');
+            runAutoSyncAfterLogin();
+            
+            setTimeout(() => {
+                initPushNotifications();
+            }, 1000);
+            
+            return true;
+            
+        } catch (error) {
+            console.error('Sign up error:', error);
+            showToast('An error occurred. Please try again.', 'error');
+            return false;
+        }
+    }
+
+    async loginWithJCId(jcId, password) {
+        try {
+            if (!jcId || !password) {
+                showToast('Please enter both JC ID and password', 'error');
+                return false;
+            }
+            
+            if (jcId.toLowerCase() === 'admin' && password === 'jeansclub2024') {
+                this.isAdmin = true;
+                this.currentMember = null;
+                this.currentSalesperson = prompt("Enter your name:", "Salesperson");
+                localStorage.setItem('jeansClubCurrentMember', '');
+                localStorage.setItem('jeansClubIsAdmin', 'true');
+                localStorage.setItem('jeansClubSalesperson', this.currentSalesperson);
+                
+                showAdminPanel();
+                showToast(`Welcome ${this.currentSalesperson}!`, 'success');
+                return true;
+            }
+            
+            const member = await this.db.getMemberByJCId(jcId.toUpperCase());
+            if (!member) {
+                showToast('Invalid JC ID or password', 'error');
+                return false;
+            }
+            
+            if (member.loginMethod === 'google') {
+                showToast('Please use Google Sign-In for this account', 'error');
+                return false;
+            }
+            
+            if (member.password !== password) {
+                showToast('Invalid JC ID or password', 'error');
+                return false;
+            }
+            
+            if (!member.lifetimePoints) {
+                member.lifetimePoints = Math.floor(member.totalSpent / 1000) + 10;
+            }
+            
+            member.lastLogin = new Date().toISOString();
+            await this.db.saveMember(member);
+            
+            this.currentMember = member;
+            this.isAdmin = false;
+            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
+            localStorage.setItem('jeansClubIsAdmin', 'false');
+            
+            const updatedMember = await this.db.getMemberByJCId(member.jcId);
+            if (updatedMember) {
+                this.currentMember = updatedMember;
+                localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
+            }
+            
+            if (typeof startListeningForNotifications === 'function') {
+                await startListeningForNotifications();
+                await fetchUndeliveredNotifications();
+            }
+            
+            showDashboard(this.currentMember);
+            showToast(`Welcome back ${member.name}!`, 'success');
+            runAutoSyncAfterLogin();
+            return true;
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            showToast('An error occurred. Please try again.', 'error');
+            return false;
+        }
+    }
+
+    async addPurchase(jcId, amount, description) {
+        try {
+            if (!jcId || !amount || amount <= 0) {
+                return { success: false, message: 'Invalid purchase data' };
+            }
+            
+            const member = await this.db.getMemberByJCId(jcId.toUpperCase());
+            if (!member) {
+                return { success: false, message: 'Member not found' };
+            }
+            
+            const pointsEarned = Math.floor(amount / 1000);
+            const oldTier = member.tier;
+            
+            member.points += pointsEarned;
+            member.lifetimePoints = (member.lifetimePoints || 0) + pointsEarned;
+            member.totalSpent += amount;
+            
+            const tiers = [
+                { name: 'PEARL', min: 0, max: 7499 },
+                { name: 'BRONZE', min: 7500, max: 24999 },
+                { name: 'SILVER', min: 25000, max: 99999 },
+                { name: 'RUBY', min: 100000, max: 249999 },
+                { name: 'GOLD', min: 250000, max: 499999 },
+                { name: 'SAPPHIRE', min: 500000, max: 999999 },
+                { name: 'PLATINUM', min: 1000000, max: Infinity }
+            ];
+            
+            for (const tier of tiers) {
+                if (member.lifetimePoints >= tier.min && member.lifetimePoints <= tier.max) {
+                    member.tier = tier.name;
+                    break;
+                }
+            }
+            
+            const tierUpgraded = oldTier !== member.tier;
+            
+            member.purchaseHistory.unshift({
+                timestamp: new Date().toISOString(),
+                amount: amount,
+                description: description || 'Purchase',
+                pointsEarned: pointsEarned
+            });
+            
+            member.activityLog.unshift({
+                timestamp: new Date().toISOString(),
+                action: 'purchase',
+                description: `Purchase: ${description || 'Item'} - ${amount.toLocaleString()} UGX`,
+                points: pointsEarned
+            });
+            
+            const darkMessages = [
+                `💀 ${member.name}, you just spent ${amount.toLocaleString()} UGX. Your ancestors are disappointed, but your jeans look FIRE. +${pointsEarned} points.`,
+                `🔮 ${member.name}, I see debt in your future... but also really nice jeans. ${amount.toLocaleString()} UGX gone. +${pointsEarned} points.`,
+                `⚰️ ${member.name}, your wallet has been officially declared dead at ${amount.toLocaleString()} UGX. Funeral expenses: 0 (you spent it all on jeans). +${pointsEarned} points.`,
+                `👻 ${member.name}, SPOOKY season came early! Your money just vanished like a ghost. ${amount.toLocaleString()} UGX gone. +${pointsEarned} points. Boo-tyful purchase!`,
+                `🤡 ${member.name}, congratulations! You're now officially broke but stylish. ${amount.toLocaleString()} UGX spent. +${pointsEarned} points. Honk honk!`,
+                `📉 ${member.name}, your bank account graph just went 📉 but your style graph went 📈. ${amount.toLocaleString()} UGX. +${pointsEarned} points.`,
+                `🍷 ${member.name}, poor decisions make great stories. ${amount.toLocaleString()} UGX on jeans? Legendary. +${pointsEarned} points.`,
+                `🎪 ${member.name}, welcome to the circus! You're the main attraction with that ${amount.toLocaleString()} UGX purchase. +${pointsEarned} points.`,
+                `🪦 ${member.name}, RIP your savings (${member.joinedDate} - today). Cause of death: Denim addiction. ${amount.toLocaleString()} UGX. +${pointsEarned} points.`,
+                `📢 ${member.name}, this is an intervention! ...Just kidding, spend more! ${amount.toLocaleString()} UGX. +${pointsEarned} points.`
+            ];
+            const randomMsg = darkMessages[Math.floor(Math.random() * darkMessages.length)];
+            sendPushNotification('🛍️ Purchase Confirmed!', randomMsg);
+            
+            if (tierUpgraded) {
+                const tierMessages = {
+                    'BRONZE': "You're officially not a beginner anymore. The denim gods approve!",
+                    'SILVER': "You're now in the top tier of denim enthusiasts. Your jeans are jealous of you!",
+                    'RUBY': "At this rate, your closet might need a separate zip code. Keep going!",
+                    'GOLD': "You've achieved what many only dream of. The denim throne awaits...",
+                    'SAPPHIRE': "You're basically a denim celebrity now. Autographs?",
+                    'PLATINUM': "You've reached the peak. Denim royalty, we bow to you."
+                };
+                const tierMsg = tierMessages[member.tier] || `Welcome to ${member.tier} tier!`;
+                sendPushNotification(`🏆 TIER UPGRADE: ${member.tier}!`, tierMsg);
+            }
+            
+            if (member.referredBy) {
+                const referrer = await this.db.getMemberByJCId(member.referredBy);
+                if (referrer) {
+                    const referral = referrer.referrals.find(r => r.referredJCId === member.jcId);
+                    if (referral && referral.status === 'pending') {
+                        referral.status = 'completed';
+                        referral.completionDate = new Date().toISOString();
+                        
+                        referrer.points += 100;
+                        referrer.lifetimePoints = (referrer.lifetimePoints || 0) + 100;
+                        referrer.activityLog.unshift({
+                            timestamp: new Date().toISOString(),
+                            action: 'referral_completed',
+                            description: `Referral completed: ${member.name}`,
+                            points: 100
+                        });
+                        
+                        await this.db.saveMember(referrer);
+                        
+                        sendPushNotification('🎊 Referral Success!', 
+                            `${referrer.name}, ${member.name} made their first purchase! +100 points for you!`);
+                        
+                        await this.emailService.sendReferralEmail(referrer.email, referrer, {
+                            referredName: member.name,
+                            pointsEarned: 100
+                        });
+                    }
+                }
+            }
+            
+            await this.db.saveMember(member);
+            
+            await this.emailService.sendPurchaseEmail(member.email, member, {
+                amount: amount,
+                description: description,
+                pointsEarned: pointsEarned,
+                newBalance: member.points
+            });
+            
+            return {
+                success: true,
+                message: `Purchase recorded! ${pointsEarned} points added.`,
+                member: member
+            };
+            
+        } catch (error) {
+            console.error('Add purchase error:', error);
+            return { success: false, message: 'Failed to record purchase' };
+        }
+    }
+
+    logout() {
+        this.currentMember = null;
+        this.isAdmin = false;
+        this.currentSalesperson = null;
+        localStorage.removeItem('jeansClubCurrentMember');
+        localStorage.removeItem('jeansClubIsAdmin');
+        localStorage.removeItem('jeansClubSalesperson');
+        
+        showSignupScreen();
+        showToast('Logged out successfully', 'success');
+    }
+
     async requestPasswordReset(jcId) {
         try {
             const member = await this.db.getMemberByJCId(jcId);
@@ -8455,32 +8442,28 @@ const darkMessages = [
                 return { success: false, message: 'Google accounts do not use passwords. Please use Google Sign-In.' };
             }
             
-            // Generate 6-digit reset code
             const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-            const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+            const resetTokenExpiry = new Date(Date.now() + 3600000);
             
             console.log('📝 Generated reset token:', resetToken, 'for member:', jcId);
             
-            // Save token to Supabase using the new method
             const saved = await this.db.setPasswordResetToken(jcId, resetToken, resetTokenExpiry);
             
             if (!saved) {
                 return { success: false, message: 'Failed to save reset token. Please try again.' };
             }
             
-            // Send email with the reset code
             const emailSent = await this.emailService.sendPasswordResetEmail(member.email, member, {
                 token: resetToken,
                 expiryMinutes: 60
             });
             
             if (!emailSent) {
-                // Even if email fails, we still have the token saved
                 console.warn('⚠️ Email sending failed but token was saved');
                 return { 
                     success: true, 
                     message: `Reset code generated but email failed. Your reset code is: ${resetToken}. Please contact support if you didn't receive it.`,
-                    token: resetToken // Only show in development
+                    token: resetToken
                 };
             }
             
@@ -8502,7 +8485,6 @@ const darkMessages = [
                 return { success: false, message: 'Member not found. Please check your JC ID.' };
             }
             
-            // Get stored reset token from Supabase
             const resetData = await this.db.getPasswordResetToken(jcId);
             
             console.log('🔐 Checking reset token for member:', jcId);
@@ -8516,7 +8498,6 @@ const darkMessages = [
                 };
             }
             
-            // Normalize and compare tokens
             const storedToken = resetData.token.toString().trim();
             const providedToken = token.toString().trim();
             
@@ -8527,10 +8508,8 @@ const darkMessages = [
                 };
             }
             
-            // Check expiration
             const now = new Date();
             if (!resetData.expiry || now > resetData.expiry) {
-                // Clear expired token
                 await this.db.clearPasswordResetToken(jcId);
                 return { 
                     success: false, 
@@ -8538,20 +8517,16 @@ const darkMessages = [
                 };
             }
             
-            // Update password
             member.password = newPassword;
             
-            // Clear the reset token
             await this.db.clearPasswordResetToken(jcId);
             
-            // Save member with new password
             const saved = await this.db.saveMember(member);
             
             if (!saved) {
                 return { success: false, message: 'Failed to update password. Please try again.' };
             }
             
-            // Log activity
             member.activityLog = member.activityLog || [];
             member.activityLog.unshift({
                 timestamp: new Date().toISOString(),
@@ -8559,7 +8534,6 @@ const darkMessages = [
                 description: 'Password reset successfully'
             });
             
-            // Send confirmation email
             await this.emailService.sendPasswordResetSuccessEmail(member.email, member);
             
             return { 
@@ -8573,51 +8547,50 @@ const darkMessages = [
         }
     }
 
-            async toggleNewsletterSubscription(email, subscribe) {
-                try {
-                    if (subscribe) {
-                        const member = await this.db.getMemberByEmail(email);
-                        const name = member ? member.name : null;
-                        await this.db.subscribeToNewsletter(email, name);
-                        return true;
-                    } else {
-                        await this.db.unsubscribeFromNewsletter(email);
-                        return true;
-                    }
-                } catch (error) {
-                    console.error('Newsletter toggle error:', error);
-                    return false;
-                }
+    async toggleNewsletterSubscription(email, subscribe) {
+        try {
+            if (subscribe) {
+                const member = await this.db.getMemberByEmail(email);
+                const name = member ? member.name : null;
+                await this.db.subscribeToNewsletter(email, name);
+                return true;
+            } else {
+                await this.db.unsubscribeFromNewsletter(email);
+                return true;
             }
+        } catch (error) {
+            console.error('Newsletter toggle error:', error);
+            return false;
+        }
+    }
 
-            async sendNewsletterToSubscribers(subject, content) {
-                try {
-                    const subscribers = await this.db.getNewsletterSubscribers();
-                    
-                    if (subscribers.length === 0) {
-                        return { success: false, message: 'No active newsletter subscribers found' };
-                    }
-                    
-                    const emails = subscribers.map(s => s.email);
-                    
-                    const result = await this.emailService.sendBulkNewsletter(emails, subject, content);
-                    
-                    if (result.success) {
-                        return { 
-                            success: true, 
-                            message: `Newsletter sent to ${emails.length} subscribers successfully` 
-                        };
-                    } else {
-                        return { success: false, message: 'Failed to send newsletter' };
-                    }
-                    
-                } catch (error) {
-                    console.error('Send newsletter error:', error);
-                    return { success: false, message: 'Failed to send newsletter' };
-                }
+    async sendNewsletterToSubscribers(subject, content) {
+        try {
+            const subscribers = await this.db.getNewsletterSubscribers();
+            
+            if (subscribers.length === 0) {
+                return { success: false, message: 'No active newsletter subscribers found' };
             }
-    
-  }
+            
+            const emails = subscribers.map(s => s.email);
+            
+            const result = await this.emailService.sendBulkNewsletter(emails, subject, content);
+            
+            if (result.success) {
+                return { 
+                    success: true, 
+                    message: `Newsletter sent to ${emails.length} subscribers successfully` 
+                };
+            } else {
+                return { success: false, message: 'Failed to send newsletter' };
+            }
+            
+        } catch (error) {
+            console.error('Send newsletter error:', error);
+            return { success: false, message: 'Failed to send newsletter' };
+        }
+    }
+}
   // ===========================================
 // CROSS-DEVICE NOTIFICATION FUNCTIONS
 // ===========================================
@@ -12692,22 +12665,25 @@ async function submitJCIdRecovery() {
         messageDiv.innerHTML = '<div class="error-message">❌ An error occurred. Please try again later.</div>';
     }
 }
-  window.onload = function() {
+window.onload = function() {
     // Check if this is a cron-job trigger
     if (checkForScheduledTrigger()) {
         return; // Stop normal page load
     }
     console.log('=== PAGE LOAD START ===');
-     // ✅ CREATE EMAIL SERVICE FIRST (before ClubManager)
+    
+    // Create iframe email service FIRST
     const iframeEmailService = new IframeEmailService('https://script.google.com/macros/s/AKfycbzmJS_ThUUb_FsyeuBVbLyBRdGXAD0Pj1uhv_4CCD8NtV0WCL6THqgIBIawmWK4F7CN/exec');
-    console.log('✅ Email service created (loading iframe...)');
-    clubManager = new ClubManager();
+    console.log('✅ IframeEmailService created');
+    
+    // Create ClubManager with the iframe email service
+    clubManager = new ClubManager(iframeEmailService);
+    console.log('✅ ClubManager created with email service:', clubManager.emailService.constructor.name);
+    // Should print: "IframeEmailService"
     
     setTimeout(() => {
         initPushNotifications();
     }, 2000);
-    
-   
     
     setTimeout(() => {
         if (clubManager) {
@@ -12764,7 +12740,6 @@ async function submitJCIdRecovery() {
             await startListeningForNotifications();
             await fetchUndeliveredNotifications();
             
-            // ✅ ADD THIS LINE RIGHT HERE - Auto-sync existing OneSignal subscribers after login
             if (typeof runAutoSyncAfterLogin === 'function') {
                 await runAutoSyncAfterLogin();
             }
@@ -12822,7 +12797,6 @@ async function submitJCIdRecovery() {
         }
     });
 }
- 
         
      
  class IframeEmailService {
