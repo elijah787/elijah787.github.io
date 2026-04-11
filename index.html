@@ -8663,263 +8663,469 @@ function checkForScheduledTrigger() {
 // PUSH NOTIFICATION MANAGER
 // ===========================================
 
+// ===========================================
+// REPLACE THE ENTIRE PUSH NOTIFICATION SECTION
+// ===========================================
+
 class PushNotificationManager {
-  constructor() {
-    this.swRegistration = null;
-    this.isSubscribed = false;
-    this.isSupported = false;
-  }
-
-  async init() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.log('Push notifications not supported');
+    constructor() {
+        this.isSubscribed = false;
         this.isSupported = false;
-        return false;
+        this.currentMember = null;
     }
 
-    this.isSupported = true;
+    async init(member) {
+        this.currentMember = member;
+        
+        if (!('Notification' in window)) {
+            console.log('Notifications not supported');
+            this.isSupported = false;
+            return false;
+        }
 
-    try {
-      // Register service worker
-      this.swRegistration = await navigator.serviceWorker.register('/jeans-club/sw.js');
-      console.log('✅ Service Worker registered');
+        this.isSupported = true;
+        
+        // Check if already subscribed via OneSignal
+        if (window.OneSignal) {
+            await this.checkOneSignalStatus();
+        }
+        
+        return true;
+    }
 
-      // Check if already subscribed
-      const subscription = await this.swRegistration.pushManager.getSubscription();
-      this.isSubscribed = subscription !== null;
-
-        // ✅ CHECK DATABASE FOR PUSH ENABLED STATUS
-        if (clubManager && clubManager.currentMember) {
-            const { data: member } = await clubManager.db.supabase
-                .from('members')
-                .select('push_enabled')
-                .eq('jc_id', clubManager.currentMember.jcId)
-                .single();
+    async checkOneSignalStatus() {
+        try {
+            const subscription = OneSignal.User.PushSubscription;
+            const isSubscribed = subscription && subscription.optedIn === true;
             
-            if (member && member.push_enabled === true && !this.isSubscribed) {
-                console.log('Member has push enabled in DB but not subscribed - resubscribing');
-                await this.subscribe();
-            } else if (member && member.push_enabled === true) {
-                this.isSubscribed = true;
-                localStorage.setItem('pushEnabled', 'true');
-                console.log('✅ Push already enabled for this member');
+            this.isSubscribed = isSubscribed;
+            console.log('OneSignal status check:', isSubscribed ? 'SUBSCRIBED' : 'NOT SUBSCRIBED');
+            
+            // Update database to match
+            if (this.currentMember) {
+                await this.updateDatabaseStatus(isSubscribed);
             }
+            
+            return isSubscribed;
+        } catch (error) {
+            console.error('Error checking OneSignal status:', error);
+            return false;
         }
-      // Check saved preference
-      const savedPref = localStorage.getItem('pushEnabled');
-      if (savedPref === 'true' && !this.isSubscribed) {
-        await this.subscribe();
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Push init error:', error);
-      return false;
-    }
-  }
-async subscribe() {
-    console.log('🔔 Starting notification subscription...');
-    
-    if (!this.isSupported) {
-        showToast('Push notifications not supported on this browser', 'error');
-        return false;
     }
 
-    try {
-        let permission = Notification.permission;
+    async updateDatabaseStatus(isSubscribed) {
+        if (!this.currentMember || !clubManager?.db) return;
         
-        if (permission !== 'granted') {
-            console.log('Requesting permission...');
-            permission = await Notification.requestPermission();
+        try {
+            const now = new Date().toISOString();
+            const deviceInfo = {
+                device_type: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+                browser: (function() {
+                    const ua = navigator.userAgent;
+                    if (ua.includes('Chrome')) return 'Chrome';
+                    if (ua.includes('Firefox')) return 'Firefox';
+                    if (ua.includes('Safari')) return 'Safari';
+                    if (ua.includes('Edge')) return 'Edge';
+                    return 'Unknown';
+                })(),
+                os: (function() {
+                    const ua = navigator.userAgent;
+                    if (ua.includes('Windows')) return 'Windows';
+                    if (ua.includes('Mac')) return 'Mac';
+                    if (ua.includes('Linux')) return 'Linux';
+                    if (ua.includes('Android')) return 'Android';
+                    if (ua.includes('iOS')) return 'iOS';
+                    return 'Unknown';
+                })()
+            };
+            
+            // Get OneSignal player ID
+            let playerId = null;
+            try {
+                playerId = OneSignal.User.PushSubscription?.id || null;
+            } catch(e) {}
+            
+            // Check if record exists
+            const { data: existing } = await clubManager.db.supabase
+                .from('push_subscriptions')
+                .select('id')
+                .eq('member_jc_id', this.currentMember.jcId)
+                .maybeSingle();
+            
+            if (existing) {
+                await clubManager.db.supabase
+                    .from('push_subscriptions')
+                    .update({
+                        status: isSubscribed ? 'active' : 'inactive',
+                        subscription_id: playerId,
+                        device_type: deviceInfo.device_type,
+                        browser: deviceInfo.browser,
+                        os: deviceInfo.os,
+                        last_active: now,
+                        updated_at: now
+                    })
+                    .eq('member_jc_id', this.currentMember.jcId);
+            } else {
+                await clubManager.db.supabase
+                    .from('push_subscriptions')
+                    .insert({
+                        member_jc_id: this.currentMember.jcId,
+                        subscription_id: playerId,
+                        status: isSubscribed ? 'active' : 'inactive',
+                        device_type: deviceInfo.device_type,
+                        browser: deviceInfo.browser,
+                        os: deviceInfo.os,
+                        subscribed_at: isSubscribed ? now : null,
+                        last_active: now,
+                        created_at: now,
+                        updated_at: now
+                    });
+            }
+            
+            // Update members table
+            await clubManager.db.supabase
+                .from('members')
+                .update({ push_enabled: isSubscribed })
+                .eq('jc_id', this.currentMember.jcId);
+            
+            console.log(`✅ Database updated: push_enabled = ${isSubscribed}`);
+            
+        } catch (error) {
+            console.error('Error updating database:', error);
         }
-        
-        if (permission !== 'granted') {
-            showToast('Please allow notifications in browser settings', 'error');
+    }
+
+    async subscribe() {
+        if (!this.isSupported) {
+            showToast('Notifications not supported on this browser', 'error');
             return false;
         }
         
-        console.log('✅ Permission granted');
-
-        if (!this.swRegistration) {
-            this.swRegistration = await navigator.serviceWorker.ready;
-        }
-        
-        const VAPID_PUBLIC_KEY = 'BCMfJoj4xAtWeOJS4PPdu1K5YtH1qs_Q-QbZT_DMPSmxyqtagJvBW77cOGXKE7_OaTneeor7fOUt6z_lWljy68U';
-        
-        let existingSubscription = await this.swRegistration.pushManager.getSubscription();
-        if (existingSubscription) {
-            console.log('Unsubscribing existing subscription...');
-            await existingSubscription.unsubscribe();
-        }
-        
-        console.log('Creating push subscription...');
-        const subscription = await this.swRegistration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-        });
-       // ========== ADD ONESIGNAL REGISTRATION ==========
-try {
-    const onesignalData = {
-        app_id: 'YOUR_ONESIGNAL_APP_ID', // Replace with your OneSignal App ID
-        identifier: subscription.endpoint,
-        external_id: clubManager.currentMember.jcId, // ← THIS IS WHERE JC ID GOES!
-        device_type: this.getDeviceType(),
-        language: 'en',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        tags: {
-            tier: clubManager.currentMember.tier,
-            jcId: clubManager.currentMember.jcId,
-            name: clubManager.currentMember.name
-        }
-    };
-    
-    const response = await fetch('https://onesignal.com/api/v1/players', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'os_v2_app_idh34p4abraqlm5kzizgoyzswctghhxlqqjeocnauuxkf7awhwjkmdv5rfub5sdugvd2au5z5p7xdcnd7pvaifndnicqnrnpuxgtqbi' // Replace with your REST API Key
-        },
-        body: JSON.stringify(onesignalData)
-    });
-    
-    const result = await response.json();
-    console.log('✅ OneSignal registration:', result);
-} catch (error) {
-    console.error('OneSignal registration failed:', error);
-}
-        console.log('✅ Push subscription created');
-        
-        localStorage.setItem('pushEnabled', 'true');
-        this.isSubscribed = true;
-        
-        // ✅ CRITICAL: SAVE TO DATABASE
-        if (clubManager && clubManager.currentMember) {
-            console.log('💾 Saving to database for member:', clubManager.currentMember.jcId);
-            
-            const { data, error } = await clubManager.db.supabase
-                .from('members')
-                .update({ 
-                    push_enabled: true,
-                    push_subscription: subscription,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('jc_id', clubManager.currentMember.jcId);
-            
-            if (error) {
-                console.error('❌ Database save error:', error);
-                showToast('Notifications enabled but failed to save preference', 'warning');
-            } else {
-                console.log('✅ Database updated successfully! push_enabled = true');
-                showToast('🔔 Notifications enabled and saved!', 'success');
-            }
-        } else {
-            console.log('⚠️ No current member - cannot save to database');
+        if (!window.OneSignal) {
+            showToast('OneSignal loading, please wait...', 'info');
+            return false;
         }
         
         const btn = document.getElementById('notifyToggleBtn');
         if (btn) {
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing...';
+        }
+        
+        try {
+            // Check current permission
+            let permission = Notification.permission;
+            
+            if (permission !== 'granted') {
+                permission = await Notification.requestPermission();
+            }
+            
+            if (permission !== 'granted') {
+                showToast('Please allow notifications in browser settings', 'error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '🔔 Enable Notifications';
+                }
+                return false;
+            }
+            
+            // Subscribe via OneSignal
+            await OneSignal.Notifications.requestPermission();
+            
+            // Set external ID (JC ID) - CRITICAL for targeting
+            await OneSignal.login(this.currentMember.jcId);
+            
+            // Add tags
+            await OneSignal.User.addTags({
+                tier: this.currentMember.tier,
+                points: this.currentMember.points.toString(),
+                name: this.currentMember.name,
+                jcId: this.currentMember.jcId
+            });
+            
+            this.isSubscribed = true;
+            
+            // Update database
+            await this.updateDatabaseStatus(true);
+            
+            // Update button
+            if (btn) {
+                btn.textContent = '🔕 Notifications On';
+                btn.style.background = '#28a745';
+            }
+            
+            // Send welcome notification (only once)
+            setTimeout(() => {
+                this.sendNotification('✅ Notifications Enabled!', 
+                    'You will now receive updates about your points, vouchers, and exclusive deals!');
+            }, 1000);
+            
+            showToast('Notifications enabled successfully!', 'success');
+            return true;
+            
+        } catch (error) {
+            console.error('Subscribe error:', error);
+            showToast('Failed to enable notifications: ' + error.message, 'error');
+            if (btn) {
+                btn.textContent = '🔔 Enable Notifications';
+                btn.style.background = '';
+            }
+            return false;
+        } finally {
+            if (btn) {
+                setTimeout(() => { btn.disabled = false; }, 2000);
+            }
+        }
+    }
+
+    async unsubscribe() {
+        if (!window.OneSignal) return false;
+        
+        const btn = document.getElementById('notifyToggleBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing...';
+        }
+        
+        try {
+            await OneSignal.User.PushSubscription.optOut();
+            
+            this.isSubscribed = false;
+            
+            // Update database
+            await this.updateDatabaseStatus(false);
+            
+            if (btn) {
+                btn.textContent = '🔔 Enable Notifications';
+                btn.style.background = '';
+            }
+            
+            showToast('Notifications disabled', 'info');
+            return true;
+            
+        } catch (error) {
+            console.error('Unsubscribe error:', error);
+            showToast('Failed to disable notifications', 'error');
+            return false;
+        } finally {
+            if (btn) {
+                setTimeout(() => { btn.disabled = false; }, 2000);
+            }
+        }
+    }
+
+    sendNotification(title, body, data = {}) {
+        if (!this.isSubscribed) {
+            console.log('Not subscribed, storing notification');
+            this.storeNotification(title, body, data);
+            return;
+        }
+        
+        // Try OneSignal first
+        if (window.OneSignal) {
+            OneSignal.Notifications.addNotification({
+                title: title,
+                body: body,
+                data: data,
+                icon: 'https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg'
+            }).catch(e => console.log('OneSignal send error:', e));
+        }
+        
+        // Also show on current device
+        if (Notification.permission === 'granted') {
+            new Notification(title, {
+                body: body,
+                icon: 'https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg'
+            });
+        }
+        
+        // Store for cross-device sync
+        this.saveNotificationToSupabase(title, body, data);
+    }
+    
+    storeNotification(title, body, data = {}) {
+        const pending = JSON.parse(localStorage.getItem('pendingNotifications') || '[]');
+        pending.push({
+            title, body, data,
+            timestamp: Date.now()
+        });
+        localStorage.setItem('pendingNotifications', JSON.stringify(pending));
+    }
+    
+    async saveNotificationToSupabase(title, body, data = {}) {
+        if (!this.currentMember || !clubManager?.db) return;
+        
+        try {
+            await clubManager.db.supabase
+                .from('push_notifications')
+                .insert({
+                    member_jc_id: this.currentMember.jcId,
+                    title: title,
+                    body: body,
+                    data: data,
+                    created_at: new Date().toISOString(),
+                    delivered: false
+                });
+        } catch (error) {
+            console.error('Error saving notification:', error);
+        }
+    }
+}
+
+// Global push manager
+
+
+// Initialize push notifications with member
+async function initPushNotifications(member) {
+    if (!member) {
+        console.log('No member to initialize push for');
+        return;
+    }
+    
+    pushManager = new PushNotificationManager();
+    await pushManager.init(member);
+    
+    // Update button state
+    await updateNotificationButton();
+    
+    // Listen for OneSignal changes
+    if (window.OneSignal) {
+        OneSignal.User.PushSubscription.addEventListener("change", async (subscription) => {
+            console.log('OneSignal subscription changed:', subscription?.optedIn);
+            if (pushManager) {
+                pushManager.isSubscribed = subscription?.optedIn === true;
+                await pushManager.updateDatabaseStatus(pushManager.isSubscribed);
+                await updateNotificationButton();
+            }
+        });
+    }
+}
+
+// Update notification button state based on actual subscription
+async function updateNotificationButton() {
+    const btn = document.getElementById('notifyToggleBtn');
+    if (!btn) return;
+    
+    if (!pushManager) {
+        btn.textContent = '🔔 Enable Notifications';
+        btn.disabled = false;
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Checking...';
+    
+    try {
+        let isSubscribed = false;
+        
+        if (window.OneSignal) {
+            const subscription = OneSignal.User.PushSubscription;
+            isSubscribed = subscription && subscription.optedIn === true;
+            pushManager.isSubscribed = isSubscribed;
+        } else {
+            isSubscribed = pushManager.isSubscribed;
+        }
+        
+        if (isSubscribed) {
             btn.textContent = '🔕 Notifications On';
             btn.style.background = '#28a745';
+        } else {
+            btn.textContent = '🔔 Enable Notifications';
+            btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
         }
         
-        // Send test notification
-        setTimeout(() => {
-            this.sendNotification('✅ Success!', 'Your notifications are now active and saved to your account!');
-        }, 1000);
+        console.log('Button updated:', isSubscribed ? 'ON' : 'OFF');
         
-        return true;
-
     } catch (error) {
-        console.error('Subscribe error:', error);
-        showToast(': ' + error.message, 'error');
-        return false;
+        console.error('Error updating button:', error);
+        btn.textContent = '🔔 Enable Notifications';
+        btn.style.background = '';
+    } finally {
+        btn.disabled = false;
     }
 }
- async unsubscribe() {
-    try {
-        const subscription = await this.swRegistration.pushManager.getSubscription();
-        if (subscription) {
-            await subscription.unsubscribe();
+
+// Toggle notifications (called by button)
+async function togglePushNotifications() {
+    if (!pushManager) {
+        if (clubManager?.currentMember) {
+            await initPushNotifications(clubManager.currentMember);
+        } else {
+            showToast('Please login first', 'error');
+            return;
         }
-        
-        localStorage.setItem('pushEnabled', 'false');
-        localStorage.setItem(`pushEnabled_${clubManager.currentMember?.jcId}`, 'false');
-        this.isSubscribed = false;
-        
-        // ✅ UPDATE DATABASE
-        if (clubManager && clubManager.currentMember) {
-            await clubManager.db.supabase
-                .from('members')
-                .update({ 
-                    push_enabled: false,
-                    push_subscription: null
-                })
-                .eq('jc_id', clubManager.currentMember.jcId);
+    }
+    
+    if (pushManager.isSubscribed) {
+        await pushManager.unsubscribe();
+    } else {
+        await pushManager.subscribe();
+    }
+    
+    await updateNotificationButton();
+}
+
+// Fixed image URLs
+const FIXED_IMAGES = {
+    logo: 'https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg',
+    fallbackLogo: 'https://via.placeholder.com/200x100?text=JEANS+CLUB'
+};
+
+// Update all image references in the page
+function fixImageUrls() {
+    // Fix header logo
+    const headerLogo = document.querySelector('.header-logo');
+    if (headerLogo) {
+        headerLogo.src = FIXED_IMAGES.logo;
+        headerLogo.onerror = function() { this.src = FIXED_IMAGES.fallbackLogo; };
+    }
+    
+    // Fix card logo
+    const cardLogos = document.querySelectorAll('.card-logo-img');
+    cardLogos.forEach(img => {
+        img.src = FIXED_IMAGES.logo;
+        img.onerror = function() { this.src = FIXED_IMAGES.fallbackLogo; };
+    });
+    
+    // Fix any other images with broken URLs
+    const allImages = document.querySelectorAll('img');
+    allImages.forEach(img => {
+        if (img.src && (img.src.includes('ibb.co.com') || img.src.includes('undefined'))) {
+            img.src = FIXED_IMAGES.logo;
         }
-        
-        showToast('Notifications disabled', 'info');
-        return true;
-    } catch (error) {
-        console.error('Unsubscribe error:', error);
-        return false;
-    }
-}
-
-  // Send immediate notification (for when user is on site)
-  sendNotification(title, body, data = {}) {
-    if (!this.swRegistration || !this.swRegistration.active) {
-      console.log('No active service worker');
-      return false;
-    }
-
-    this.swRegistration.active.postMessage({
-      type: 'SHOW_NOTIFICATION',
-      notification: {
-        title: title,
-        body: body,
-        data: data,
-        icon: 'https://i.ibb.co.com/Rp9F4xBC/jeans-club.jpg'
-      }
     });
-    return true;
-  }
+}
 
-  // Store notification for later (when user comes back)
-  storeNotification(title, body, data = {}) {
-    const pending = JSON.parse(localStorage.getItem('pendingNotifications') || '[]');
-    pending.push({
-      id: Date.now(),
-      title: title,
-      body: body,
-      data: data,
-      timestamp: Date.now()
+// Call this on page load and after dynamic content updates
+fixImageUrls();
+
+// Also update the member transaction screen images
+function updateTransactionScreenImages() {
+    const receiptImages = document.querySelectorAll('.member-transaction-screen img, .salesperson-transaction img');
+    receiptImages.forEach(img => {
+        if (img.src && (img.src.includes('ibb.co.com') || img.src.includes('undefined'))) {
+            img.src = FIXED_IMAGES.logo;
+        }
     });
-    localStorage.setItem('pendingNotifications', JSON.stringify(pending));
-    console.log('📦 Notification stored for later');
-  }
+}
 
-  // Process stored notifications
-  processStoredNotifications() {
-    const pending = JSON.parse(localStorage.getItem('pendingNotifications') || '[]');
-    if (pending.length > 0 && this.isSubscribed) {
-      console.log(`📬 Processing ${pending.length} stored notifications`);
-      pending.forEach(notif => {
-        this.sendNotification(notif.title, notif.body, notif.data);
-      });
-      localStorage.removeItem('pendingNotifications');
+// Call after showing transaction screens
+const originalShowMemberTransactionScreen = window.showMemberTransactionScreen;
+window.showMemberTransactionScreen = function(transaction) {
+    if (originalShowMemberTransactionScreen) {
+        originalShowMemberTransactionScreen(transaction);
     }
-  }
-  urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
+    setTimeout(updateTransactionScreenImages, 100);
+};
+
+const originalShowSalespersonTransactionScreen = window.showSalespersonTransactionScreen;
+window.showSalespersonTransactionScreen = function(transaction) {
+    if (originalShowSalespersonTransactionScreen) {
+        originalShowSalespersonTransactionScreen(transaction);
     }
-    return outputArray;
-}
-}
+    setTimeout(updateTransactionScreenImages, 100);
+};
+ 
 async function enablePushNotifications() {
     if (!pushManager) {
         await initPushNotifications();
@@ -11969,4 +12175,4 @@ function initBirthdayFeatures() {
 }
     </script>
 </body>
-</html>
+</html> 
