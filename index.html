@@ -12705,8 +12705,8 @@ async function submitJCIdRecovery() {
         initPushNotifications();
     }, 2000);
     
-   // const iframeEmailService = new IframeEmailService('https://script.google.com/macros/s/AKfycbzmJS_ThUUb_FsyeuBVbLyBRdGXAD0Pj1uhv_4CCD8NtV0WCL6THqgIBIawmWK4F7CN/exec');
-    //  clubManager.emailService = iframeEmailService;
+   const iframeEmailService = new IframeEmailService('https://script.google.com/macros/s/AKfycbzmJS_ThUUb_FsyeuBVbLyBRdGXAD0Pj1uhv_4CCD8NtV0WCL6THqgIBIawmWK4F7CN/exec');
+      clubManager.emailService = iframeEmailService;
     console.log('✅ Email service upgraded to iframe (no CORS)');
     
     setTimeout(() => {
@@ -12825,7 +12825,7 @@ async function submitJCIdRecovery() {
  
         
      
-         class IframeEmailService {
+ class IframeEmailService {
     constructor(scriptURL) {
         this.scriptURL = scriptURL;
         this.isReady = false;
@@ -12927,7 +12927,13 @@ async function submitJCIdRecovery() {
         return this.sendEmail(email, 'referral', memberData, referralData);
     }
     
-    // Build email content based on type
+    // ========== ADD THIS METHOD FOR JC ID RECOVERY ==========
+    async sendJCIdRecoveryEmail(email, member, recoveryData) {
+        console.log(`📧 Sending JC ID recovery email to ${email}...`);
+        return this.sendEmail(email, 'jc_recovery', member, recoveryData);
+    }
+    
+    // Build email content based on type - UPDATED with jc_recovery case
     buildEmailContent(type, memberData, extraData) {
         switch(type) {
             case 'welcome':
@@ -12938,12 +12944,87 @@ async function submitJCIdRecovery() {
                 return this.buildDiscountEmail(memberData, extraData);
             case 'referral':
                 return this.buildReferralEmail(memberData, extraData);
+            case 'jc_recovery':  // ← ADD THIS CASE
+                return this.buildJCIdRecoveryEmail(memberData, extraData);
             default:
                 return `<h1>Jeans Club</h1><p>${extraData?.message || ''}</p>`;
         }
     }
     
-    // Email template builders
+    // ========== ADD THIS NEW METHOD FOR JC ID RECOVERY EMAIL TEMPLATE ==========
+    buildJCIdRecoveryEmail(member, recoveryData) {
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>🔐 Your Jeans Club JC ID Recovery</title>
+                <style>
+                    body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                    .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
+                    .content { padding: 30px; }
+                    .jc-id-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+                    .jc-id { font-size: 32px; font-weight: bold; letter-spacing: 5px; font-family: 'Courier New', monospace; background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; display: inline-block; margin: 10px 0; }
+                    .warning-box { background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107; }
+                    .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; color: #666; font-size: 12px; }
+                    .btn { display: inline-block; background: #00AFF0; color: white; padding: 12px 30px; text-decoration: none; border-radius: 50px; margin: 15px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>👖 JEANS CLUB</h1>
+                        <p>Raised on Denim</p>
+                    </div>
+                    
+                    <div class="content">
+                        <h2>JC ID Recovery Request</h2>
+                        
+                        <p>Dear <strong>${member.name}</strong>,</p>
+                        
+                        <p>We received a request to recover your Jeans Club JC ID. Here is your account information:</p>
+                        
+                        <div class="jc-id-box">
+                            <p style="margin: 0; opacity: 0.9;">Your JC ID is:</p>
+                            <div class="jc-id">${recoveryData.jcId}</div>
+                            <p style="margin: 10px 0 0 0; font-size: 14px;">Use this ID to login to your account</p>
+                        </div>
+                        
+                        <div class="warning-box">
+                            <p style="margin: 0; color: #856404;">
+                                🔐 <strong>Keep this safe!</strong><br>
+                                Your JC ID is like your username. You'll need it every time you login.
+                            </p>
+                        </div>
+                        
+                        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <p style="margin: 0; color: #2e7d32;">
+                                💡 <strong>Pro Tip:</strong> Save this email or take a screenshot of your JC ID for easy access later!
+                            </p>
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <a href="https://elijah787.github.io/jeans-club" class="btn">🔐 Login to Your Account</a>
+                        </div>
+                        
+                        <p style="margin-top: 20px; font-size: 14px; color: #666;">
+                            If you didn't request this recovery, please ignore this email. Your account remains secure.
+                        </p>
+                    </div>
+                    
+                    <div class="footer">
+                        <p>Jeans Club - Kampala, Uganda</p>
+                        <p>Questions? Contact us at support@jeansclub.com</p>
+                        <p>&copy; 2026 Jeans Club. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+    }
+    
+    // Email template builders (your existing ones)
     buildWelcomeEmail(member) {
         return `
             <!DOCTYPE html>
@@ -13061,12 +13142,14 @@ async function submitJCIdRecovery() {
         `;
     }
     
+    // ========== UPDATE getSubject METHOD ==========
     getSubject(type, memberData, extraData) {
         switch(type) {
             case 'welcome': return '👖 Welcome to Jeans Club!';
             case 'purchase': return '🛍️ Purchase Confirmed - Points Added!';
             case 'discount': return `🎫 ${extraData?.discountPercentage || 0}% Discount Voucher`;
             case 'referral': return '🎊 Referral Success! +100 Points';
+            case 'jc_recovery': return '🔐 Your Jeans Club JC ID Recovery';  // ← ADD THIS
             default: return '💌 Message from Jeans Club';
         }
     }
