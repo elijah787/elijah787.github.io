@@ -9877,8 +9877,7 @@ function showJcIdRecoveryScreen() {
     hideAllSections();
     document.getElementById('jcIdRecoverySection').classList.remove('hidden');
 }
-
-// Recover JC ID by email - USING GET REQUEST (no CORS issues)
+// Recover JC ID by email - USING GET REQUEST
 async function recoverJCId() {
     const email = document.getElementById('recoveryEmail').value.trim();
     const resultDiv = document.getElementById('recoveryResult');
@@ -9893,36 +9892,29 @@ async function recoverJCId() {
         return;
     }
     
-    resultDiv.innerHTML = '<div class="info-message">Checking our records...</div>';
+    resultDiv.innerHTML = '<div class="info-message">Processing your request...</div>';
     
     try {
-        // USE GET REQUEST instead of POST to avoid CORS
+        // Call the JC ID recovery endpoint
         const params = new URLSearchParams({
-            action: 'getJCIdByEmail',
+            action: 'sendJCIdRecoveryEmail',
             email: email
         });
         
         const url = `${clubManager.emailService.scriptURL}?${params.toString()}`;
         
-        console.log('📤 Looking up JC ID via GET for:', email);
+        console.log('📤 Requesting JC ID recovery for:', email);
         
-        const response = await fetch(url, {
+        await fetch(url, {
             method: 'GET',
-            mode: 'no-cors'  // Same as password reset
+            mode: 'no-cors'
         });
-        
-        // Since we're using no-cors, we can't read the response directly
-        // So we'll simulate a successful lookup and send the email
-        // The actual lookup will happen in the email sending step
-        
-        // Send JC ID recovery email (this will do the actual lookup)
-        await sendJCIdRecoveryEmail(email);
         
         resultDiv.innerHTML = `
             <div class="success-message">
                 <strong>✅ Request Received!</strong><br>
-                If an account exists with <strong>${email}</strong>, we'll send your JC ID shortly.<br>
-                Please check your inbox (and spam folder).
+                Please check your email at <strong>${email}</strong> for your JC ID.<br>
+                <small>(Check your spam folder if you don't see it in 2-3 minutes)</small>
             </div>
         `;
         
@@ -9933,11 +9925,12 @@ async function recoverJCId() {
         resultDiv.innerHTML = `
             <div class="error-message">
                 <strong>❌ Error</strong><br>
-                Failed to recover JC ID. Please try again or contact support.
+                Failed to process request. Please try again or contact support.
             </div>
         `;
     }
 }
+
 
 // Send JC ID recovery email - DOES THE ACTUAL LOOKUP
 async function sendJCIdRecoveryEmail(email) {
