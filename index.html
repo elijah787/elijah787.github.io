@@ -3539,8 +3539,10 @@
             <button class="btn" onclick="loginWithCredentials()">Login</button>
             
             <div class="form-group" style="text-align: center; margin: 20px 0;">
-                <a href="#" onclick="showPasswordResetScreen()" style="color: #667eea; text-decoration: none;">Forgot Password?</a>
-            </div>
+    <a href="#" onclick="showJcIdRecoveryScreen()" style="color: #667eea; text-decoration: none;">Forgot JC ID?</a>
+    &nbsp;|&nbsp;
+    <a href="#" onclick="showPasswordResetScreen()" style="color: #667eea; text-decoration: none;">Forgot Password?</a>
+</div>
             
             <div class="form-group" style="text-align: center; margin: 20px 0;">
                 <div style="border-bottom: 1px solid #ddd; line-height: 0.1em; margin: 10px 0 20px;">
@@ -3603,7 +3605,38 @@
                 </ul>
             </div>
         </div>
+        <!-- JC ID Recovery Section -->
+        <div id="jcIdRecoverySection" class="card hidden">
+            <div class="nav-buttons">
+                <button class="btn secondary" onclick="showLoginScreen()">← Back to Login</button>
+            </div>
 
+            <h2 class="section-title">Recover Your JC ID</h2>
+            
+            <div class="info-card">
+                <h3>Enter Your Email Address</h3>
+                <p style="color: #666; margin-bottom: 15px;">We'll send your JC ID to your registered email address.</p>
+                
+                <div class="form-group">
+                    <label for="recoveryEmail">Email Address</label>
+                    <input type="email" id="recoveryEmail" placeholder="Enter the email you used to sign up" autocomplete="off">
+                </div>
+                
+                <button class="btn" onclick="recoverJCId()">Send JC ID</button>
+                
+                <div id="recoveryResult" style="margin-top: 15px;"></div>
+            </div>
+            
+            <div class="info-card">
+                <h3>Still Having Trouble?</h3>
+                <p>If you can't access your email or need further assistance:</p>
+                <ul>
+                    <li>Contact our support team at <strong>support@jeansclub.com</strong></li>
+                    <li>Visit our store in Kampala for in-person help</li>
+                    <li>Call us at <strong>+256 772558913</strong></li>
+                </ul>
+            </div>
+        </div>
         <!-- Dashboard Section - WITH RESUME TRANSACTION BUTTON -->
         <div id="dashboardSection" class="card hidden">
             <div class="nav-buttons">
@@ -9839,7 +9872,153 @@ if (typeof initBirthdayFeatures === 'function') {
             hideAllSections();
             document.getElementById('passwordResetSection').classList.remove('hidden');
         }
+// Show JC ID Recovery Screen
+function showJcIdRecoveryScreen() {
+    hideAllSections();
+    document.getElementById('jcIdRecoverySection').classList.remove('hidden');
+}
 
+// Recover JC ID by email
+async function recoverJCId() {
+    const email = document.getElementById('recoveryEmail').value.trim();
+    const resultDiv = document.getElementById('recoveryResult');
+    
+    if (!email) {
+        resultDiv.innerHTML = '<div class="error-message">Please enter your email address</div>';
+        return;
+    }
+    
+    if (!isValidEmail(email)) {
+        resultDiv.innerHTML = '<div class="error-message">Please enter a valid email address</div>';
+        return;
+    }
+    
+    resultDiv.innerHTML = '<div class="info-message">Checking our records...</div>';
+    
+    try {
+        const response = await fetch(clubManager.emailService.scriptURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'getJCIdByEmail',
+                email: email
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.found) {
+            // Found the JC ID - send email
+            await sendJCIdRecoveryEmail(email, result.jcId);
+            
+            resultDiv.innerHTML = `
+                <div class="success-message">
+                    <strong>✅ JC ID Sent!</strong><br>
+                    We've sent your JC ID to <strong>${email}</strong>.<br>
+                    Please check your inbox (and spam folder).
+                </div>
+            `;
+            
+            document.getElementById('recoveryEmail').value = '';
+            
+        } else if (result.success && !result.found) {
+            resultDiv.innerHTML = `
+                <div class="error-message">
+                    <strong>❌ Account Not Found</strong><br>
+                    No account found with email: <strong>${email}</strong><br>
+                    Please check the email address or <a href="#" onclick="showSignupScreen()">create a new account</a>.
+                </div>
+            `;
+        } else {
+            throw new Error(result.error || 'Failed to recover JC ID');
+        }
+        
+    } catch (error) {
+        console.error('JC ID recovery error:', error);
+        resultDiv.innerHTML = `
+            <div class="error-message">
+                <strong>❌ Error</strong><br>
+                Failed to recover JC ID. Please try again or contact support.
+            </div>
+        `;
+    }
+}
+
+// Send JC ID recovery email
+async function sendJCIdRecoveryEmail(email, jcId) {
+    try {
+        const emailContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Your Jeans Club ID</title>
+                <style>
+                    body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                    .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 40px 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
+                    .logo { font-size: 32px; font-weight: 800; letter-spacing: 2px; margin: 0; }
+                    .logo-jeans { color: #00AFF0; }
+                    .logo-club { color: white; }
+                    .content { padding: 40px 30px; }
+                    .jc-card { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 30px; border-radius: 10px; margin: 25px 0; text-align: center; border-left: 4px solid #00AFF0; }
+                    .jc-id { font-family: 'Courier New', monospace; font-size: 28px; font-weight: bold; color: #00AFF0; letter-spacing: 3px; background: white; padding: 15px 25px; border-radius: 8px; display: inline-block; margin: 10px 0; }
+                    .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; color: #666; }
+                    .btn { display: inline-block; background: #00AFF0; color: white; padding: 14px 32px; text-decoration: none; border-radius: 50px; font-weight: bold; margin: 15px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <div class="logo"><span class="logo-jeans">JEANS</span><span class="logo-club">CLUB</span></div>
+                        <h2>RAISED ON DENIM</h2>
+                    </div>
+                    <div class="content">
+                        <h2 style="color: #333;">JC ID Recovery</h2>
+                        <p style="font-size: 16px;">Hello,</p>
+                        <p>You requested to recover your Jeans Club ID. Here it is:</p>
+                        
+                        <div class="jc-card">
+                            <div class="jc-id">${jcId}</div>
+                            <p style="margin: 15px 0 0; color: #666;">Use this ID to login to your account</p>
+                        </div>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="https://elijah787.github.io/jeans-club" class="btn">🔓 LOGIN NOW</a>
+                        </div>
+                        
+                        <p style="color: #666; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
+                    </div>
+                    <div class="footer">
+                        <p>Jeans Club - Kampala, Uganda</p>
+                        <p>&copy; 2026 Jeans Club. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        const params = new URLSearchParams({
+            action: 'sendEmail',
+            email: email,
+            subject: '🔑 Your Jeans Club ID',
+            message: emailContent,
+            html: 'true'
+        });
+        
+        await fetch(`${clubManager.emailService.scriptURL}?${params.toString()}`, {
+            method: 'GET',
+            mode: 'no-cors'
+        });
+        
+        console.log('✅ JC ID recovery email sent to:', email);
+        
+    } catch (error) {
+        console.error('Failed to send recovery email:', error);
+    }
+}
         function showAdminLogin() {
             const jcId = prompt('Enter Admin JC ID:');
             const password = prompt('Enter Admin Password:');
@@ -9909,7 +10088,7 @@ if (typeof initBirthdayFeatures === 'function') {
 
         function hideAllSections() {
             const sections = [
-                'signupSection', 'loginSection', 'passwordResetSection',
+                'signupSection', 'loginSection', 'passwordResetSection','jcIdRecoverySection',
                 'dashboardSection', 'adminSection', 'deleteMemberSection',
                 'voucherManagementSection', 'membershipInfoPage',
                 'benefitsInfoPage', 'tiersInfoPage', 'vouchersInfoPage',
