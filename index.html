@@ -2599,6 +2599,134 @@
             opacity: 1 !important;
             visibility: visible !important;
         }
+        
+    /* ... your existing CSS ... */
+    
+    /* ===== ADD BIRTHDAY STYLES HERE ===== */
+    .birthday-countdown-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+
+    .birthday-countdown-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .birthday-countdown-card::before {
+        content: '🎂';
+        position: absolute;
+        font-size: 100px;
+        opacity: 0.1;
+        bottom: -20px;
+        right: -20px;
+        pointer-events: none;
+    }
+
+    .birthday-today {
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        animation: birthdayPulse 2s infinite;
+    }
+
+    @keyframes birthdayPulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+        50% { transform: scale(1.02); box-shadow: 0 0 0 20px rgba(255, 215, 0, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+    }
+
+    .birthday-countdown-number {
+        font-size: 48px;
+        font-weight: bold;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+
+    .confetti {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        position: absolute;
+        animation: confettiFall 3s linear forwards;
+        z-index: 10000;
+        pointer-events: none;
+    }
+
+    @keyframes confettiFall {
+        0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+
+    .birthday-reward-card {
+        background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        animation: slideIn 0.5s ease;
+    }
+
+    .birthday-reward-card h3 {
+        color: #333;
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+
+    .birthday-reward-card .reward-amount {
+        font-size: 48px;
+        font-weight: bold;
+        color: #fff;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .birthday-voucher {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+        border: 2px dashed #FFD700;
+    }
+
+    .birthday-voucher-code {
+        font-family: 'Courier New', monospace;
+        font-size: 20px;
+        font-weight: bold;
+        letter-spacing: 3px;
+        color: #333;
+    }
+/* ===== ADD THIS TO YOUR STYLE TAG ===== */
+/* JC ID Recovery Modal Styles */
+#jcRecoveryModal .info-message {
+    background: #e7f3ff;
+    color: #2196F3;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+#jcRecoveryModal .success-message {
+    background: #d4edda;
+    color: #155724;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+#jcRecoveryModal .error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 10px 0;
+}
     </style>
     <!-- Add Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2700,7 +2828,7 @@
             </div>
         </div>
     </div>
-<!-- Birthday Modal -->
+<!-- Birthday Modal - UPDATE THIS -->
 <div class="camera-scanner-modal" id="birthdayModal" style="display: none;">
     <div class="camera-container" style="max-width: 500px;">
         <div class="scanner-header">
@@ -2715,6 +2843,9 @@
                 <small style="color: #666; display: block; margin-top: 5px;">We'll send you a special birthday surprise!</small>
             </div>
             
+            <!-- ADD THIS PREVIEW DIV -->
+            <div id="birthdayPreview"></div>
+            
             <div id="birthdayMessage" style="margin: 15px 0;"></div>
             
             <div class="camera-buttons" style="margin-top: 20px;">
@@ -2724,6 +2855,42 @@
                 <button class="camera-btn close" onclick="closeBirthdayModal()">
                     ✖ Cancel
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- JC ID Recovery Modal - ADD THIS AFTER YOUR BIRTHDAY MODAL -->
+<div id="jcRecoveryModal" class="camera-scanner-modal" style="display: none;">
+    <div class="camera-container" style="max-width: 500px;">
+        <div class="scanner-header">
+            <h2>🔐 Recover Your JC ID</h2>
+            <p>We'll send your JC ID to your registered email</p>
+        </div>
+        
+        <div style="padding: 30px;">
+            <div class="form-group">
+                <label for="recoveryEmail">📧 Email Address</label>
+                <input type="email" id="recoveryEmail" placeholder="Enter the email you used to sign up" style="width: 100%; padding: 12px; font-size: 16px;">
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    We'll send your JC ID to this email address
+                </small>
+            </div>
+            
+            <div id="recoveryMessage" style="margin: 15px 0;"></div>
+            
+            <div class="camera-buttons" style="margin-top: 20px;">
+                <button class="camera-btn start" onclick="submitJCIdRecovery()" style="background: #667eea;">
+                    📧 Send My JC ID
+                </button>
+                <button class="camera-btn close" onclick="closeJCIdRecovery()">
+                    ✖ Cancel
+                </button>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #e8f5e8; border-radius: 8px;">
+                <p style="margin: 0; font-size: 13px; color: #2e7d32;">
+                    ✅ <strong>Remember:</strong> Your JC ID is unique to your account. Keep it safe!
+                </p>
             </div>
         </div>
     </div>
@@ -3525,36 +3692,47 @@
             </div>
         </div>
 
-        <!-- Login Section -->
-        <div id="loginSection" class="card hidden">
-            <h2 class="section-title">Login to Your Account</h2>
-            <div class="form-group">
-                <label for="loginJCId">JC ID</label>
-                <input type="text" id="loginJCId" placeholder="Enter your JC ID" autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label for="loginPassword">Password</label>
-                <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
-            </div>
-            <button class="btn" onclick="loginWithCredentials()">Login</button>
-            
-            <div class="form-group" style="text-align: center; margin: 20px 0;">
-                <a href="#" onclick="showPasswordResetScreen()" style="color: #667eea; text-decoration: none;">Forgot Password?</a>
-            </div>
-            
-            <div class="form-group" style="text-align: center; margin: 20px 0;">
-                <div style="border-bottom: 1px solid #ddd; line-height: 0.1em; margin: 10px 0 20px;">
-                    <span style="background: white; padding: 0 10px; color: #666;">OR</span>
-                </div>
-                <div class="google-login-button"></div>
-            </div>
-            <div class="form-group" style="text-align: center;">
-                <p>Don't have an account? <a href="#" onclick="showSignupScreen()" style="color: #667eea; text-decoration: none;">Sign up here</a></p>
-            </div>
-            <div class="form-group" style="text-align: center; margin-top: 20px;">
-                <button class="btn secondary" onclick="showAdminLogin()">Staff Login</button>
-            </div>
+      <div id="loginSection" class="card hidden">
+    <h2 class="section-title">Login to Your Account</h2>
+    
+    <div class="form-group">
+        <label for="loginJCId">JC ID</label>
+        <input type="text" id="loginJCId" placeholder="Enter your JC ID (e.g., JC4XK2)" autocomplete="off">
+    </div>
+    
+    <div class="form-group">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+    </div>
+    
+    <button class="btn" onclick="loginWithCredentials()">Login</button>
+    
+    <!-- ADD THIS RECOVERY LINK RIGHT HERE -->
+    <div class="form-group" style="text-align: center; margin: 15px 0;">
+        <a href="#" onclick="showJCIdRecovery()" style="color: #667eea; text-decoration: none; font-size: 14px;">
+            🔑 Forgot your JC ID? Recover via Email
+        </a>
+        <span style="color: #ddd; margin: 0 10px;">|</span>
+        <a href="#" onclick="showPasswordResetScreen()" style="color: #667eea; text-decoration: none; font-size: 14px;">
+            🔒 Forgot Password?
+        </a>
+    </div>
+    
+    <div class="form-group" style="text-align: center; margin: 20px 0;">
+        <div style="border-bottom: 1px solid #ddd; line-height: 0.1em; margin: 10px 0 20px;">
+            <span style="background: white; padding: 0 10px; color: #666;">OR</span>
         </div>
+        <div class="google-login-button"></div>
+    </div>
+    
+    <div class="form-group" style="text-align: center;">
+        <p>Don't have an account? <a href="#" onclick="showSignupScreen()" style="color: #667eea; text-decoration: none;">Sign up here</a></p>
+    </div>
+    
+    <div class="form-group" style="text-align: center; margin-top: 20px;">
+        <button class="btn secondary" onclick="showAdminLogin()">Staff Login</button>
+    </div>
+</div>
 
         <!-- Password Reset Section -->
         <div id="passwordResetSection" class="card hidden">
@@ -3688,7 +3866,8 @@
                     <p id="lifetimePoints">-</p>
                 </div>
             </div>
-
+ <!-- ADD THIS RIGHT HERE - after the member-info divs -->
+    <div id="birthdayCelebrationSection" class="info-card" style="display: none;">
             <div class="info-card">
                 <h3>Tier Progress (Based on Lifetime Points)</h3>
                 <div class="progress-bar">
@@ -3875,6 +4054,9 @@
             </div>
         </div>
 
+        
+    </div>
+
         <!-- QR Code Section -->
         <div class="card qr-share-section" style="text-align: center; margin-top: 20px;">
             <h3 style="color: #333; margin-bottom: 20px;">Share Jeans Club</h3>
@@ -3883,8 +4065,6 @@
                  style="border: 2px solid #ddd; border-radius: 10px; padding: 10px; display: block; margin: 0 auto;">
             <p style="color: #666; margin-top: 15px;">Scan to share with friends</p>
         </div>
-    </div>
-
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
@@ -6845,13 +7025,13 @@ function normalizeEmailForDatabase(email) {
                 return { allowed: true, reason: '' };
             }
         }
-
-        // Google Apps Script Email Service
-        class GoogleAppsEmailService {
-            constructor() {
-                this.scriptURL = 'https://script.google.com/macros/s/AKfycbzmJS_ThUUb_FsyeuBVbLyBRdGXAD0Pj1uhv_4CCD8NtV0WCL6THqgIBIawmWK4F7CN/exec';
-                  this.isReady = false;
+// Google Apps Script Email Service
+class GoogleAppsEmailService {
+    constructor() {
+        this.scriptURL = 'https://script.google.com/macros/s/AKfycbzmJS_ThUUb_FsyeuBVbLyBRdGXAD0Pj1uhv_4CCD8NtV0WCL6THqgIBIawmWK4F7CN/exec';
+        this.isReady = false;
         this.pendingEmails = [];
+        this.currentCallback = null;
         this.initIframe();
     }
     
@@ -6880,1294 +7060,1377 @@ function normalizeEmailForDatabase(email) {
             }
         });
     }
-
-            async sendEmailToGoogleScript(email, type, memberData, extraData = null) {
-                try {
-                    const emailContent = this.buildEmailContent(type, memberData, extraData);
-                    const subject = this.getSubject(type, memberData, extraData);
-                    
-                    const payload = {
-                        action: 'sendEmail',
-                        emailData: {
-                            email: email,
-                            type: type,
-                            subject: subject,
-                            message: emailContent,
-                            html: true
-                        }
-                    };
-
-                    console.log('📤 Sending email via Google Apps Script:', payload.emailData.type);
-
-                    try {
-                        const response = await fetch(this.scriptURL, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(payload)
-                        });
-
-                        if (response.ok) {
-                            const result = await response.json();
-                            console.log('✅ Email sent successfully via Google Apps Script:', result);
-                            return result;
-                        } else {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                    } catch (fetchError) {
-                        console.log('Direct fetch failed, trying with no-cors:', fetchError);
-                        
-                        await fetch(this.scriptURL, {
-                            method: 'POST',
-                            mode: 'no-cors',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(payload)
-                        });
-                        
-                        console.log('✅ Email request sent (no-cors fallback mode)');
-                        return { 
-                            success: true, 
-                            message: 'Email sent successfully (fallback mode)',
-                            fallback: true 
-                        };
-                    }
-                    
-                } catch (error) {
-                    console.error('❌ All Google Apps Script email attempts failed:', error);
-                    return this.fallbackEmail(email, memberData, type, extraData);
-                }
+    
+    processPending() {
+        while (this.pendingEmails.length > 0 && this.currentCallback === null) {
+            const email = this.pendingEmails.shift();
+            if (this.iframe && this.iframe.contentWindow) {
+                this.iframe.contentWindow.postMessage(email, '*');
             }
+        }
+    }
 
-            buildEmailContent(type, memberData, extraData = null) {
-                let content = '';
-                
-                switch(type) {
-                    case 'welcome':
-                        content = this.buildWelcomeEmail(memberData);
-                        break;
-                    case 'purchase':
-                        content = this.buildPurchaseEmail(memberData, extraData);
-                        break;
-                    case 'discount':
-                        content = this.buildDiscountEmail(memberData, extraData);
-                        break;
-                    case 'referral':
-                        content = this.buildReferralEmail(memberData, extraData);
-                        break;
-                    case 'password_reset':
-                        content = this.buildPasswordResetEmail(memberData, extraData);
-                        break;
-                    case 'password_reset_success':
-                        content = this.buildPasswordResetSuccessEmail(memberData);
-                        break;
-                    case 'newsletter_welcome':
-                        content = this.buildNewsletterWelcomeEmail(memberData, extraData);
-                        break;
-                    case 'newsletter':
-                        content = this.buildNewsletterEmail(memberData, extraData);
-                        break;
-                }
-                
-                return content;
-            }
-
-            buildWelcomeEmail(memberData) {
-                return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>Welcome to Jeans Club - Raised on Denim</title>
-                    <style>
-                        body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
-                        .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-                        .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 40px 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
-                        .logo { font-size: 32px; font-weight: 800; letter-spacing: 2px; margin: 0; }
-                        .logo-jeans { color: #00AFF0; }
-                        .logo-club { color: white; }
-                        .header h2 { color: #00AFF0; margin: 10px 0 0; font-weight: 400; letter-spacing: 1px; }
-                        .content { padding: 40px 30px; }
-                        .greeting { font-size: 24px; color: #333; margin-bottom: 20px; font-weight: 300; }
-                        .greeting strong { color: #00AFF0; font-weight: 600; }
-                        .card { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 25px; border-radius: 10px; margin: 25px 0; border-left: 4px solid #00AFF0; }
-                        .jc-id { font-family: 'Courier New', monospace; font-size: 22px; font-weight: bold; color: #00AFF0; letter-spacing: 3px; background: white; padding: 8px 15px; border-radius: 5px; display: inline-block; margin: 5px 0; }
-                        .points-badge { background: white; padding: 15px; border-radius: 50px; display: inline-block; margin: 15px 0; }
-                        .points-number { font-size: 32px; font-weight: 800; color: #00AFF0; }
-                        .tier-badge { display: inline-block; padding: 8px 20px; border-radius: 50px; font-weight: bold; text-transform: uppercase; background: white; color: #333; border: 2px solid; }
-                        .tier-badge.pearl { border-color: #FFF8DC; }
-                        .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 30px 0; text-align: center; }
-                        .feature-item { background: white; padding: 15px; border-radius: 10px; }
-                        .feature-icon { font-size: 32px; margin-bottom: 10px; }
-                        .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; color: #666; }
-                        .btn { display: inline-block; background: #00AFF0; color: white; padding: 14px 32px; text-decoration: none; border-radius: 50px; font-weight: bold; margin: 15px 0; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <div class="logo"><span class="logo-jeans">JEANS</span><span class="logo-club">CLUB</span></div>
-                            <h2>RAISED ON DENIM</h2>
-                        </div>
-                        <div class="content">
-                            <div class="greeting">Welcome, <strong>${memberData.name}</strong>!</div>
-                            <p style="font-size: 18px; color: #555;">Your membership has been created successfully.</p>
-                            
-                            <div class="card">
-                                <h3 style="margin: 0 0 15px; color: #000;">💳 YOUR MEMBERSHIP CARD</h3>
-                                <div style="text-align: center;">
-                                    <div class="jc-id">${memberData.jcId}</div>
-                                    <div style="margin: 15px 0;">
-                                        <span class="tier-badge ${memberData.tier.toLowerCase()}">${memberData.tier}</span>
-                                    </div>
-                                    <div class="points-badge">
-                                        <span class="points-number">${memberData.points}</span> points
-                                    </div>
-                                </div>
-                                <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                                    <p style="margin: 0;">🎫 Your referral code: <strong style="color: #00AFF0;">${memberData.referralCode}</strong></p>
-                                </div>
-                            </div>
-                            
-                            <div class="features">
-                                <div class="feature-item">
-                                    <div class="feature-icon">💰</div>
-                                    <div>1pt / 1,000 UGX</div>
-                                </div>
-                                <div class="feature-item">
-                                    <div class="feature-icon">💸</div>
-                                    <div>1pt = 50 UGX</div>
-                                </div>
-                                <div class="feature-item">
-                                    <div class="feature-icon">👥</div>
-                                    <div>Refer: 100pts</div>
-                                </div>
-                            </div>
-                            
-                            <div style="text-align: center;">
-                                <a href="https://elijah787.github.io/jeans-club" class="btn">🔓 VISIT DASHBOARD</a>
-                            </div>
-                        </div>
-                        <div class="footer">
-                            <p>Kampala, Uganda | +256 772558913</p>
-                            <p>&copy; 2026 Jeans Club</p>
-                        </div>
-                    </div>
-                </body>
-                </html>`;
-            }
-
-            buildPurchaseEmail(memberData, extraData) {
-                const amount = extraData?.amount || 0;
-                const description = extraData?.description || 'Purchase';
-                const pointsEarned = extraData?.pointsEarned || 0;
-                const newBalance = extraData?.newBalance || 0;
-                
-                return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>🛍️ Purchase Confirmed | Jeans Club</title>
-                    <style>
-                        body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
-                        .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-                        .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
-                        .content { padding: 40px 30px; }
-                        .receipt { background: #f8f9fa; padding: 25px; border-radius: 10px; margin: 25px 0; }
-                        .points-badge { background: white; padding: 20px; border-radius: 10px; text-align: center; margin: 25px 0; border: 2px solid #00AFF0; }
-                        .points-number { font-size: 48px; font-weight: 800; color: #00AFF0; }
-                        .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>🛍️ PURCHASE CONFIRMED</h1>
-                        </div>
-                        <div class="content">
-                            <p style="font-size: 18px;">Dear <strong>${memberData.name}</strong>,</p>
-                            <p>Thank you for your purchase!</p>
-                            
-                            <div class="receipt">
-                                <h3>📋 RECEIPT</h3>
-                                <p><strong>Item:</strong> ${description}</p>
-                                <p><strong>Amount:</strong> ${amount.toLocaleString()} UGX</p>
-                                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-                            </div>
-                            
-                            <div class="points-badge">
-                                <div style="font-size: 14px; color: #666;">POINTS EARNED</div>
-                                <div class="points-number">+${pointsEarned}</div>
-                                <div>New Balance: ${newBalance.toLocaleString()} points</div>
-                            </div>
-                            
-                            <div style="text-align: center;">
-                                <a href="https://elijah787.github.io/jeans-club" class="btn">VIEW DASHBOARD</a>
-                            </div>
-                        </div>
-                        <div class="footer">
-                            <p>Jeans Club - Raised on Denim</p>
-                        </div>
-                    </div>
-                </body>
-                </html>`;
-            }
-
-            buildDiscountEmail(memberData, extraData) {
-                const voucherCode = extraData?.voucherCode || 'N/A';
-                const discountPercentage = extraData?.discountPercentage || 0;
-                const expiryDate = extraData?.expiryDate ? new Date(extraData.expiryDate).toLocaleDateString() : 'N/A';
-                const qrCodeUrl = extraData?.qrCodeUrl || '';
-                const pointsUsed = extraData?.pointsUsed || 0;
-                
-                return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>🎫 Your Discount Voucher | Jeans Club</title>
-                    <style>
-                        body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
-                        .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-                        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
-                        .voucher-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin: 25px 0; text-align: center; }
-                        .voucher-code { font-size: 28px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; font-family: 'Courier New', monospace; }
-                        .qr-container { background: white; padding: 20px; border-radius: 10px; display: inline-block; margin: 20px 0; }
-                        .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>🎫 DISCOUNT VOUCHER</h1>
-                        </div>
-                        <div class="content" style="padding: 30px;">
-                            <p style="font-size: 18px;">Dear <strong>${memberData.name}</strong>,</p>
-                            <p>Your discount voucher has been created!</p>
-                            
-                            <div class="voucher-card">
-                                <h3 style="color: white;">SAVE ${discountPercentage}%</h3>
-                                <div class="qr-container">
-                                    <img src="${qrCodeUrl}" alt="QR Code" style="width: 150px; height: 150px;">
-                                </div>
-                                <div class="voucher-code">${voucherCode}</div>
-                                <p>Valid until: ${expiryDate}</p>
-                            </div>
-                            
-                            <p><strong>Points Used:</strong> ${pointsUsed}</p>
-                            
-                            <div style="text-align: center;">
-                                <a href="https://elijah787.github.io/jeans-club" class="btn">CREATE MORE VOUCHERS</a>
-                            </div>
-                        </div>
-                        <div class="footer">
-                            <p>Jeans Club - Raised on Denim</p>
-                        </div>
-                    </div>
-                </body>
-                </html>`;
-            }
-
-            buildReferralEmail(memberData, extraData) {
-                const referredName = extraData?.referredName || 'New Member';
-                const pointsEarned = extraData?.pointsEarned || 100;
-                
-                return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>🎊 Referral Success! | Jeans Club</title>
-                    <style>
-                        body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
-                        .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-                        .header { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #333; padding: 40px; text-align: center; }
-                        .points-bonus { font-size: 48px; font-weight: 800; color: #333; margin: 15px 0; }
-                        .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>🎊 REFERRAL SUCCESS!</h1>
-                        </div>
-                        <div class="content" style="padding: 30px;">
-                            <p style="font-size: 18px;">Congratulations <strong>${memberData.name}</strong>!</p>
-                            <div style="text-align: center; padding: 30px;">
-                                <h3>BONUS POINTS EARNED</h3>
-                                <div class="points-bonus">+${pointsEarned}</div>
-                                <p>for referring <strong>${referredName}</strong></p>
-                            </div>
-                            <p>Share your referral code to earn more points!</p>
-                        </div>
-                        <div class="footer">
-                            <p>Thank you for growing the Jeans Club community!</p>
-                        </div>
-                    </div>
-                </body>
-                </html>`;
-            }
-
-            buildPasswordResetEmail(memberData, extraData) {
-                const token = extraData?.token || 'N/A';
-                
-                return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>🔒 Password Reset | Jeans Club</title>
-                    <style>
-                        body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
-                        .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-                        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
-                        .reset-box { background: #fff3cd; padding: 30px; border-radius: 10px; margin: 25px 0; text-align: center; }
-                        .reset-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #333; font-family: 'Courier New', monospace; margin: 20px 0; }
-                        .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>🔒 PASSWORD RESET</h1>
-                        </div>
-                        <div class="content" style="padding: 30px;">
-                            <p>Dear <strong>${memberData.name}</strong>,</p>
-                            <p>Use the code below to reset your password:</p>
-                            
-                            <div class="reset-box">
-                                <h3>YOUR RESET CODE</h3>
-                                <div class="reset-code">${token}</div>
-                                <p>⏰ Expires in 1 hour</p>
-                            </div>
-                            
-                            <p>If you didn't request this, please ignore this email.</p>
-                        </div>
-                        <div class="footer">
-                            <p>Jeans Club - Account Security</p>
-                        </div>
-                    </div>
-                </body>
-                </html>`;
-            }
-
-            buildPasswordResetSuccessEmail(memberData) {
-                return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>✅ Password Reset Successful | Jeans Club</title>
-                    <style>
-                        body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
-                        .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-                        .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; text-align: center; }
-                        .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>✅ PASSWORD RESET SUCCESSFUL</h1>
-                        </div>
-                        <div class="content" style="padding: 30px;">
-                            <p>Dear <strong>${memberData.name}</strong>,</p>
-                            <p>Your password has been successfully reset. You can now login with your new password.</p>
-                            <div style="text-align: center; margin: 30px 0;">
-                                <a href="https://elijah787.github.io/jeans-club" class="btn">LOGIN NOW</a>
-                            </div>
-                        </div>
-                        <div class="footer">
-                            <p>Thank you for securing your Jeans Club account!</p>
-                        </div>
-                    </div>
-                </body>
-                </html>`;
-            }
-
-            buildNewsletterWelcomeEmail(memberData, extraData) {
-                const subject = extraData?.subject || "Welcome to Jeans Club Newsletter!";
-                const message = extraData?.message || "Thank you for subscribing!";
-                
-                return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>📬 ${subject}</title>
-                    <style>
-                        body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
-                        .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-                        .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
-                        .content { padding: 30px; }
-                        .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>📬 WELCOME TO OUR NEWSLETTER</h1>
-                        </div>
-                        <div class="content">
-                            <p>Dear <strong>${memberData?.name || 'Valued Member'}</strong>,</p>
-                            <p>${message}</p>
-                            <p>You'll now receive exclusive offers and updates!</p>
-                            <div style="text-align: center;">
-                                <a href="https://elijah787.github.io/jeans-club" class="btn">VISIT JEANS CLUB</a>
-                            </div>
-                        </div>
-                        <div class="footer">
-                            <p>Jeans Club - Raised on Denim</p>
-                        </div>
-                    </div>
-                </body>
-                </html>`;
-            }
-
-            buildNewsletterEmail(memberData, extraData) {
-                const subject = extraData?.subject || "Jeans Club Newsletter";
-                const message = extraData?.message || "Here are your latest updates!";
-                
-                return `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <title>📰 ${subject}</title>
-                    <style>
-                        body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
-                        .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-                        .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
-                        .content { padding: 30px; }
-                        .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>📰 ${subject}</h1>
-                        </div>
-                        <div class="content">
-                            <p>Dear <strong>${memberData?.name || 'Valued Member'}</strong>,</p>
-                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
-                                ${message}
-                            </div>
-                            <div style="text-align: center; margin: 30px 0;">
-                                <a href="https://elijah787.github.io/jeans-club" class="btn">VISIT JEANS CLUB</a>
-                            </div>
-                        </div>
-                        <div class="footer">
-                            <p>Jeans Club - Raised on Denim</p>
-                        </div>
-                    </div>
-                </body>
-                </html>`;
-            }
-
-            getSubject(type, memberData, extraData) {
-                switch(type) {
-                    case 'welcome': return '👖 Welcome to Jeans Club!';
-                    case 'purchase': return '🛍️ Purchase Confirmed - Points Added!';
-                    case 'discount': return '🎫 ' + (extraData?.discountPercentage || 0) + '% Discount Voucher';
-                    case 'referral': return '🎊 Referral Success! +100 Points';
-                    case 'password_reset': return '🔒 Password Reset Request';
-                    case 'password_reset_success': return '✅ Password Reset Successful';
-                    case 'newsletter_welcome': return "📬 Welcome to Jeans Club Newsletter!";
-                    case 'newsletter': return extraData?.subject || "📰 Jeans Club Newsletter";
-                    default: return '💌 Message from Jeans Club';
-                }
-            }
-
-            async sendWelcomeEmail(email, memberData) {
-                return this.sendEmailToGoogleScript(email, 'welcome', memberData);
-            }
-
-            async sendPurchaseEmail(email, memberData, purchaseData) {
-                return this.sendEmailToGoogleScript(email, 'purchase', memberData, purchaseData);
-            }    
-
-            async sendDiscountEmail(email, memberData, discountData) {
-                return this.sendEmailToGoogleScript(email, 'discount', memberData, discountData);
-            }
-
-            async sendReferralEmail(email, memberData, referralData) {
-                return this.sendEmailToGoogleScript(email, 'referral', memberData, referralData);
-            }
+    async sendEmailToGoogleScript(email, type, memberData, extraData = null) {
+        try {
+            const emailContent = this.buildEmailContent(type, memberData, extraData);
+            const subject = this.getSubject(type, memberData, extraData);
             
-            async sendPasswordResetEmail(email, memberData, resetData) {
-                return this.sendEmailToGoogleScript(email, 'password_reset', memberData, resetData);
-            }
-
-            async sendPasswordResetSuccessEmail(email, memberData) {
-                return this.sendEmailToGoogleScript(email, 'password_reset_success', memberData);
-            }
-
-            async sendNewsletterWelcomeEmail(email, memberData, newsletterData) {
-                return this.sendEmailToGoogleScript(email, 'newsletter_welcome', memberData, newsletterData);
-            }
-
-            async sendNewsletterEmail(email, memberData, newsletterData) {
-                return this.sendEmailToGoogleScript(email, 'newsletter', memberData, newsletterData);
-            }
-
-            fallbackEmail(email, memberData, type, extraData = null) {
-                console.log('📧 Using fallback email system for:', type);
-                
-                const subject = this.getSubject(type, memberData, extraData);
-                let message = '';
-                
-                switch(type) {
-                    case 'welcome':
-                        message = `Welcome to Jeans Club!\n\nDear ${memberData.name},\n\nYour account has been created successfully!\n\nJC ID: ${memberData.jcId}\nTier: ${memberData.tier}\nPoints: ${memberData.points}\nReferral Code: ${memberData.referralCode}\n\nVisit: https://elijah787.github.io/jeans-club`;
-                        break;
-                    case 'password_reset':
-                        message = `Password Reset Request\n\nA password reset has been requested for your account.\nReset Code: ${extraData?.token || 'N/A'}\n\nIf you didn't request this, please ignore this email.`;
-                        break;
-                    default:
-                        message = `Jeans Club Update\n\nType: ${type}\nDetails available in your dashboard.`;
+            const payload = {
+                action: 'sendEmail',
+                emailData: {
+                    email: email,
+                    type: type,
+                    subject: subject,
+                    message: emailContent,
+                    html: true
                 }
-                
-                console.log('📨 Fallback email would send:', { email, subject });
-                return { success: true, message: 'Email queued for sending', fallback: true };
-            }
+            };
 
-            async sendBulkNewsletter(emails, subject, message) {
-                try {
-                    console.log(`📧 Sending newsletter to ${emails.length} subscribers`);
-                    
-                    let successCount = 0;
-                    let failCount = 0;
-                    
-                    for (const email of emails) {
-                        try {
-                            const memberData = {
-                                name: email.split('@')[0],
-                                email: email
-                            };
-                            
-                            if (window.clubManager && window.clubManager.db) {
-                                const member = await window.clubManager.db.getMemberByEmail(email);
-                                if (member) {
-                                    memberData.name = member.name;
-                                    memberData.jcId = member.jcId;
-                                }
-                            }
-                            
-                            await this.sendEmailToGoogleScript(
-                                email,
-                                'newsletter',
-                                memberData,
-                                { subject, message }
-                            );
-                            
-                            successCount++;
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                            
-                        } catch (emailError) {
-                            console.error(`❌ Failed to send to ${email}:`, emailError);
-                            failCount++;
-                        }
-                    }
-                    
-                    return {
-                        success: successCount > 0,
-                        message: `Newsletter sent: ${successCount} successful, ${failCount} failed`,
-                        successCount,
-                        failCount
-                    };
-                    
-                } catch (error) {
-                    console.error('❌ Newsletter error:', error);
-                    return {
-                        success: false,
-                        message: `Failed to send newsletter: ${error.message}`,
-                        error: error.toString()
-                    };
-                }
-            }
-        }
+            console.log('📤 Sending email via Google Apps Script:', payload.emailData.type);
 
-        // ===========================
-        // CLUB MANAGER IMPLEMENTATION
-        // ===========================
-        
-        class ClubManager {
-            constructor() {
-                this.db = new SupabaseDB();
-                this.emailService = new GoogleAppsEmailService();
-                this.currentMember = null;
-                this.isAdmin = false;
-                this.currentSalesperson = null;
-                
-                this.voucherSystem = new VoucherSystem();
-                
-                console.log('✅ ClubManager initialized');
-                
-                window.voucherSystem = this.voucherSystem;
-                
-                this.init();
-            }
-
-            async init() {
-                try {
-                    const savedMember = localStorage.getItem('jeansClubCurrentMember');
-                    const adminStatus = localStorage.getItem('jeansClubIsAdmin');
-                    const salesperson = localStorage.getItem('jeansClubSalesperson');
-                    
-                    if (savedMember && savedMember !== '') {
-                        try {
-                            this.currentMember = JSON.parse(savedMember);
-                            this.isAdmin = adminStatus === 'true';
-                            this.currentSalesperson = salesperson;
-                            
-                            const freshMember = await this.db.getMemberByJCId(this.currentMember.jcId);
-                            
-                            if (freshMember) {
-                                this.currentMember = freshMember;
-                                localStorage.setItem('jeansClubCurrentMember', JSON.stringify(freshMember));
-                                
-                                if (this.isAdmin) {
-                                    showAdminPanel();
-                                } else {
-                                    setTimeout(() => showDashboard(this.currentMember), 100);
-                                }
-                            } else {
-                                localStorage.removeItem('jeansClubCurrentMember');
-                                localStorage.removeItem('jeansClubIsAdmin');
-                                localStorage.removeItem('jeansClubSalesperson');
-                                showSignupScreen();
-                            }
-                        } catch (parseError) {
-                            console.error('Error parsing saved member:', parseError);
-                            localStorage.removeItem('jeansClubCurrentMember');
-                            showSignupScreen();
-                        }
-                    } else {
-                        showSignupScreen();
-                    }
-                    
-                    this.voucherSystem.updateVoucherStatuses();
-                    
-                    setTimeout(() => this.initializeGoogleSignIn(), 500);
-                    
-                } catch (error) {
-                    console.error('Init error:', error);
-                    showSignupScreen();
-                }
-            }
-
-            initializeGoogleSignIn() {
-                if (!window.googleInitialized) {
-                    google.accounts.id.initialize({
-                        client_id: '607807821474-43243foqc9ml9eq3e0ugu04fnsigbqc5.apps.googleusercontent.com',
-                        callback: (response) => {
-                            if (!document.getElementById('loginSection').classList.contains('hidden')) {
-                                this.handleGoogleLogin(response);
-                            } else {
-                                this.handleGoogleSignIn(response);
-                            }
-                        },
-                        ux_mode: 'popup'
-                    });
-                    window.googleInitialized = true;
-                }
-                
-                setTimeout(() => {
-                    const signupButton = document.querySelector('.google-signin-button');
-                    const loginButton = document.querySelector('.google-login-button');
-                    
-                    if (signupButton && signupButton.children.length === 0) {
-                        try {
-                            google.accounts.id.renderButton(
-                                signupButton,
-                                { 
-                                    theme: 'outline',
-                                    size: 'large',
-                                    width: 280,
-                                    text: 'signup_with'
-                                }
-                            );
-                        } catch (e) {
-                            console.log('Signup button render error:', e);
-                        }
-                    }
-                    
-                    if (loginButton && loginButton.children.length === 0) {
-                        try {
-                            google.accounts.id.renderButton(
-                                loginButton,
-                                { 
-                                    theme: 'outline',
-                                    size: 'large',
-                                    width: 280,
-                                    text: 'signin_with'
-                                }
-                            );
-                        } catch (e) {
-                            console.log('Login button render error:', e);
-                        }
-                    }
-                }, 500);
-            }
-
-            async handleGoogleSignIn(response) {
-                try {
-                    console.log('Google Sign-In response:', response);
-                    
-                    const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                    const email = payload.email;
-                    const name = payload.name;
-                    const googleId = payload.sub;
-                    
-                    const emailValidation = isValidEmailWithFraudPrevention(email);
-                    if (!emailValidation.valid) {
-                        showToast(emailValidation.message, 'error');
-                        return;
-                    }
-                    
-                    let member = await this.db.getMemberByEmail(email);
-                    
-                    if (member) {
-                        this.currentMember = member;
-                        this.isAdmin = false;
-                        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
-                        localStorage.setItem('jeansClubIsAdmin', 'false');
-                        
-                        member.lastLogin = new Date().toISOString();
-                        await this.db.saveMember(member);
-                        
-                        const updatedMember = await this.db.getMemberByJCId(member.jcId);
-                        if (updatedMember) {
-                            this.currentMember = updatedMember;
-                            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
-                        }
-                        
-                        showDashboard(this.currentMember);
-                        showToast(`Welcome back ${member.name}!`, 'success');
-                    } else {
-                        const jcId = this.generateJCId();
-                        const referralCode = this.generateReferralCode();
-                        
-                        member = {
-                            jcId: jcId,
-                            email: email,
-                            name: name,
-                            googleId: googleId,
-                            loginMethod: 'google',
-                            points: 10,
-                            lifetimePoints: 10,
-                            tier: 'PEARL',
-                            referralCode: referralCode,
-                            joinedDate: new Date().toISOString(),
-                            totalSpent: 0,
-                            newsletterSubscribed: true,
-                            purchaseHistory: [],
-                            activityLog: [],
-                            challenges: [],
-                            referrals: [],
-                            lastLogin: new Date().toISOString(),
-                            createdAt: new Date().toISOString()
-                        };
-                        
-                        member.activityLog.unshift({
-                            timestamp: new Date().toISOString(),
-                            action: 'account_created',
-                            description: 'Account created via Google Sign-In',
-                            points: 10
-                        });
-                        
-                        const saved = await this.db.saveMember(member);
-                        if (saved) {
-                            this.currentMember = member;
-                            this.isAdmin = false;
-                            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
-                            localStorage.setItem('jeansClubIsAdmin', 'false');
-                            
-                            this.emailService.sendWelcomeEmail(email, member);
-                            this.db.subscribeToNewsletter(email, name);
-                            
-                            showDashboard(member);
-                            showToast(`Welcome to Jeans Club ${name}!`, 'success');
-                        } else {
-                            showToast('Failed to create account. Please try again.', 'error');
-                        }
-                    }
-                    
-                } catch (error) {
-                    console.error('Google Sign-In error:', error);
-                    showToast('Google Sign-In failed. Please try again.', 'error');
-                }
-            }
-
-            async handleGoogleLogin(response) {
-                try {
-                    console.log('Google Login response:', response);
-                    
-                    const payload = JSON.parse(atob(response.credential.split('.')[1]));
-                    const email = payload.email;
-                    
-                    const member = await this.db.getMemberByEmail(email);
-                    
-                    if (member) {
-                        if (member.loginMethod === 'email') {
-                            showToast('Please use email/password to login to this account.', 'error');
-                            return;
-                        }
-                        
-                        member.lastLogin = new Date().toISOString();
-                        await this.db.saveMember(member);
-                        
-                        this.currentMember = member;
-                        this.isAdmin = false;
-                        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
-                        localStorage.setItem('jeansClubIsAdmin', 'false');
-                        
-                        const updatedMember = await this.db.getMemberByJCId(member.jcId);
-                        if (updatedMember) {
-                            this.currentMember = updatedMember;
-                            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
-                        }
-                        
-                        showDashboard(this.currentMember);
-                        showToast(`Welcome back ${member.name}!`, 'success');
-                    } else {
-                        showToast('No account found with this Google email. Please sign up first.', 'error');
-                        showSignupScreen();
-                    }
-                    
-                } catch (error) {
-                    console.error('Google Login error:', error);
-                    showToast('Google Login failed. Please try again.', 'error');
-                }
-            }
-
-            generateJCId() {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                let id = 'JC';
-                for (let i = 0; i < 4; i++) {
-                    id += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return id;
-            }
-
-            generateReferralCode() {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                let code = '';
-                for (let i = 0; i < 6; i++) {
-                    code += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return code;
-            }
-
-            calculateTier(member) {
-                const points = member.lifetimePoints || 0;
-                
-                if (points >= 1000000) return 'PLATINUM';
-                if (points >= 500000) return 'SAPPHIRE';
-                if (points >= 250000) return 'GOLD';
-                if (points >= 100000) return 'RUBY';
-                if (points >= 25000) return 'SILVER';
-                if (points >= 7500) return 'BRONZE';
-                return 'PEARL';
-            }
-async signUpWithEmail(name, email, password, referralCode = null, birthday = null) {
-    try {
-        if (!name || !email || !password) {
-            showToast('Please fill in all required fields', 'error');
-            return false;
-        }
-        
-        const emailValidation = isValidEmailWithFraudPrevention(email);
-        if (!emailValidation.valid) {
-            showToast(emailValidation.message, 'error');
-            return false;
-        }
-        
-        // Validate birthday if provided
-        if (birthday) {
-            const birthDate = new Date(birthday);
-            const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-            
-            if (age < 13) {
-                showToast('You must be at least 13 years old to join', 'error');
-                return false;
-            }
-            
-            if (age > 120) {
-                showToast('Please enter a valid birthday', 'error');
-                return false;
-            }
-        }
-        
-        const normalizedEmail = normalizeEmailForDatabase(email);
-        
-        const existingMember = await this.db.getMemberByEmail(email);
-        if (existingMember) {
-            showToast('An account with this email already exists', 'error');
-            return false;
-        }
-        
-        const allMembers = await this.db.getAllMembers();
-        
-        if (referralCode && isSelfReferral(referralCode, email)) {
-            showToast('You cannot use your own referral code', 'error');
-            return false;
-        }
-        
-        const clientIP = await getClientIP();
-        const ipCheck = await checkMultipleAccountsFromIP(email, clientIP);
-        if (!ipCheck.allowed) {
-            showToast(ipCheck.reason, 'error');
-            return false;
-        }
-        
-        const jcId = this.generateJCId();
-        const memberReferralCode = this.generateReferralCode();
-        
-        let referredBy = null;
-        let referralPoints = 10;
-        
-        if (referralCode) {
-            const referrer = allMembers.find(m => m.referralCode === referralCode);
-            
-            if (referrer) {
-                referredBy = referrer.jcId;
-                referralPoints = 20;
-                
-                referrer.referrals.push({
-                    referredJCId: jcId,
-                    referredName: name,
-                    referralDate: new Date().toISOString(),
-                    status: 'pending'
+            try {
+                const response = await fetch(this.scriptURL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
                 });
-                await this.db.saveMember(referrer);
-            } else {
-                showToast('Invalid referral code', 'error');
-                return false;
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Email sent successfully via Google Apps Script:', result);
+                    return result;
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+            } catch (fetchError) {
+                console.log('Direct fetch failed, trying with no-cors:', fetchError);
+                
+                await fetch(this.scriptURL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                console.log('✅ Email request sent (no-cors fallback mode)');
+                return { 
+                    success: true, 
+                    message: 'Email sent successfully (fallback mode)',
+                    fallback: true 
+                };
             }
+            
+        } catch (error) {
+            console.error('❌ All Google Apps Script email attempts failed:', error);
+            return this.fallbackEmail(email, memberData, type, extraData);
+        }
+    }
+
+    buildEmailContent(type, memberData, extraData = null) {
+        let content = '';
+        
+        switch(type) {
+            case 'welcome':
+                content = this.buildWelcomeEmail(memberData);
+                break;
+            case 'purchase':
+                content = this.buildPurchaseEmail(memberData, extraData);
+                break;
+            case 'discount':
+                content = this.buildDiscountEmail(memberData, extraData);
+                break;
+            case 'referral':
+                content = this.buildReferralEmail(memberData, extraData);
+                break;
+            case 'password_reset':
+                content = this.buildPasswordResetEmail(memberData, extraData);
+                break;
+            case 'password_reset_success':
+                content = this.buildPasswordResetSuccessEmail(memberData);
+                break;
+            case 'newsletter_welcome':
+                content = this.buildNewsletterWelcomeEmail(memberData, extraData);
+                break;
+            case 'newsletter':
+                content = this.buildNewsletterEmail(memberData, extraData);
+                break;
+            case 'jc_recovery':  // ← ADD THIS CASE
+                content = this.buildJCIdRecoveryEmail(memberData, extraData);
+                break;
         }
         
-        const member = {
-            jcId: jcId,
-            email: email,
-            name: name.trim(),
-            password: password,
-            loginMethod: 'email',
-            points: referralPoints,
-            lifetimePoints: referralPoints,
-            tier: 'PEARL',
-            referralCode: memberReferralCode,
-            referredBy: referredBy,
-            joinedDate: new Date().toISOString(),
-            totalSpent: 0,
-            newsletterSubscribed: document.getElementById('newsletterSignup')?.checked || true,
-            birthday: birthday || null,  // ADD THIS LINE
-            purchaseHistory: [],
-            activityLog: [],
-            challenges: [],
-            referrals: [],
-            ip_address: clientIP,
-            lastLogin: new Date().toISOString(),
-            createdAt: new Date().toISOString()
-        };
+        return content;
+    }
+
+    buildWelcomeEmail(memberData) {
+        return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Welcome to Jeans Club - Raised on Denim</title>
+            <style>
+                body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 40px 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
+                .logo { font-size: 32px; font-weight: 800; letter-spacing: 2px; margin: 0; }
+                .logo-jeans { color: #00AFF0; }
+                .logo-club { color: white; }
+                .header h2 { color: #00AFF0; margin: 10px 0 0; font-weight: 400; letter-spacing: 1px; }
+                .content { padding: 40px 30px; }
+                .greeting { font-size: 24px; color: #333; margin-bottom: 20px; font-weight: 300; }
+                .greeting strong { color: #00AFF0; font-weight: 600; }
+                .card { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 25px; border-radius: 10px; margin: 25px 0; border-left: 4px solid #00AFF0; }
+                .jc-id { font-family: 'Courier New', monospace; font-size: 22px; font-weight: bold; color: #00AFF0; letter-spacing: 3px; background: white; padding: 8px 15px; border-radius: 5px; display: inline-block; margin: 5px 0; }
+                .points-badge { background: white; padding: 15px; border-radius: 50px; display: inline-block; margin: 15px 0; }
+                .points-number { font-size: 32px; font-weight: 800; color: #00AFF0; }
+                .tier-badge { display: inline-block; padding: 8px 20px; border-radius: 50px; font-weight: bold; text-transform: uppercase; background: white; color: #333; border: 2px solid; }
+                .tier-badge.pearl { border-color: #FFF8DC; }
+                .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 30px 0; text-align: center; }
+                .feature-item { background: white; padding: 15px; border-radius: 10px; }
+                .feature-icon { font-size: 32px; margin-bottom: 10px; }
+                .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; color: #666; }
+                .btn { display: inline-block; background: #00AFF0; color: white; padding: 14px 32px; text-decoration: none; border-radius: 50px; font-weight: bold; margin: 15px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <div class="logo"><span class="logo-jeans">JEANS</span><span class="logo-club">CLUB</span></div>
+                    <h2>RAISED ON DENIM</h2>
+                </div>
+                <div class="content">
+                    <div class="greeting">Welcome, <strong>${memberData.name}</strong>!</div>
+                    <p style="font-size: 18px; color: #555;">Your membership has been created successfully.</p>
+                    
+                    <div class="card">
+                        <h3 style="margin: 0 0 15px; color: #000;">💳 YOUR MEMBERSHIP CARD</h3>
+                        <div style="text-align: center;">
+                            <div class="jc-id">${memberData.jcId}</div>
+                            <div style="margin: 15px 0;">
+                                <span class="tier-badge ${memberData.tier.toLowerCase()}">${memberData.tier}</span>
+                            </div>
+                            <div class="points-badge">
+                                <span class="points-number">${memberData.points}</span> points
+                            </div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                            <p style="margin: 0;">🎫 Your referral code: <strong style="color: #00AFF0;">${memberData.referralCode}</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div class="features">
+                        <div class="feature-item">
+                            <div class="feature-icon">💰</div>
+                            <div>1pt / 1,000 UGX</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">💸</div>
+                            <div>1pt = 50 UGX</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">👥</div>
+                            <div>Refer: 100pts</div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <a href="https://elijah787.github.io/jeans-club" class="btn">🔓 VISIT DASHBOARD</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <p>Kampala, Uganda | +256 772558913</p>
+                    <p>&copy; 2026 Jeans Club</p>
+                </div>
+            </div>
+        </body>
+        </html>`;
+    }
+
+    buildPurchaseEmail(memberData, extraData) {
+        const amount = extraData?.amount || 0;
+        const description = extraData?.description || 'Purchase';
+        const pointsEarned = extraData?.pointsEarned || 0;
+        const newBalance = extraData?.newBalance || 0;
         
-        member.activityLog.unshift({
-            timestamp: new Date().toISOString(),
-            action: 'account_created',
-            description: 'Account created with email' + (birthday ? ' (birthday added)' : ''),
-            points: referralPoints
-        });
+        return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>🛍️ Purchase Confirmed | Jeans Club</title>
+            <style>
+                body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
+                .content { padding: 40px 30px; }
+                .receipt { background: #f8f9fa; padding: 25px; border-radius: 10px; margin: 25px 0; }
+                .points-badge { background: white; padding: 20px; border-radius: 10px; text-align: center; margin: 25px 0; border: 2px solid #00AFF0; }
+                .points-number { font-size: 48px; font-weight: 800; color: #00AFF0; }
+                .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🛍️ PURCHASE CONFIRMED</h1>
+                </div>
+                <div class="content">
+                    <p style="font-size: 18px;">Dear <strong>${memberData.name}</strong>,</p>
+                    <p>Thank you for your purchase!</p>
+                    
+                    <div class="receipt">
+                        <h3>📋 RECEIPT</h3>
+                        <p><strong>Item:</strong> ${description}</p>
+                        <p><strong>Amount:</strong> ${amount.toLocaleString()} UGX</p>
+                        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                    </div>
+                    
+                    <div class="points-badge">
+                        <div style="font-size: 14px; color: #666;">POINTS EARNED</div>
+                        <div class="points-number">+${pointsEarned}</div>
+                        <div>New Balance: ${newBalance.toLocaleString()} points</div>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <a href="https://elijah787.github.io/jeans-club" class="btn">VIEW DASHBOARD</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <p>Jeans Club - Raised on Denim</p>
+                </div>
+            </div>
+        </body>
+        </html>`;
+    }
+
+    buildDiscountEmail(memberData, extraData) {
+        const voucherCode = extraData?.voucherCode || 'N/A';
+        const discountPercentage = extraData?.discountPercentage || 0;
+        const expiryDate = extraData?.expiryDate ? new Date(extraData.expiryDate).toLocaleDateString() : 'N/A';
+        const qrCodeUrl = extraData?.qrCodeUrl || '';
+        const pointsUsed = extraData?.pointsUsed || 0;
         
-        const saved = await this.db.saveMember(member);
-        if (!saved) {
-            showToast('Failed to create account. Please try again.', 'error');
-            return false;
+        return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>🎫 Your Discount Voucher | Jeans Club</title>
+            <style>
+                body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+                .voucher-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin: 25px 0; text-align: center; }
+                .voucher-code { font-size: 28px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; font-family: 'Courier New', monospace; }
+                .qr-container { background: white; padding: 20px; border-radius: 10px; display: inline-block; margin: 20px 0; }
+                .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🎫 DISCOUNT VOUCHER</h1>
+                </div>
+                <div class="content" style="padding: 30px;">
+                    <p style="font-size: 18px;">Dear <strong>${memberData.name}</strong>,</p>
+                    <p>Your discount voucher has been created!</p>
+                    
+                    <div class="voucher-card">
+                        <h3 style="color: white;">SAVE ${discountPercentage}%</h3>
+                        <div class="qr-container">
+                            <img src="${qrCodeUrl}" alt="QR Code" style="width: 150px; height: 150px;">
+                        </div>
+                        <div class="voucher-code">${voucherCode}</div>
+                        <p>Valid until: ${expiryDate}</p>
+                    </div>
+                    
+                    <p><strong>Points Used:</strong> ${pointsUsed}</p>
+                    
+                    <div style="text-align: center;">
+                        <a href="https://elijah787.github.io/jeans-club" class="btn">CREATE MORE VOUCHERS</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <p>Jeans Club - Raised on Denim</p>
+                </div>
+            </div>
+        </body>
+        </html>`;
+    }
+
+    buildReferralEmail(memberData, extraData) {
+        const referredName = extraData?.referredName || 'New Member';
+        const pointsEarned = extraData?.pointsEarned || 100;
+        
+        return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>🎊 Referral Success! | Jeans Club</title>
+            <style>
+                body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #333; padding: 40px; text-align: center; }
+                .points-bonus { font-size: 48px; font-weight: 800; color: #333; margin: 15px 0; }
+                .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🎊 REFERRAL SUCCESS!</h1>
+                </div>
+                <div class="content" style="padding: 30px;">
+                    <p style="font-size: 18px;">Congratulations <strong>${memberData.name}</strong>!</p>
+                    <div style="text-align: center; padding: 30px;">
+                        <h3>BONUS POINTS EARNED</h3>
+                        <div class="points-bonus">+${pointsEarned}</div>
+                        <p>for referring <strong>${referredName}</strong></p>
+                    </div>
+                    <p>Share your referral code to earn more points!</p>
+                </div>
+                <div class="footer">
+                    <p>Thank you for growing the Jeans Club community!</p>
+                </div>
+            </div>
+        </body>
+        </html>`;
+    }
+
+    buildPasswordResetEmail(memberData, extraData) {
+        const token = extraData?.token || 'N/A';
+        
+        return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>🔒 Password Reset | Jeans Club</title>
+            <style>
+                body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+                .reset-box { background: #fff3cd; padding: 30px; border-radius: 10px; margin: 25px 0; text-align: center; }
+                .reset-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #333; font-family: 'Courier New', monospace; margin: 20px 0; }
+                .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🔒 PASSWORD RESET</h1>
+                </div>
+                <div class="content" style="padding: 30px;">
+                    <p>Dear <strong>${memberData.name}</strong>,</p>
+                    <p>Use the code below to reset your password:</p>
+                    
+                    <div class="reset-box">
+                        <h3>YOUR RESET CODE</h3>
+                        <div class="reset-code">${token}</div>
+                        <p>⏰ Expires in 1 hour</p>
+                    </div>
+                    
+                    <p>If you didn't request this, please ignore this email.</p>
+                </div>
+                <div class="footer">
+                    <p>Jeans Club - Account Security</p>
+                </div>
+            </div>
+        </body>
+        </html>`;
+    }
+
+    buildPasswordResetSuccessEmail(memberData) {
+        return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>✅ Password Reset Successful | Jeans Club</title>
+            <style>
+                body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px; text-align: center; }
+                .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>✅ PASSWORD RESET SUCCESSFUL</h1>
+                </div>
+                <div class="content" style="padding: 30px;">
+                    <p>Dear <strong>${memberData.name}</strong>,</p>
+                    <p>Your password has been successfully reset. You can now login with your new password.</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://elijah787.github.io/jeans-club" class="btn">LOGIN NOW</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <p>Thank you for securing your Jeans Club account!</p>
+                </div>
+            </div>
+        </body>
+        </html>`;
+    }
+
+    buildNewsletterWelcomeEmail(memberData, extraData) {
+        const subject = extraData?.subject || "Welcome to Jeans Club Newsletter!";
+        const message = extraData?.message || "Thank you for subscribing!";
+        
+        return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>📬 ${subject}</title>
+            <style>
+                body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
+                .content { padding: 30px; }
+                .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>📬 WELCOME TO OUR NEWSLETTER</h1>
+                </div>
+                <div class="content">
+                    <p>Dear <strong>${memberData?.name || 'Valued Member'}</strong>,</p>
+                    <p>${message}</p>
+                    <p>You'll now receive exclusive offers and updates!</p>
+                    <div style="text-align: center;">
+                        <a href="https://elijah787.github.io/jeans-club" class="btn">VISIT JEANS CLUB</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <p>Jeans Club - Raised on Denim</p>
+                </div>
+            </div>
+        </body>
+        </html>`;
+    }
+
+    buildNewsletterEmail(memberData, extraData) {
+        const subject = extraData?.subject || "Jeans Club Newsletter";
+        const message = extraData?.message || "Here are your latest updates!";
+        
+        return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>📰 ${subject}</title>
+            <style>
+                body { font-family: 'Helvetica Neue', 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
+                .content { padding: 30px; }
+                .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>📰 ${subject}</h1>
+                </div>
+                <div class="content">
+                    <p>Dear <strong>${memberData?.name || 'Valued Member'}</strong>,</p>
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        ${message}
+                    </div>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://elijah787.github.io/jeans-club" class="btn">VISIT JEANS CLUB</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <p>Jeans Club - Raised on Denim</p>
+                </div>
+            </div>
+        </body>
+        </html>`;
+    }
+
+    // =============================================
+    // JC ID RECOVERY EMAIL - ADDED HERE
+    // =============================================
+    buildJCIdRecoveryEmail(member, recoveryData) {
+        return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>🔐 Your Jeans Club JC ID Recovery</title>
+            <style>
+                body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
+                .content { padding: 30px; }
+                .jc-id-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+                .jc-id { font-size: 32px; font-weight: bold; letter-spacing: 5px; font-family: 'Courier New', monospace; background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; display: inline-block; margin: 10px 0; }
+                .warning-box { background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107; }
+                .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; color: #666; font-size: 12px; }
+                .btn { display: inline-block; background: #00AFF0; color: white; padding: 12px 30px; text-decoration: none; border-radius: 50px; margin: 15px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>👖 JEANS CLUB</h1>
+                    <p>Raised on Denim</p>
+                </div>
+                
+                <div class="content">
+                    <h2>JC ID Recovery Request</h2>
+                    
+                    <p>Dear <strong>${member.name}</strong>,</p>
+                    
+                    <p>We received a request to recover your Jeans Club JC ID. Here is your account information:</p>
+                    
+                    <div class="jc-id-box">
+                        <p style="margin: 0; opacity: 0.9;">Your JC ID is:</p>
+                        <div class="jc-id">${recoveryData.jcId}</div>
+                        <p style="margin: 10px 0 0 0; font-size: 14px;">Use this ID to login to your account</p>
+                    </div>
+                    
+                    <div class="warning-box">
+                        <p style="margin: 0; color: #856404;">
+                            🔐 <strong>Keep this safe!</strong><br>
+                            Your JC ID is like your username. You'll need it every time you login.
+                        </p>
+                    </div>
+                    
+                    <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0; color: #2e7d32;">
+                            💡 <strong>Pro Tip:</strong> Save this email or take a screenshot of your JC ID for easy access later!
+                        </p>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <a href="https://elijah787.github.io/jeans-club" class="btn">🔐 Login to Your Account</a>
+                    </div>
+                    
+                    <p style="margin-top: 20px; font-size: 14px; color: #666;">
+                        If you didn't request this recovery, please ignore this email. Your account remains secure.
+                    </p>
+                </div>
+                
+                <div class="footer">
+                    <p>Jeans Club - Kampala, Uganda</p>
+                    <p>Questions? Contact us at support@jeansclub.com</p>
+                    <p>&copy; 2026 Jeans Club. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    }
+
+    getSubject(type, memberData, extraData) {
+        switch(type) {
+            case 'welcome': return '👖 Welcome to Jeans Club!';
+            case 'purchase': return '🛍️ Purchase Confirmed - Points Added!';
+            case 'discount': return '🎫 ' + (extraData?.discountPercentage || 0) + '% Discount Voucher';
+            case 'referral': return '🎊 Referral Success! +100 Points';
+            case 'password_reset': return '🔒 Password Reset Request';
+            case 'password_reset_success': return '✅ Password Reset Successful';
+            case 'newsletter_welcome': return "📬 Welcome to Jeans Club Newsletter!";
+            case 'newsletter': return extraData?.subject || "📰 Jeans Club Newsletter";
+            case 'jc_recovery': return "🔐 Your Jeans Club JC ID Recovery";  // ← ADD THIS
+            default: return '💌 Message from Jeans Club';
+        }
+    }
+
+    async sendWelcomeEmail(email, memberData) {
+        return this.sendEmailToGoogleScript(email, 'welcome', memberData);
+    }
+
+    async sendPurchaseEmail(email, memberData, purchaseData) {
+        return this.sendEmailToGoogleScript(email, 'purchase', memberData, purchaseData);
+    }    
+
+    async sendDiscountEmail(email, memberData, discountData) {
+        return this.sendEmailToGoogleScript(email, 'discount', memberData, discountData);
+    }
+
+    async sendReferralEmail(email, memberData, referralData) {
+        return this.sendEmailToGoogleScript(email, 'referral', memberData, referralData);
+    }
+    
+    async sendPasswordResetEmail(email, memberData, resetData) {
+        return this.sendEmailToGoogleScript(email, 'password_reset', memberData, resetData);
+    }
+
+    async sendPasswordResetSuccessEmail(email, memberData) {
+        return this.sendEmailToGoogleScript(email, 'password_reset_success', memberData);
+    }
+
+    // ← ADD THIS METHOD
+    async sendJCIdRecoveryEmail(email, member, recoveryData) {
+        return this.sendEmailToGoogleScript(email, 'jc_recovery', member, recoveryData);
+    }
+
+    async sendNewsletterWelcomeEmail(email, memberData, newsletterData) {
+        return this.sendEmailToGoogleScript(email, 'newsletter_welcome', memberData, newsletterData);
+    }
+
+    async sendNewsletterEmail(email, memberData, newsletterData) {
+        return this.sendEmailToGoogleScript(email, 'newsletter', memberData, newsletterData);
+    }
+
+    fallbackEmail(email, memberData, type, extraData = null) {
+        console.log('📧 Using fallback email system for:', type);
+        
+        const subject = this.getSubject(type, memberData, extraData);
+        let message = '';
+        
+        switch(type) {
+            case 'welcome':
+                message = `Welcome to Jeans Club!\n\nDear ${memberData.name},\n\nYour account has been created successfully!\n\nJC ID: ${memberData.jcId}\nTier: ${memberData.tier}\nPoints: ${memberData.points}\nReferral Code: ${memberData.referralCode}\n\nVisit: https://elijah787.github.io/jeans-club`;
+                break;
+            case 'password_reset':
+                message = `Password Reset Request\n\nA password reset has been requested for your account.\nReset Code: ${extraData?.token || 'N/A'}\n\nIf you didn't request this, please ignore this email.`;
+                break;
+            case 'jc_recovery':  // ← ADD THIS
+                message = `JC ID Recovery\n\nDear ${memberData.name},\n\nYour JC ID is: ${extraData?.jcId || 'N/A'}\n\nKeep this safe for future logins.\n\nLogin here: https://elijah787.github.io/jeans-club`;
+                break;
+            default:
+                message = `Jeans Club Update\n\nType: ${type}\nDetails available in your dashboard.`;
         }
         
-        this.currentMember = member;
-        this.isAdmin = false;
-        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
-        localStorage.setItem('jeansClubIsAdmin', 'false');
-        
-        // Send birthday notification if provided
-        if (birthday) {
-            const birthDate = new Date(birthday);
-            const formattedBirthday = birthDate.toLocaleDateString('en-US', { 
-                month: 'long', 
-                day: 'numeric'
-            });
-            sendPushNotification('🎂 Birthday Added!', 
-                `Thanks for sharing your birthday! We'll have something special waiting for you on ${formattedBirthday}!`);
+        console.log('📨 Fallback email would send:', { email, subject });
+        return { success: true, message: 'Email queued for sending', fallback: true };
+    }
+
+    async sendBulkNewsletter(emails, subject, message) {
+        try {
+            console.log(`📧 Sending newsletter to ${emails.length} subscribers`);
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            for (const email of emails) {
+                try {
+                    const memberData = {
+                        name: email.split('@')[0],
+                        email: email
+                    };
+                    
+                    if (window.clubManager && window.clubManager.db) {
+                        const member = await window.clubManager.db.getMemberByEmail(email);
+                        if (member) {
+                            memberData.name = member.name;
+                            memberData.jcId = member.jcId;
+                        }
+                    }
+                    
+                    await this.sendEmailToGoogleScript(
+                        email,
+                        'newsletter',
+                        memberData,
+                        { subject, message }
+                    );
+                    
+                    successCount++;
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                } catch (emailError) {
+                    console.error(`❌ Failed to send to ${email}:`, emailError);
+                    failCount++;
+                }
+            }
+            
+            return {
+                success: successCount > 0,
+                message: `Newsletter sent: ${successCount} successful, ${failCount} failed`,
+                successCount,
+                failCount
+            };
+            
+        } catch (error) {
+            console.error('❌ Newsletter error:', error);
+            return {
+                success: false,
+                message: `Failed to send newsletter: ${error.message}`,
+                error: error.toString()
+            };
         }
-        
-        const darkWelcomeMessages = [
-            `💀 Welcome ${name}! You've just joined the exclusive club of people who spend too much on denim. We're your people.`,
-            `🔮 ${name}, your future includes: 1) Jeans 2) Happiness 3) Questioning your life choices. Welcome!`,
-            `🤡 ${name}, another clown joins the circus! Just kidding. But seriously, welcome to the broke-but-stylish club.`,
-            `⚰️ ${name}, your savings just filed a restraining order. Welcome to Jeans Club!`,
-            `🎪 ${name}, you've joined the greatest show on earth! Starring: Your wallet. Co-starring: Your impulse control (RIP).`
-        ];
-        const randomMsg = darkWelcomeMessages[Math.floor(Math.random() * darkWelcomeMessages.length)];
-        sendPushNotification('👖 Welcome to Jeans Club!', randomMsg);
-        
-        await this.emailService.sendWelcomeEmail(email, member);
-        
-        if (member.newsletterSubscribed) {
-            await this.db.subscribeToNewsletter(email, name);
-            await this.emailService.sendNewsletterWelcomeEmail(email, member, {
-                subject: "Welcome to Jeans Club Newsletter!",
-                message: "Thank you for subscribing!"
-            });
-        }
-        
-        await showDashboard(member);
-        showToast(`Welcome to Jeans Club ${name}!`, 'success');
-        runAutoSyncAfterLogin();
-        
-        setTimeout(() => {
-            initPushNotifications();
-        }, 1000);
-        
-        return true;
-        
-    } catch (error) {
-        console.error('Sign up error:', error);
-        showToast('An error occurred. Please try again.', 'error');
-        return false;
     }
 }
-            async loginWithJCId(jcId, password) {
+class ClubManager {
+    constructor(emailService = null) {
+        this.db = new SupabaseDB();
+        // Use provided email service or default to GoogleAppsEmailService
+        this.emailService = emailService || new GoogleAppsEmailService();
+        this.currentMember = null;
+        this.isAdmin = false;
+        this.currentSalesperson = null;
+        
+        this.voucherSystem = new VoucherSystem();
+        
+        console.log('✅ ClubManager initialized with email service:', this.emailService.constructor.name);
+        
+        window.voucherSystem = this.voucherSystem;
+        
+        this.init();
+    }
+
+    async init() {
+        try {
+            const savedMember = localStorage.getItem('jeansClubCurrentMember');
+            const adminStatus = localStorage.getItem('jeansClubIsAdmin');
+            const salesperson = localStorage.getItem('jeansClubSalesperson');
+            
+            if (savedMember && savedMember !== '') {
                 try {
-                    if (!jcId || !password) {
-                        showToast('Please enter both JC ID and password', 'error');
-                        return false;
-                    }
+                    this.currentMember = JSON.parse(savedMember);
+                    this.isAdmin = adminStatus === 'true';
+                    this.currentSalesperson = salesperson;
                     
-                    if (jcId.toLowerCase() === 'admin' && password === 'jeansclub2024') {
-                        this.isAdmin = true;
-                        this.currentMember = null;
-                        this.currentSalesperson = prompt("Enter your name:", "Salesperson");
-                        localStorage.setItem('jeansClubCurrentMember', '');
-                        localStorage.setItem('jeansClubIsAdmin', 'true');
-                        localStorage.setItem('jeansClubSalesperson', this.currentSalesperson);
+                    const freshMember = await this.db.getMemberByJCId(this.currentMember.jcId);
+                    
+                    if (freshMember) {
+                        this.currentMember = freshMember;
+                        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(freshMember));
                         
-                        showAdminPanel();
-                        showToast(`Welcome ${this.currentSalesperson}!`, 'success');
-                        return true;
+                        if (this.isAdmin) {
+                            showAdminPanel();
+                        } else {
+                            setTimeout(() => showDashboard(this.currentMember), 100);
+                        }
+                    } else {
+                        localStorage.removeItem('jeansClubCurrentMember');
+                        localStorage.removeItem('jeansClubIsAdmin');
+                        localStorage.removeItem('jeansClubSalesperson');
+                        showSignupScreen();
                     }
-                    
-                    const member = await this.db.getMemberByJCId(jcId.toUpperCase());
-                    if (!member) {
-                        showToast('Invalid JC ID or password', 'error');
-                        return false;
+                } catch (parseError) {
+                    console.error('Error parsing saved member:', parseError);
+                    localStorage.removeItem('jeansClubCurrentMember');
+                    showSignupScreen();
+                }
+            } else {
+                showSignupScreen();
+            }
+            
+            this.voucherSystem.updateVoucherStatuses();
+            
+            setTimeout(() => this.initializeGoogleSignIn(), 500);
+            
+        } catch (error) {
+            console.error('Init error:', error);
+            showSignupScreen();
+        }
+    }
+
+    initializeGoogleSignIn() {
+        if (!window.googleInitialized) {
+            google.accounts.id.initialize({
+                client_id: '607807821474-43243foqc9ml9eq3e0ugu04fnsigbqc5.apps.googleusercontent.com',
+                callback: (response) => {
+                    if (!document.getElementById('loginSection').classList.contains('hidden')) {
+                        this.handleGoogleLogin(response);
+                    } else {
+                        this.handleGoogleSignIn(response);
                     }
-                    
-                    if (member.loginMethod === 'google') {
-                        showToast('Please use Google Sign-In for this account', 'error');
-                        return false;
-                    }
-                    
-                    if (member.password !== password) {
-                        showToast('Invalid JC ID or password', 'error');
-                        return false;
-                    }
-                    
-                    if (!member.lifetimePoints) {
-                        member.lifetimePoints = Math.floor(member.totalSpent / 1000) + 10;
-                    }
-                    
-                    member.lastLogin = new Date().toISOString();
-                    await this.db.saveMember(member);
-                    
+                },
+                ux_mode: 'popup'
+            });
+            window.googleInitialized = true;
+        }
+        
+        setTimeout(() => {
+            const signupButton = document.querySelector('.google-signin-button');
+            const loginButton = document.querySelector('.google-login-button');
+            
+            if (signupButton && signupButton.children.length === 0) {
+                try {
+                    google.accounts.id.renderButton(
+                        signupButton,
+                        { 
+                            theme: 'outline',
+                            size: 'large',
+                            width: 280,
+                            text: 'signup_with'
+                        }
+                    );
+                } catch (e) {
+                    console.log('Signup button render error:', e);
+                }
+            }
+            
+            if (loginButton && loginButton.children.length === 0) {
+                try {
+                    google.accounts.id.renderButton(
+                        loginButton,
+                        { 
+                            theme: 'outline',
+                            size: 'large',
+                            width: 280,
+                            text: 'signin_with'
+                        }
+                    );
+                } catch (e) {
+                    console.log('Login button render error:', e);
+                }
+            }
+        }, 500);
+    }
+
+    async handleGoogleSignIn(response) {
+        try {
+            console.log('Google Sign-In response:', response);
+            
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            const email = payload.email;
+            const name = payload.name;
+            const googleId = payload.sub;
+            
+            const emailValidation = isValidEmailWithFraudPrevention(email);
+            if (!emailValidation.valid) {
+                showToast(emailValidation.message, 'error');
+                return;
+            }
+            
+            let member = await this.db.getMemberByEmail(email);
+            
+            if (member) {
+                this.currentMember = member;
+                this.isAdmin = false;
+                localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
+                localStorage.setItem('jeansClubIsAdmin', 'false');
+                
+                member.lastLogin = new Date().toISOString();
+                await this.db.saveMember(member);
+                
+                const updatedMember = await this.db.getMemberByJCId(member.jcId);
+                if (updatedMember) {
+                    this.currentMember = updatedMember;
+                    localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
+                }
+                
+                showDashboard(this.currentMember);
+                showToast(`Welcome back ${member.name}!`, 'success');
+            } else {
+                const jcId = this.generateJCId();
+                const referralCode = this.generateReferralCode();
+                
+                member = {
+                    jcId: jcId,
+                    email: email,
+                    name: name,
+                    googleId: googleId,
+                    loginMethod: 'google',
+                    points: 10,
+                    lifetimePoints: 10,
+                    tier: 'PEARL',
+                    referralCode: referralCode,
+                    joinedDate: new Date().toISOString(),
+                    totalSpent: 0,
+                    newsletterSubscribed: true,
+                    purchaseHistory: [],
+                    activityLog: [],
+                    challenges: [],
+                    referrals: [],
+                    lastLogin: new Date().toISOString(),
+                    createdAt: new Date().toISOString()
+                };
+                
+                member.activityLog.unshift({
+                    timestamp: new Date().toISOString(),
+                    action: 'account_created',
+                    description: 'Account created via Google Sign-In',
+                    points: 10
+                });
+                
+                const saved = await this.db.saveMember(member);
+                if (saved) {
                     this.currentMember = member;
                     this.isAdmin = false;
                     localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
                     localStorage.setItem('jeansClubIsAdmin', 'false');
                     
-                    const updatedMember = await this.db.getMemberByJCId(member.jcId);
-                    if (updatedMember) {
-                        this.currentMember = updatedMember;
-                        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
-                    }
-                    // ✅ ADD THESE 3 LINES RIGHT HERE
-if (typeof startListeningForNotifications === 'function') {
-    await startListeningForNotifications();
-    await fetchUndeliveredNotifications();
-}
-                    showDashboard(this.currentMember);
-                    showToast(`Welcome back ${member.name}!`, 'success');
-                    // ✅ ADD THIS LINE
-    runAutoSyncAfterLogin();
-                    return true;
+                    this.emailService.sendWelcomeEmail(email, member);
+                    this.db.subscribeToNewsletter(email, name);
                     
-                } catch (error) {
-                    console.error('Login error:', error);
-                    showToast('An error occurred. Please try again.', 'error');
+                    showDashboard(member);
+                    showToast(`Welcome to Jeans Club ${name}!`, 'success');
+                } else {
+                    showToast('Failed to create account. Please try again.', 'error');
+                }
+            }
+            
+        } catch (error) {
+            console.error('Google Sign-In error:', error);
+            showToast('Google Sign-In failed. Please try again.', 'error');
+        }
+    }
+
+    async handleGoogleLogin(response) {
+        try {
+            console.log('Google Login response:', response);
+            
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            const email = payload.email;
+            
+            const member = await this.db.getMemberByEmail(email);
+            
+            if (member) {
+                if (member.loginMethod === 'email') {
+                    showToast('Please use email/password to login to this account.', 'error');
+                    return;
+                }
+                
+                member.lastLogin = new Date().toISOString();
+                await this.db.saveMember(member);
+                
+                this.currentMember = member;
+                this.isAdmin = false;
+                localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
+                localStorage.setItem('jeansClubIsAdmin', 'false');
+                
+                const updatedMember = await this.db.getMemberByJCId(member.jcId);
+                if (updatedMember) {
+                    this.currentMember = updatedMember;
+                    localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
+                }
+                
+                showDashboard(this.currentMember);
+                showToast(`Welcome back ${member.name}!`, 'success');
+            } else {
+                showToast('No account found with this Google email. Please sign up first.', 'error');
+                showSignupScreen();
+            }
+            
+        } catch (error) {
+            console.error('Google Login error:', error);
+            showToast('Google Login failed. Please try again.', 'error');
+        }
+    }
+
+    generateJCId() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let id = 'JC';
+        for (let i = 0; i < 4; i++) {
+            id += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return id;
+    }
+
+    generateReferralCode() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+    }
+
+    calculateTier(member) {
+        const points = member.lifetimePoints || 0;
+        
+        if (points >= 1000000) return 'PLATINUM';
+        if (points >= 500000) return 'SAPPHIRE';
+        if (points >= 250000) return 'GOLD';
+        if (points >= 100000) return 'RUBY';
+        if (points >= 25000) return 'SILVER';
+        if (points >= 7500) return 'BRONZE';
+        return 'PEARL';
+    }
+
+    async signUpWithEmail(name, email, password, referralCode = null, birthday = null) {
+        try {
+            if (!name || !email || !password) {
+                showToast('Please fill in all required fields', 'error');
+                return false;
+            }
+            
+            const emailValidation = isValidEmailWithFraudPrevention(email);
+            if (!emailValidation.valid) {
+                showToast(emailValidation.message, 'error');
+                return false;
+            }
+            
+            // Validate birthday if provided
+            if (birthday) {
+                const birthDate = new Date(birthday);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                
+                if (age < 13) {
+                    showToast('You must be at least 13 years old to join', 'error');
+                    return false;
+                }
+                
+                if (age > 120) {
+                    showToast('Please enter a valid birthday', 'error');
                     return false;
                 }
             }
-
-
-            async addPurchase(jcId, amount, description) {
-    try {
-        if (!jcId || !amount || amount <= 0) {
-            return { success: false, message: 'Invalid purchase data' };
-        }
-        
-        const member = await this.db.getMemberByJCId(jcId.toUpperCase());
-        if (!member) {
-            return { success: false, message: 'Member not found' };
-        }
-        
-        const pointsEarned = Math.floor(amount / 1000);
-        const oldTier = member.tier;
-        
-        member.points += pointsEarned;
-        member.lifetimePoints = (member.lifetimePoints || 0) + pointsEarned;
-        member.totalSpent += amount;
-        
-        const tiers = [
-            { name: 'PEARL', min: 0, max: 7499 },
-            { name: 'BRONZE', min: 7500, max: 24999 },
-            { name: 'SILVER', min: 25000, max: 99999 },
-            { name: 'RUBY', min: 100000, max: 249999 },
-            { name: 'GOLD', min: 250000, max: 499999 },
-            { name: 'SAPPHIRE', min: 500000, max: 999999 },
-            { name: 'PLATINUM', min: 1000000, max: Infinity }
-        ];
-        
-        for (const tier of tiers) {
-            if (member.lifetimePoints >= tier.min && member.lifetimePoints <= tier.max) {
-                member.tier = tier.name;
-                break;
+            
+            const normalizedEmail = normalizeEmailForDatabase(email);
+            
+            const existingMember = await this.db.getMemberByEmail(email);
+            if (existingMember) {
+                showToast('An account with this email already exists', 'error');
+                return false;
             }
-        }
-        
-        const tierUpgraded = oldTier !== member.tier;
-        
-        member.purchaseHistory.unshift({
-            timestamp: new Date().toISOString(),
-            amount: amount,
-            description: description || 'Purchase',
-            pointsEarned: pointsEarned
-        });
-        
-        member.activityLog.unshift({
-            timestamp: new Date().toISOString(),
-            action: 'purchase',
-            description: `Purchase: ${description || 'Item'} - ${amount.toLocaleString()} UGX`,
-            points: pointsEarned
-        });
-        
-        // ✅ SEND PUSH NOTIFICATION FOR PURCHASE
-       // FIND this function in your code and REPLACE the darkMessages array:
-
-const darkMessages = [
-    // DARK HUMOR PURCHASE MESSAGES
-    `💀 ${member.name}, you just spent ${amount.toLocaleString()} UGX. Your ancestors are disappointed, but your jeans look FIRE. +${pointsEarned} points.`,
-    `🔮 ${member.name}, I see debt in your future... but also really nice jeans. ${amount.toLocaleString()} UGX gone. +${pointsEarned} points.`,
-    `⚰️ ${member.name}, your wallet has been officially declared dead at ${amount.toLocaleString()} UGX. Funeral expenses: 0 (you spent it all on jeans). +${pointsEarned} points.`,
-    `👻 ${member.name}, SPOOKY season came early! Your money just vanished like a ghost. ${amount.toLocaleString()} UGX gone. +${pointsEarned} points. Boo-tyful purchase!`,
-    `🤡 ${member.name}, congratulations! You're now officially broke but stylish. ${amount.toLocaleString()} UGX spent. +${pointsEarned} points. Honk honk!`,
-    `📉 ${member.name}, your bank account graph just went 📉 but your style graph went 📈. ${amount.toLocaleString()} UGX. +${pointsEarned} points.`,
-    `🍷 ${member.name}, poor decisions make great stories. ${amount.toLocaleString()} UGX on jeans? Legendary. +${pointsEarned} points.`,
-    `🎪 ${member.name}, welcome to the circus! You're the main attraction with that ${amount.toLocaleString()} UGX purchase. +${pointsEarned} points.`,
-    `🪦 ${member.name}, RIP your savings (${member.joinedDate} - today). Cause of death: Denim addiction. ${amount.toLocaleString()} UGX. +${pointsEarned} points.`,
-    `📢 ${member.name}, this is an intervention! ...Just kidding, spend more! ${amount.toLocaleString()} UGX. +${pointsEarned} points.`
-];
-        const randomMsg = darkMessages[Math.floor(Math.random() * darkMessages.length)];
-        sendPushNotification('🛍️ Purchase Confirmed!', randomMsg);
-        
-        // ✅ SEND TIER UPGRADE NOTIFICATION IF APPLICABLE
-        if (tierUpgraded) {
-            const tierMessages = {
-                'BRONZE': "You're officially not a beginner anymore. The denim gods approve!",
-                'SILVER': "You're now in the top tier of denim enthusiasts. Your jeans are jealous of you!",
-                'RUBY': "At this rate, your closet might need a separate zip code. Keep going!",
-                'GOLD': "You've achieved what many only dream of. The denim throne awaits...",
-                'SAPPHIRE': "You're basically a denim celebrity now. Autographs?",
-                'PLATINUM': "You've reached the peak. Denim royalty, we bow to you."
-            };
-            const tierMsg = tierMessages[member.tier] || `Welcome to ${member.tier} tier!`;
-            sendPushNotification(`🏆 TIER UPGRADE: ${member.tier}!`, tierMsg);
-        }
-        
-        if (member.referredBy) {
-            const referrer = await this.db.getMemberByJCId(member.referredBy);
-            if (referrer) {
-                const referral = referrer.referrals.find(r => r.referredJCId === member.jcId);
-                if (referral && referral.status === 'pending') {
-                    referral.status = 'completed';
-                    referral.completionDate = new Date().toISOString();
+            
+            const allMembers = await this.db.getAllMembers();
+            
+            if (referralCode && isSelfReferral(referralCode, email)) {
+                showToast('You cannot use your own referral code', 'error');
+                return false;
+            }
+            
+            const clientIP = await getClientIP();
+            const ipCheck = await checkMultipleAccountsFromIP(email, clientIP);
+            if (!ipCheck.allowed) {
+                showToast(ipCheck.reason, 'error');
+                return false;
+            }
+            
+            const jcId = this.generateJCId();
+            const memberReferralCode = this.generateReferralCode();
+            
+            let referredBy = null;
+            let referralPoints = 10;
+            
+            if (referralCode) {
+                const referrer = allMembers.find(m => m.referralCode === referralCode);
+                
+                if (referrer) {
+                    referredBy = referrer.jcId;
+                    referralPoints = 20;
                     
-                    referrer.points += 100;
-                    referrer.lifetimePoints = (referrer.lifetimePoints || 0) + 100;
-                    referrer.activityLog.unshift({
-                        timestamp: new Date().toISOString(),
-                        action: 'referral_completed',
-                        description: `Referral completed: ${member.name}`,
-                        points: 100
+                    referrer.referrals.push({
+                        referredJCId: jcId,
+                        referredName: name,
+                        referralDate: new Date().toISOString(),
+                        status: 'pending'
                     });
-                    
                     await this.db.saveMember(referrer);
-                    
-                    // ✅ SEND REFERRAL NOTIFICATION
-                    sendPushNotification('🎊 Referral Success!', 
-                        `${referrer.name}, ${member.name} made their first purchase! +100 points for you!`);
-                    
-                    await this.emailService.sendReferralEmail(referrer.email, referrer, {
-                        referredName: member.name,
-                        pointsEarned: 100
-                    });
+                } else {
+                    showToast('Invalid referral code', 'error');
+                    return false;
                 }
             }
-        }
-        
-        await this.db.saveMember(member);
-        
-        await this.emailService.sendPurchaseEmail(member.email, member, {
-            amount: amount,
-            description: description,
-            pointsEarned: pointsEarned,
-            newBalance: member.points
-        });
-        
-        return {
-            success: true,
-            message: `Purchase recorded! ${pointsEarned} points added.`,
-            member: member
-        };
-        
-    } catch (error) {
-        console.error('Add purchase error:', error);
-        return { success: false, message: 'Failed to record purchase' };
-    }
-}
-
-            logout() {
-                this.currentMember = null;
-                this.isAdmin = false;
-                this.currentSalesperson = null;
-                localStorage.removeItem('jeansClubCurrentMember');
-                localStorage.removeItem('jeansClubIsAdmin');
-                localStorage.removeItem('jeansClubSalesperson');
-                
-                showSignupScreen();
-                showToast('Logged out successfully', 'success');
-            }
-
-           
             
-          
-    
+            const member = {
+                jcId: jcId,
+                email: email,
+                name: name.trim(),
+                password: password,
+                loginMethod: 'email',
+                points: referralPoints,
+                lifetimePoints: referralPoints,
+                tier: 'PEARL',
+                referralCode: memberReferralCode,
+                referredBy: referredBy,
+                joinedDate: new Date().toISOString(),
+                totalSpent: 0,
+                newsletterSubscribed: document.getElementById('newsletterSignup')?.checked || true,
+                birthday: birthday || null,
+                purchaseHistory: [],
+                activityLog: [],
+                challenges: [],
+                referrals: [],
+                ip_address: clientIP,
+                lastLogin: new Date().toISOString(),
+                createdAt: new Date().toISOString()
+            };
+            
+            member.activityLog.unshift({
+                timestamp: new Date().toISOString(),
+                action: 'account_created',
+                description: 'Account created with email' + (birthday ? ' (birthday added)' : ''),
+                points: referralPoints
+            });
+            
+            const saved = await this.db.saveMember(member);
+            if (!saved) {
+                showToast('Failed to create account. Please try again.', 'error');
+                return false;
+            }
+            
+            this.currentMember = member;
+            this.isAdmin = false;
+            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
+            localStorage.setItem('jeansClubIsAdmin', 'false');
+            
+            // Send birthday notification if provided
+            if (birthday) {
+                const birthDate = new Date(birthday);
+                const formattedBirthday = birthDate.toLocaleDateString('en-US', { 
+                    month: 'long', 
+                    day: 'numeric'
+                });
+                sendPushNotification('🎂 Birthday Added!', 
+                    `Thanks for sharing your birthday! We'll have something special waiting for you on ${formattedBirthday}!`);
+            }
+            
+            const darkWelcomeMessages = [
+                `💀 Welcome ${name}! You've just joined the exclusive club of people who spend too much on denim. We're your people.`,
+                `🔮 ${name}, your future includes: 1) Jeans 2) Happiness 3) Questioning your life choices. Welcome!`,
+                `🤡 ${name}, another clown joins the circus! Just kidding. But seriously, welcome to the broke-but-stylish club.`,
+                `⚰️ ${name}, your savings just filed a restraining order. Welcome to Jeans Club!`,
+                `🎪 ${name}, you've joined the greatest show on earth! Starring: Your wallet. Co-starring: Your impulse control (RIP).`
+            ];
+            const randomMsg = darkWelcomeMessages[Math.floor(Math.random() * darkWelcomeMessages.length)];
+            sendPushNotification('👖 Welcome to Jeans Club!', randomMsg);
+            
+            await this.emailService.sendWelcomeEmail(email, member);
+            
+            if (member.newsletterSubscribed) {
+                await this.db.subscribeToNewsletter(email, name);
+                await this.emailService.sendNewsletterWelcomeEmail(email, member, {
+                    subject: "Welcome to Jeans Club Newsletter!",
+                    message: "Thank you for subscribing!"
+                });
+            }
+            
+            await showDashboard(member);
+            showToast(`Welcome to Jeans Club ${name}!`, 'success');
+            runAutoSyncAfterLogin();
+            
+            setTimeout(() => {
+                initPushNotifications();
+            }, 1000);
+            
+            return true;
+            
+        } catch (error) {
+            console.error('Sign up error:', error);
+            showToast('An error occurred. Please try again.', 'error');
+            return false;
+        }
+    }
+
+    async loginWithJCId(jcId, password) {
+        try {
+            if (!jcId || !password) {
+                showToast('Please enter both JC ID and password', 'error');
+                return false;
+            }
+            
+            if (jcId.toLowerCase() === 'admin' && password === 'jeansclub2024') {
+                this.isAdmin = true;
+                this.currentMember = null;
+                this.currentSalesperson = prompt("Enter your name:", "Salesperson");
+                localStorage.setItem('jeansClubCurrentMember', '');
+                localStorage.setItem('jeansClubIsAdmin', 'true');
+                localStorage.setItem('jeansClubSalesperson', this.currentSalesperson);
+                
+                showAdminPanel();
+                showToast(`Welcome ${this.currentSalesperson}!`, 'success');
+                return true;
+            }
+            
+            const member = await this.db.getMemberByJCId(jcId.toUpperCase());
+            if (!member) {
+                showToast('Invalid JC ID or password', 'error');
+                return false;
+            }
+            
+            if (member.loginMethod === 'google') {
+                showToast('Please use Google Sign-In for this account', 'error');
+                return false;
+            }
+            
+            if (member.password !== password) {
+                showToast('Invalid JC ID or password', 'error');
+                return false;
+            }
+            
+            if (!member.lifetimePoints) {
+                member.lifetimePoints = Math.floor(member.totalSpent / 1000) + 10;
+            }
+            
+            member.lastLogin = new Date().toISOString();
+            await this.db.saveMember(member);
+            
+            this.currentMember = member;
+            this.isAdmin = false;
+            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
+            localStorage.setItem('jeansClubIsAdmin', 'false');
+            
+            const updatedMember = await this.db.getMemberByJCId(member.jcId);
+            if (updatedMember) {
+                this.currentMember = updatedMember;
+                localStorage.setItem('jeansClubCurrentMember', JSON.stringify(updatedMember));
+            }
+            
+            if (typeof startListeningForNotifications === 'function') {
+                await startListeningForNotifications();
+                await fetchUndeliveredNotifications();
+            }
+            
+            showDashboard(this.currentMember);
+            showToast(`Welcome back ${member.name}!`, 'success');
+            runAutoSyncAfterLogin();
+            return true;
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            showToast('An error occurred. Please try again.', 'error');
+            return false;
+        }
+    }
+
+    async addPurchase(jcId, amount, description) {
+        try {
+            if (!jcId || !amount || amount <= 0) {
+                return { success: false, message: 'Invalid purchase data' };
+            }
+            
+            const member = await this.db.getMemberByJCId(jcId.toUpperCase());
+            if (!member) {
+                return { success: false, message: 'Member not found' };
+            }
+            
+            const pointsEarned = Math.floor(amount / 1000);
+            const oldTier = member.tier;
+            
+            member.points += pointsEarned;
+            member.lifetimePoints = (member.lifetimePoints || 0) + pointsEarned;
+            member.totalSpent += amount;
+            
+            const tiers = [
+                { name: 'PEARL', min: 0, max: 7499 },
+                { name: 'BRONZE', min: 7500, max: 24999 },
+                { name: 'SILVER', min: 25000, max: 99999 },
+                { name: 'RUBY', min: 100000, max: 249999 },
+                { name: 'GOLD', min: 250000, max: 499999 },
+                { name: 'SAPPHIRE', min: 500000, max: 999999 },
+                { name: 'PLATINUM', min: 1000000, max: Infinity }
+            ];
+            
+            for (const tier of tiers) {
+                if (member.lifetimePoints >= tier.min && member.lifetimePoints <= tier.max) {
+                    member.tier = tier.name;
+                    break;
+                }
+            }
+            
+            const tierUpgraded = oldTier !== member.tier;
+            
+            member.purchaseHistory.unshift({
+                timestamp: new Date().toISOString(),
+                amount: amount,
+                description: description || 'Purchase',
+                pointsEarned: pointsEarned
+            });
+            
+            member.activityLog.unshift({
+                timestamp: new Date().toISOString(),
+                action: 'purchase',
+                description: `Purchase: ${description || 'Item'} - ${amount.toLocaleString()} UGX`,
+                points: pointsEarned
+            });
+            
+            const darkMessages = [
+                `💀 ${member.name}, you just spent ${amount.toLocaleString()} UGX. Your ancestors are disappointed, but your jeans look FIRE. +${pointsEarned} points.`,
+                `🔮 ${member.name}, I see debt in your future... but also really nice jeans. ${amount.toLocaleString()} UGX gone. +${pointsEarned} points.`,
+                `⚰️ ${member.name}, your wallet has been officially declared dead at ${amount.toLocaleString()} UGX. Funeral expenses: 0 (you spent it all on jeans). +${pointsEarned} points.`,
+                `👻 ${member.name}, SPOOKY season came early! Your money just vanished like a ghost. ${amount.toLocaleString()} UGX gone. +${pointsEarned} points. Boo-tyful purchase!`,
+                `🤡 ${member.name}, congratulations! You're now officially broke but stylish. ${amount.toLocaleString()} UGX spent. +${pointsEarned} points. Honk honk!`,
+                `📉 ${member.name}, your bank account graph just went 📉 but your style graph went 📈. ${amount.toLocaleString()} UGX. +${pointsEarned} points.`,
+                `🍷 ${member.name}, poor decisions make great stories. ${amount.toLocaleString()} UGX on jeans? Legendary. +${pointsEarned} points.`,
+                `🎪 ${member.name}, welcome to the circus! You're the main attraction with that ${amount.toLocaleString()} UGX purchase. +${pointsEarned} points.`,
+                `🪦 ${member.name}, RIP your savings (${member.joinedDate} - today). Cause of death: Denim addiction. ${amount.toLocaleString()} UGX. +${pointsEarned} points.`,
+                `📢 ${member.name}, this is an intervention! ...Just kidding, spend more! ${amount.toLocaleString()} UGX. +${pointsEarned} points.`
+            ];
+            const randomMsg = darkMessages[Math.floor(Math.random() * darkMessages.length)];
+            sendPushNotification('🛍️ Purchase Confirmed!', randomMsg);
+            
+            if (tierUpgraded) {
+                const tierMessages = {
+                    'BRONZE': "You're officially not a beginner anymore. The denim gods approve!",
+                    'SILVER': "You're now in the top tier of denim enthusiasts. Your jeans are jealous of you!",
+                    'RUBY': "At this rate, your closet might need a separate zip code. Keep going!",
+                    'GOLD': "You've achieved what many only dream of. The denim throne awaits...",
+                    'SAPPHIRE': "You're basically a denim celebrity now. Autographs?",
+                    'PLATINUM': "You've reached the peak. Denim royalty, we bow to you."
+                };
+                const tierMsg = tierMessages[member.tier] || `Welcome to ${member.tier} tier!`;
+                sendPushNotification(`🏆 TIER UPGRADE: ${member.tier}!`, tierMsg);
+            }
+            
+            if (member.referredBy) {
+                const referrer = await this.db.getMemberByJCId(member.referredBy);
+                if (referrer) {
+                    const referral = referrer.referrals.find(r => r.referredJCId === member.jcId);
+                    if (referral && referral.status === 'pending') {
+                        referral.status = 'completed';
+                        referral.completionDate = new Date().toISOString();
+                        
+                        referrer.points += 100;
+                        referrer.lifetimePoints = (referrer.lifetimePoints || 0) + 100;
+                        referrer.activityLog.unshift({
+                            timestamp: new Date().toISOString(),
+                            action: 'referral_completed',
+                            description: `Referral completed: ${member.name}`,
+                            points: 100
+                        });
+                        
+                        await this.db.saveMember(referrer);
+                        
+                        sendPushNotification('🎊 Referral Success!', 
+                            `${referrer.name}, ${member.name} made their first purchase! +100 points for you!`);
+                        
+                        await this.emailService.sendReferralEmail(referrer.email, referrer, {
+                            referredName: member.name,
+                            pointsEarned: 100
+                        });
+                    }
+                }
+            }
+            
+            await this.db.saveMember(member);
+            
+            await this.emailService.sendPurchaseEmail(member.email, member, {
+                amount: amount,
+                description: description,
+                pointsEarned: pointsEarned,
+                newBalance: member.points
+            });
+            
+            return {
+                success: true,
+                message: `Purchase recorded! ${pointsEarned} points added.`,
+                member: member
+            };
+            
+        } catch (error) {
+            console.error('Add purchase error:', error);
+            return { success: false, message: 'Failed to record purchase' };
+        }
+    }
+
+    logout() {
+        this.currentMember = null;
+        this.isAdmin = false;
+        this.currentSalesperson = null;
+        localStorage.removeItem('jeansClubCurrentMember');
+        localStorage.removeItem('jeansClubIsAdmin');
+        localStorage.removeItem('jeansClubSalesperson');
+        
+        showSignupScreen();
+        showToast('Logged out successfully', 'success');
+    }
+
     async requestPasswordReset(jcId) {
         try {
             const member = await this.db.getMemberByJCId(jcId);
@@ -8179,32 +8442,28 @@ const darkMessages = [
                 return { success: false, message: 'Google accounts do not use passwords. Please use Google Sign-In.' };
             }
             
-            // Generate 6-digit reset code
             const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-            const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+            const resetTokenExpiry = new Date(Date.now() + 3600000);
             
             console.log('📝 Generated reset token:', resetToken, 'for member:', jcId);
             
-            // Save token to Supabase using the new method
             const saved = await this.db.setPasswordResetToken(jcId, resetToken, resetTokenExpiry);
             
             if (!saved) {
                 return { success: false, message: 'Failed to save reset token. Please try again.' };
             }
             
-            // Send email with the reset code
             const emailSent = await this.emailService.sendPasswordResetEmail(member.email, member, {
                 token: resetToken,
                 expiryMinutes: 60
             });
             
             if (!emailSent) {
-                // Even if email fails, we still have the token saved
                 console.warn('⚠️ Email sending failed but token was saved');
                 return { 
                     success: true, 
                     message: `Reset code generated but email failed. Your reset code is: ${resetToken}. Please contact support if you didn't receive it.`,
-                    token: resetToken // Only show in development
+                    token: resetToken
                 };
             }
             
@@ -8226,7 +8485,6 @@ const darkMessages = [
                 return { success: false, message: 'Member not found. Please check your JC ID.' };
             }
             
-            // Get stored reset token from Supabase
             const resetData = await this.db.getPasswordResetToken(jcId);
             
             console.log('🔐 Checking reset token for member:', jcId);
@@ -8240,7 +8498,6 @@ const darkMessages = [
                 };
             }
             
-            // Normalize and compare tokens
             const storedToken = resetData.token.toString().trim();
             const providedToken = token.toString().trim();
             
@@ -8251,10 +8508,8 @@ const darkMessages = [
                 };
             }
             
-            // Check expiration
             const now = new Date();
             if (!resetData.expiry || now > resetData.expiry) {
-                // Clear expired token
                 await this.db.clearPasswordResetToken(jcId);
                 return { 
                     success: false, 
@@ -8262,20 +8517,16 @@ const darkMessages = [
                 };
             }
             
-            // Update password
             member.password = newPassword;
             
-            // Clear the reset token
             await this.db.clearPasswordResetToken(jcId);
             
-            // Save member with new password
             const saved = await this.db.saveMember(member);
             
             if (!saved) {
                 return { success: false, message: 'Failed to update password. Please try again.' };
             }
             
-            // Log activity
             member.activityLog = member.activityLog || [];
             member.activityLog.unshift({
                 timestamp: new Date().toISOString(),
@@ -8283,7 +8534,6 @@ const darkMessages = [
                 description: 'Password reset successfully'
             });
             
-            // Send confirmation email
             await this.emailService.sendPasswordResetSuccessEmail(member.email, member);
             
             return { 
@@ -8297,51 +8547,50 @@ const darkMessages = [
         }
     }
 
-            async toggleNewsletterSubscription(email, subscribe) {
-                try {
-                    if (subscribe) {
-                        const member = await this.db.getMemberByEmail(email);
-                        const name = member ? member.name : null;
-                        await this.db.subscribeToNewsletter(email, name);
-                        return true;
-                    } else {
-                        await this.db.unsubscribeFromNewsletter(email);
-                        return true;
-                    }
-                } catch (error) {
-                    console.error('Newsletter toggle error:', error);
-                    return false;
-                }
+    async toggleNewsletterSubscription(email, subscribe) {
+        try {
+            if (subscribe) {
+                const member = await this.db.getMemberByEmail(email);
+                const name = member ? member.name : null;
+                await this.db.subscribeToNewsletter(email, name);
+                return true;
+            } else {
+                await this.db.unsubscribeFromNewsletter(email);
+                return true;
             }
+        } catch (error) {
+            console.error('Newsletter toggle error:', error);
+            return false;
+        }
+    }
 
-            async sendNewsletterToSubscribers(subject, content) {
-                try {
-                    const subscribers = await this.db.getNewsletterSubscribers();
-                    
-                    if (subscribers.length === 0) {
-                        return { success: false, message: 'No active newsletter subscribers found' };
-                    }
-                    
-                    const emails = subscribers.map(s => s.email);
-                    
-                    const result = await this.emailService.sendBulkNewsletter(emails, subject, content);
-                    
-                    if (result.success) {
-                        return { 
-                            success: true, 
-                            message: `Newsletter sent to ${emails.length} subscribers successfully` 
-                        };
-                    } else {
-                        return { success: false, message: 'Failed to send newsletter' };
-                    }
-                    
-                } catch (error) {
-                    console.error('Send newsletter error:', error);
-                    return { success: false, message: 'Failed to send newsletter' };
-                }
+    async sendNewsletterToSubscribers(subject, content) {
+        try {
+            const subscribers = await this.db.getNewsletterSubscribers();
+            
+            if (subscribers.length === 0) {
+                return { success: false, message: 'No active newsletter subscribers found' };
             }
-    
-  }
+            
+            const emails = subscribers.map(s => s.email);
+            
+            const result = await this.emailService.sendBulkNewsletter(emails, subject, content);
+            
+            if (result.success) {
+                return { 
+                    success: true, 
+                    message: `Newsletter sent to ${emails.length} subscribers successfully` 
+                };
+            } else {
+                return { success: false, message: 'Failed to send newsletter' };
+            }
+            
+        } catch (error) {
+            console.error('Send newsletter error:', error);
+            return { success: false, message: 'Failed to send newsletter' };
+        }
+    }
+}
   // ===========================================
 // CROSS-DEVICE NOTIFICATION FUNCTIONS
 // ===========================================
@@ -10160,52 +10409,64 @@ window.removeFromPushSubscriptions = removeFromPushSubscriptions;
             document.head.appendChild(style);
         }
 
-        async function showDashboard(member) {
-            hideAllSections();
+       // Find this function in your code (it should be around line 2800-3000)
+async function showDashboard(member) {
+    hideAllSections();
+    
+    const dashboardSection = document.getElementById('dashboardSection');
+    if (!dashboardSection) {
+        console.error('Dashboard section not found!');
+        return;
+    }
+    dashboardSection.classList.remove('hidden');
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    if (typeof checkForPendingTransaction === 'function') {
+        checkForPendingTransaction();
+    }
+    
+    try {
+        const freshMember = await clubManager.db.getMemberByJCId(member.jcId);
+        if (freshMember) {
+            clubManager.currentMember = freshMember;
+            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(freshMember));
             
-            const dashboardSection = document.getElementById('dashboardSection');
-            if (!dashboardSection) {
-                console.error('Dashboard section not found!');
-                return;
-            }
-            dashboardSection.classList.remove('hidden');
-            
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            if (typeof checkForPendingTransaction === 'function') {
-                checkForPendingTransaction();
-            }
-            
-            try {
-                const freshMember = await clubManager.db.getMemberByJCId(member.jcId);
-                if (freshMember) {
-                    clubManager.currentMember = freshMember;
-                    localStorage.setItem('jeansClubCurrentMember', JSON.stringify(freshMember));
-                    
-                    if (typeof window.safeUpdateDashboard === 'function') {
-                        window.safeUpdateDashboard(freshMember);
-                    } else if (typeof updateMemberDashboard === 'function') {
-                        const memberTier = document.getElementById('memberTier');
-                        if (memberTier) {
-                            updateMemberDashboard(freshMember);
-                        } else {
-                            setTimeout(() => updateMemberDashboard(freshMember), 200);
-                        }
-                    }
-                    // Add this after updating the dashboard
-if (typeof initBirthdayFeatures === 'function') {
-    initBirthdayFeatures();
-}
+            if (typeof window.safeUpdateDashboard === 'function') {
+                window.safeUpdateDashboard(freshMember);
+            } else if (typeof updateMemberDashboard === 'function') {
+                const memberTier = document.getElementById('memberTier');
+                if (memberTier) {
+                    updateMemberDashboard(freshMember);
                 } else {
-                    if (typeof updateMemberDashboard === 'function') {
-                        setTimeout(() => updateMemberDashboard(member), 200);
-                    }
+                    setTimeout(() => updateMemberDashboard(freshMember), 200);
                 }
-            } catch (error) {
-                console.error('Error loading member:', error);
-                showToast('Error loading member data', 'error');
+            }
+        } else {
+            if (typeof updateMemberDashboard === 'function') {
+                setTimeout(() => updateMemberDashboard(member), 200);
             }
         }
+    } catch (error) {
+        console.error('Error loading member:', error);
+        showToast('Error loading member data', 'error');
+    }
+    
+    // =============================================
+    // ADD THIS BLOCK RIGHT HERE - AFTER loading member data
+    // =============================================
+    setTimeout(() => {
+        if (typeof updateBirthdayCelebration === 'function') {
+            updateBirthdayCelebration();
+        }
+        if (typeof updateBirthdayDisplay === 'function') {
+            updateBirthdayDisplay();
+        }
+        if (typeof initBirthdaySystem === 'function') {
+            initBirthdaySystem();
+        }
+    }, 500);
+}
 
         function showAdminPanel() {
             hideAllSections();
@@ -11794,22 +12055,635 @@ function initBirthdayFeatures() {
     }, 5000);
     setInterval(checkAndRewardBirthdays, 24 * 60 * 60 * 1000);
 }
-  window.onload = function() {
+// ===========================================
+// COMPLETE BIRTHDAY CELEBRATION SYSTEM
+// ===========================================
+
+// Update birthday display on dashboard
+async function updateBirthdayCelebration() {
+    if (!clubManager.currentMember) return;
+    
+    const member = clubManager.currentMember;
+    const container = document.getElementById('birthdayCelebrationSection');
+    
+    if (!container) return;
+    
+    // Check if member has birthday set
+    if (!member.birthday) {
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div class="birthday-countdown-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <span style="font-size: 48px;">🎂</span>
+                        <h3 style="margin: 10px 0 5px 0; color: white;">We Want to Celebrate You!</h3>
+                        <p style="margin: 0; color: rgba(255,255,255,0.9);">Add your birthday to get special surprises and bonus points!</p>
+                    </div>
+                    <button class="btn" onclick="showBirthdayModal()" style="background: white; color: #667eea;">
+                        📅 Add My Birthday
+                    </button>
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                    <p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.8);">
+                        🎁 <strong>Birthday Rewards Include:</strong> Bonus points + Special discount voucher + Birthday surprises!
+                    </p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    // Has birthday - show countdown or celebration
+    const birthDate = new Date(member.birthday);
+    const today = new Date();
+    const isBirthdayToday = isTodayBirthday(birthDate, today);
+    
+    // Check if already claimed this year
+    const alreadyClaimed = member.lastBirthdayReward === today.getFullYear();
+    
+    if (isBirthdayToday && !alreadyClaimed) {
+        // BIRTHDAY CELEBRATION MODE
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div class="birthday-countdown-card birthday-today">
+                <div style="text-align: center; position: relative; z-index: 1;">
+                    <div style="font-size: 64px; margin-bottom: 10px;">🎂🎉🎈</div>
+                    <h2 style="color: #333; margin: 10px 0;">HAPPY BIRTHDAY, ${member.name.toUpperCase()}!</h2>
+                    <p style="color: #555; font-size: 18px; margin-bottom: 20px;">Today is YOUR day! We've prepared something special...</p>
+                    
+                    <div class="birthday-reward-card">
+                        <h3>🎁 YOUR BIRTHDAY REWARDS 🎁</h3>
+                        <div class="reward-amount">+200 BONUS POINTS</div>
+                        <div class="birthday-voucher">
+                            <div style="font-size: 14px; color: #666;">20% OFF VOUCHER</div>
+                            <div class="birthday-voucher-code" id="birthdayVoucherCode">Generating...</div>
+                            <button class="btn" onclick="claimBirthdayRewards()" style="margin-top: 10px; background: #28a745; color: white;">
+                                🎁 CLAIM MY REWARDS NOW
+                            </button>
+                        </div>
+                        <p style="margin-top: 15px; font-size: 12px; color: rgba(255,255,255,0.8);">
+                            ✨ Your birthday rewards are waiting! Click to claim and make your day even more special.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Trigger confetti animation
+        triggerConfetti();
+        
+        // Show birthday message
+        showBirthdayMessage();
+        
+    } else if (isBirthdayToday && alreadyClaimed) {
+        // Already claimed today
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div class="birthday-countdown-card birthday-today">
+                <div style="text-align: center;">
+                    <div style="font-size: 64px;">🎂🥳🎉</div>
+                    <h3 style="color: #333;">Happy Birthday, ${member.name}!</h3>
+                    <p style="color: #555;">You've already claimed your birthday rewards today!</p>
+                    <div style="background: rgba(255,255,255,0.2); border-radius: 10px; padding: 10px; margin-top: 10px;">
+                        <p style="margin: 0;">🎁 Rewards claimed: +200 points + 20% off voucher</p>
+                        <p style="margin: 5px 0 0 0; font-size: 12px;">Enjoy your special day! 🎈</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        // COUNTDOWN MODE
+        const daysUntil = getDaysUntilBirthday(birthDate, today);
+        const monthsUntil = Math.floor(daysUntil / 30);
+        const weeksUntil = Math.floor(daysUntil / 7);
+        
+        let timeMessage = '';
+        let excitementLevel = '';
+        
+        if (daysUntil <= 7) {
+            excitementLevel = '🎉 SO CLOSE! 🎉';
+            timeMessage = `${daysUntil} days until your birthday!`;
+        } else if (daysUntil <= 30) {
+            excitementLevel = '✨ Getting excited? ✨';
+            timeMessage = `${daysUntil} days to go!`;
+        } else if (monthsUntil > 0) {
+            excitementLevel = '💝 We\'re counting down! 💝';
+            timeMessage = `${monthsUntil} month${monthsUntil > 1 ? 's' : ''} and ${daysUntil % 30} days until your birthday!`;
+        } else {
+            timeMessage = `${daysUntil} days until your special day!`;
+        }
+        
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div class="birthday-countdown-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                            <span style="font-size: 48px;">🎂</span>
+                            <div>
+                                <h3 style="margin: 0; color: white;">${excitementLevel || 'Birthday Countdown'}</h3>
+                                <p style="margin: 5px 0 0 0; color: rgba(255,255,255,0.9);">${member.name}, we're getting ready for you!</p>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; margin: 20px 0;">
+                            <div class="birthday-countdown-number">${daysUntil}</div>
+                            <div style="margin-top: 10px; font-size: 14px; color: rgba(255,255,255,0.8);">
+                                ${timeMessage}
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; min-width: 80px;">
+                                <div style="font-size: 24px; font-weight: bold;">${daysUntil}</div>
+                                <div style="font-size: 12px;">Days</div>
+                            </div>
+                            <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; min-width: 80px;">
+                                <div style="font-size: 24px; font-weight: bold;">${Math.floor(daysUntil / 7)}</div>
+                                <div style="font-size: 12px;">Weeks</div>
+                            </div>
+                            <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; min-width: 80px;">
+                                <div style="font-size: 24px; font-weight: bold;">${Math.floor(daysUntil / 30)}</div>
+                                <div style="font-size: 12px;">Months</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; min-width: 150px;">
+                        <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 10px;">Your Birthday Rewards:</div>
+                        <div style="background: rgba(255,255,255,0.15); border-radius: 10px; padding: 10px;">
+                            <div>🎁 <strong>+200 Points</strong></div>
+                            <div>🎫 <strong>20% OFF Voucher</strong></div>
+                            <div>✨ <strong>Birthday Surprise</strong></div>
+                        </div>
+                        <button class="btn" onclick="showBirthdayModal()" style="margin-top: 15px; background: rgba(255,255,255,0.2); color: white;">
+                            📅 Update Birthday
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="birthday-message" style="margin-top: 15px; text-align: center;">
+                    ${getRandomBirthdayMessage(member.name, daysUntil)}
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Helper: Check if today is birthday
+function isTodayBirthday(birthDate, today) {
+    return birthDate.getMonth() === today.getMonth() && 
+           birthDate.getDate() === today.getDate();
+}
+
+// Helper: Get days until birthday
+function getDaysUntilBirthday(birthDate, today) {
+    let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+    if (nextBirthday < today) {
+        nextBirthday.setFullYear(today.getFullYear() + 1);
+    }
+    return Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+}
+
+// Get random birthday message
+function getRandomBirthdayMessage(name, daysUntil) {
+    const messages = [
+        `🎈 ${name}, we're counting down the days to celebrate YOU!`,
+        `💝 Something special is being prepared for ${name}'s birthday!`,
+        `🎂 The party planning has begun for ${name}'s special day!`,
+        `✨ ${daysUntil} days until ${name} gets spoiled with rewards!`,
+        `🎁 We can't wait to celebrate ${name}'s birthday!`,
+        `💎 ${name}, your birthday rewards are going to be EPIC!`,
+        `🌟 The Jeans Club team is getting ready for ${name}'s big day!`
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
+}
+
+// Trigger confetti animation
+function triggerConfetti() {
+    const colors = ['#FFD700', '#FFA500', '#FF6347', '#FF69B4', '#87CEEB', '#98FB98'];
+    
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.width = Math.random() * 8 + 4 + 'px';
+        confetti.style.height = Math.random() * 8 + 4 + 'px';
+        confetti.style.animationDuration = Math.random() * 2 + 2 + 's';
+        confetti.style.animationDelay = Math.random() * 2 + 's';
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), 3000);
+    }
+}
+
+// Show birthday message popup
+function showBirthdayMessage() {
+    const messages = [
+        "🎂 HAPPY BIRTHDAY! Today is YOUR day! 🎂",
+        "🎉 The Jeans Club family celebrates YOU today! 🎉",
+        "🎈 Time to party! Happy Birthday from all of us! 🎈",
+        "💝 You're the star today! Happy Birthday! 💝",
+        "🎁 Your birthday rewards are waiting for you! 🎁"
+    ];
+    
+    const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+    showToast(randomMsg, 'success');
+    
+    // Also send push notification
+    sendPushNotification('🎂 HAPPY BIRTHDAY!', 
+        `${clubManager.currentMember.name}, today is your special day! Claim your 200 bonus points + 20% off voucher!`);
+}
+
+// Claim birthday rewards
+async function claimBirthdayRewards() {
+    if (!clubManager.currentMember) return;
+    
+    const member = clubManager.currentMember;
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    
+    // Check if already claimed this year
+    if (member.lastBirthdayReward === currentYear) {
+        showToast('You already claimed your birthday rewards this year!', 'info');
+        return;
+    }
+    
+    // Check if it's actually their birthday
+    const birthDate = new Date(member.birthday);
+    const isBirthday = birthDate.getMonth() === today.getMonth() && 
+                       birthDate.getDate() === today.getDate();
+    
+    if (!isBirthday) {
+        showToast('Birthday rewards can only be claimed on your actual birthday!', 'error');
+        return;
+    }
+    
+    try {
+        showToast('🎁 Processing your birthday rewards...', 'info');
+        
+        // Add bonus points
+        const BIRTHDAY_BONUS = 200;
+        member.points += BIRTHDAY_BONUS;
+        member.lifetimePoints += BIRTHDAY_BONUS;
+        member.lastBirthdayReward = currentYear;
+        
+        // Create birthday voucher
+        const voucher = await voucherSystem.createVoucher(
+            member.jcId,
+            member.name,
+            0,  // Free voucher! Uses 0 points
+            20, // 20% discount
+            14  // Valid for 14 days
+        );
+        
+        // Log activity
+        member.activityLog.unshift({
+            timestamp: new Date().toISOString(),
+            action: 'birthday_reward',
+            description: `🎂 Happy Birthday! Received ${BIRTHDAY_BONUS} bonus points + 20% off voucher`,
+            points: BIRTHDAY_BONUS
+        });
+        
+        // Save to database
+        await clubManager.db.saveMember(member);
+        
+        // Update local storage
+        localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
+        
+        // Update dashboard
+        updateMemberDashboard(member);
+        updateBirthdayCelebration();
+        updateMemberVouchers(member.jcId);
+        
+        // Show voucher code
+        const voucherCodeSpan = document.getElementById('birthdayVoucherCode');
+        if (voucherCodeSpan) {
+            voucherCodeSpan.textContent = voucher.code;
+        }
+        
+        // Send email
+        await clubManager.emailService.sendBirthdayEmail(member.email, member, {
+            bonusPoints: BIRTHDAY_BONUS,
+            discountPercentage: 20,
+            voucherCode: voucher.code
+        });
+        
+        // Send push notification
+        sendPushNotification('🎁 BIRTHDAY REWARDS CLAIMED!', 
+            `🎉 ${BIRTHDAY_BONUS} points + 20% off voucher added to your account!`);
+        
+        // Trigger more confetti
+        triggerConfetti();
+        
+        showToast(`🎉 Happy Birthday! +${BIRTHDAY_BONUS} points and 20% off voucher added!`, 'success');
+        
+    } catch (error) {
+        console.error('Error claiming birthday rewards:', error);
+        showToast('Failed to claim rewards. Please try again.', 'error');
+    }
+}
+
+// Update birthday display (existing function - replace with this enhanced version)
+function updateBirthdayDisplay() {
+    const container = document.getElementById('birthdayDisplay');
+    if (!container) return;
+    
+    const birthday = clubManager.currentMember?.birthday;
+    const birthdayBtn = document.getElementById('birthdayBtn');
+    
+    if (birthday) {
+        const birthDate = new Date(birthday);
+        const today = new Date();
+        const isToday = birthDate.getMonth() === today.getMonth() && 
+                        birthDate.getDate() === today.getDate();
+        
+        let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+        if (nextBirthday < today) {
+            nextBirthday.setFullYear(today.getFullYear() + 1);
+        }
+        const daysUntil = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+        
+        const formattedBirthday = birthDate.toLocaleDateString('en-US', { 
+            month: 'long', 
+            day: 'numeric',
+            year: 'numeric'
+        });
+        
+        if (isToday) {
+            container.innerHTML = `
+                <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 15px; border-radius: 10px; animation: pulse 2s infinite;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-size: 32px;">🎂🎉🎂</span>
+                            <strong style="margin-left: 10px; font-size: 18px;">HAPPY BIRTHDAY!</strong>
+                        </div>
+                        <button class="btn" onclick="claimBirthdayRewards()" style="background: white; color: #333; padding: 8px 20px;">
+                            🎁 Claim Rewards
+                        </button>
+                    </div>
+                    <p style="margin: 10px 0 0 0; font-size: 14px; color: #333;">
+                        ✨ 200 bonus points + 20% off voucher waiting for you!
+                    </p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); padding: 15px; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <span style="font-size: 24px;">🎂</span>
+                            <strong style="margin-left: 10px;">${formattedBirthday}</strong>
+                        </div>
+                        <div style="background: #ffc107; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold;">
+                            ${daysUntil === 0 ? '🎉 TODAY! 🎉' : `${daysUntil} days until birthday`}
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <div class="progress-bar" style="height: 6px;">
+                            <div class="progress-fill" style="width: ${Math.max(0, 100 - (daysUntil / 365 * 100))}%; background: #FFD700;"></div>
+                        </div>
+                        <p style="margin: 8px 0 0 0; font-size: 12px; color: #856404;">
+                            ✨ You'll receive 200 bonus points + 20% off voucher on your birthday!
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        birthdayBtn.textContent = '✏️ Update Birthday';
+        birthdayBtn.style.background = '#6c757d';
+    } else {
+        container.innerHTML = `
+            <div style="background: linear-gradient(135deg, #e7f3ff 0%, #b3e0ff 100%); padding: 15px; border-radius: 10px;">
+                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <span style="font-size: 40px;">🎂</span>
+                    <div style="flex: 1;">
+                        <p style="margin: 0; font-weight: bold; color: #2196F3;">
+                            We'd love to celebrate your birthday!
+                        </p>
+                        <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">
+                            Add your birthday to receive 200 bonus points + 20% off voucher on your special day!
+                        </p>
+                    </div>
+                    <button class="btn" onclick="showBirthdayModal()" style="background: #2196F3; white-space: nowrap;">
+                        📅 Add Birthday
+                    </button>
+                </div>
+            </div>
+        `;
+        birthdayBtn.textContent = '➕ Add Birthday';
+        birthdayBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    }
+}
+
+// Enhanced birthday modal with preview
+function showBirthdayModal() {
+    const modal = document.getElementById('birthdayModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+    // Pre-fill if birthday exists
+    if (clubManager.currentMember && clubManager.currentMember.birthday) {
+        document.getElementById('birthdayInput').value = clubManager.currentMember.birthday;
+    } else {
+        document.getElementById('birthdayInput').value = '';
+    }
+    
+    // Add birthday preview
+    const previewDiv = document.getElementById('birthdayPreview');
+    if (previewDiv) {
+        previewDiv.innerHTML = `
+            <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                <p style="margin: 0; font-size: 12px; color: #666;">✨ Your birthday rewards will include:</p>
+                <div style="display: flex; justify-content: center; gap: 20px; margin-top: 10px;">
+                    <div><span style="font-size: 20px;">🎁</span><br>200 Points</div>
+                    <div><span style="font-size: 20px;">🎫</span><br>20% OFF</div>
+                    <div><span style="font-size: 20px;">🎂</span><br>Surprise!</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    document.getElementById('birthdayMessage').innerHTML = '';
+}
+
+// Auto-check birthdays on page load and daily
+function initBirthdaySystem() {
+    updateBirthdayCelebration();
+    updateBirthdayDisplay();
+    
+    // Check for birthdays every hour
+    setInterval(() => {
+        updateBirthdayCelebration();
+        checkAndRewardBirthdays();
+    }, 60 * 60 * 1000);
+}
+
+// Call this in your ClubManager.init() or after login
+async function checkAndRewardBirthdays() {
+    if (!clubManager?.db) return;
+    
+    const today = new Date();
+    const todayMonthDay = `${today.getMonth() + 1}-${today.getDate()}`;
+    
+    try {
+        const { data: members, error } = await clubManager.db.supabase
+            .from('members')
+            .select('*')
+            .not('birthday', 'is', null);
+        
+        if (error) throw error;
+        
+        for (const member of members) {
+            const birthDate = new Date(member.birthday);
+            const birthMonthDay = `${birthDate.getMonth() + 1}-${birthDate.getDate()}`;
+            
+            if (birthMonthDay === todayMonthDay) {
+                const lastRewardYear = member.last_birthday_reward_year;
+                const currentYear = today.getFullYear();
+                
+                if (lastRewardYear !== currentYear) {
+                    const BIRTHDAY_BONUS = 200;
+                    
+                    // Update member
+                    await clubManager.db.supabase
+                        .from('members')
+                        .update({
+                            points: (member.points || 0) + BIRTHDAY_BONUS,
+                            lifetime_points: (member.lifetime_points || 0) + BIRTHDAY_BONUS,
+                            last_birthday_reward_year: currentYear,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('jc_id', member.jc_id);
+                    
+                    // Create birthday voucher
+                    const voucher = await voucherSystem.createVoucher(
+                        member.jc_id,
+                        member.name,
+                        0,
+                        20,
+                        14
+                    );
+                    
+                    // Send notification
+                    sendPushNotification('🎂 HAPPY BIRTHDAY!', 
+                        `${member.name}, ${BIRTHDAY_BONUS} bonus points + 20% off voucher have been added to your account!`);
+                    
+                    console.log(`🎂 Auto-rewarded birthday for ${member.name} (${member.jc_id})`);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error auto-checking birthdays:', error);
+    }
+}
+// ===========================================
+// JC ID EMAIL RECOVERY SYSTEM
+// ===========================================
+
+// Show JC ID recovery modal
+function showJCIdRecovery() {
+    const modal = document.getElementById('jcRecoveryModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        document.getElementById('recoveryEmail').value = '';
+        document.getElementById('recoveryMessage').innerHTML = '';
+    }
+}
+
+// Close JC ID recovery modal
+function closeJCIdRecovery() {
+    const modal = document.getElementById('jcRecoveryModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Submit JC ID recovery request
+async function submitJCIdRecovery() {
+    const email = document.getElementById('recoveryEmail').value.trim().toLowerCase();
+    const messageDiv = document.getElementById('recoveryMessage');
+    
+    if (!email) {
+        messageDiv.innerHTML = '<div class="error-message">❌ Please enter your email address</div>';
+        return;
+    }
+    
+    // Validate email format
+    if (!isValidEmail(email)) {
+        messageDiv.innerHTML = '<div class="error-message">❌ Please enter a valid email address</div>';
+        return;
+    }
+    
+    messageDiv.innerHTML = '<div class="info-message">📧 Checking account... Please wait.</div>';
+    
+    try {
+        // Find member by email
+        const member = await clubManager.db.getMemberByEmail(email);
+        
+        if (!member) {
+            messageDiv.innerHTML = '<div class="error-message">❌ No account found with this email address. Please check and try again.</div>';
+            return;
+        }
+        
+        // Send recovery email with JC ID
+        messageDiv.innerHTML = '<div class="info-message">📧 Sending recovery email...</div>';
+        
+        const emailSent = await clubManager.emailService.sendJCIdRecoveryEmail(
+            member.email,
+            member,
+            { jcId: member.jcId }
+        );
+        
+        if (emailSent) {
+            messageDiv.innerHTML = `
+                <div class="success-message">
+                    ✅ <strong>JC ID Sent!</strong><br>
+                    We've sent your JC ID to <strong>${member.email}</strong><br>
+                    Please check your inbox and spam folder.
+                </div>
+            `;
+            
+            // Auto-close modal after 5 seconds
+            setTimeout(() => {
+                closeJCIdRecovery();
+            }, 5000);
+        } else {
+            messageDiv.innerHTML = `
+                <div class="error-message">
+                    ❌ Failed to send email. Please try again or contact support.
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Recovery error:', error);
+        messageDiv.innerHTML = '<div class="error-message">❌ An error occurred. Please try again later.</div>';
+    }
+}
+window.onload = function() {
     // Check if this is a cron-job trigger
     if (checkForScheduledTrigger()) {
         return; // Stop normal page load
     }
     console.log('=== PAGE LOAD START ===');
     
-    clubManager = new ClubManager();
+    // Create iframe email service FIRST
+    const iframeEmailService = new IframeEmailService('https://script.google.com/macros/s/AKfycbzmJS_ThUUb_FsyeuBVbLyBRdGXAD0Pj1uhv_4CCD8NtV0WCL6THqgIBIawmWK4F7CN/exec');
+    console.log('✅ IframeEmailService created');
+    
+    // Create ClubManager with the iframe email service
+    clubManager = new ClubManager(iframeEmailService);
+    console.log('✅ ClubManager created with email service:', clubManager.emailService.constructor.name);
+    // Should print: "IframeEmailService"
     
     setTimeout(() => {
         initPushNotifications();
     }, 2000);
-    
-    const iframeEmailService = new IframeEmailService('https://script.google.com/macros/s/AKfycbzmJS_ThUUb_FsyeuBVbLyBRdGXAD0Pj1uhv_4CCD8NtV0WCL6THqgIBIawmWK4F7CN/exec');
-    clubManager.emailService = iframeEmailService;
-    console.log('✅ Email service upgraded to iframe (no CORS)');
     
     setTimeout(() => {
         if (clubManager) {
@@ -11866,7 +12740,6 @@ function initBirthdayFeatures() {
             await startListeningForNotifications();
             await fetchUndeliveredNotifications();
             
-            // ✅ ADD THIS LINE RIGHT HERE - Auto-sync existing OneSignal subscribers after login
             if (typeof runAutoSyncAfterLogin === 'function') {
                 await runAutoSyncAfterLogin();
             }
@@ -11924,10 +12797,9 @@ function initBirthdayFeatures() {
         }
     });
 }
- 
         
      
-         class IframeEmailService {
+ class IframeEmailService {
     constructor(scriptURL) {
         this.scriptURL = scriptURL;
         this.isReady = false;
@@ -12029,7 +12901,13 @@ function initBirthdayFeatures() {
         return this.sendEmail(email, 'referral', memberData, referralData);
     }
     
-    // Build email content based on type
+    // ========== ADD THIS METHOD FOR JC ID RECOVERY ==========
+    async sendJCIdRecoveryEmail(email, member, recoveryData) {
+        console.log(`📧 Sending JC ID recovery email to ${email}...`);
+        return this.sendEmail(email, 'jc_recovery', member, recoveryData);
+    }
+    
+    // Build email content based on type - UPDATED with jc_recovery case
     buildEmailContent(type, memberData, extraData) {
         switch(type) {
             case 'welcome':
@@ -12040,12 +12918,87 @@ function initBirthdayFeatures() {
                 return this.buildDiscountEmail(memberData, extraData);
             case 'referral':
                 return this.buildReferralEmail(memberData, extraData);
+            case 'jc_recovery':  // ← ADD THIS CASE
+                return this.buildJCIdRecoveryEmail(memberData, extraData);
             default:
                 return `<h1>Jeans Club</h1><p>${extraData?.message || ''}</p>`;
         }
     }
     
-    // Email template builders
+    // ========== ADD THIS NEW METHOD FOR JC ID RECOVERY EMAIL TEMPLATE ==========
+    buildJCIdRecoveryEmail(member, recoveryData) {
+        return `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>🔐 Your Jeans Club JC ID Recovery</title>
+                <style>
+                    body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 20px auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                    .header { background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); color: white; padding: 30px; text-align: center; border-bottom: 3px solid #00AFF0; }
+                    .content { padding: 30px; }
+                    .jc-id-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin: 20px 0; }
+                    .jc-id { font-size: 32px; font-weight: bold; letter-spacing: 5px; font-family: 'Courier New', monospace; background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; display: inline-block; margin: 10px 0; }
+                    .warning-box { background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107; }
+                    .footer { text-align: center; padding: 25px; background: #f8f9fa; border-top: 1px solid #eee; color: #666; font-size: 12px; }
+                    .btn { display: inline-block; background: #00AFF0; color: white; padding: 12px 30px; text-decoration: none; border-radius: 50px; margin: 15px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>👖 JEANS CLUB</h1>
+                        <p>Raised on Denim</p>
+                    </div>
+                    
+                    <div class="content">
+                        <h2>JC ID Recovery Request</h2>
+                        
+                        <p>Dear <strong>${member.name}</strong>,</p>
+                        
+                        <p>We received a request to recover your Jeans Club JC ID. Here is your account information:</p>
+                        
+                        <div class="jc-id-box">
+                            <p style="margin: 0; opacity: 0.9;">Your JC ID is:</p>
+                            <div class="jc-id">${recoveryData.jcId}</div>
+                            <p style="margin: 10px 0 0 0; font-size: 14px;">Use this ID to login to your account</p>
+                        </div>
+                        
+                        <div class="warning-box">
+                            <p style="margin: 0; color: #856404;">
+                                🔐 <strong>Keep this safe!</strong><br>
+                                Your JC ID is like your username. You'll need it every time you login.
+                            </p>
+                        </div>
+                        
+                        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <p style="margin: 0; color: #2e7d32;">
+                                💡 <strong>Pro Tip:</strong> Save this email or take a screenshot of your JC ID for easy access later!
+                            </p>
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <a href="https://elijah787.github.io/jeans-club" class="btn">🔐 Login to Your Account</a>
+                        </div>
+                        
+                        <p style="margin-top: 20px; font-size: 14px; color: #666;">
+                            If you didn't request this recovery, please ignore this email. Your account remains secure.
+                        </p>
+                    </div>
+                    
+                    <div class="footer">
+                        <p>Jeans Club - Kampala, Uganda</p>
+                        <p>Questions? Contact us at support@jeansclub.com</p>
+                        <p>&copy; 2026 Jeans Club. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+    }
+    
+    // Email template builders (your existing ones)
     buildWelcomeEmail(member) {
         return `
             <!DOCTYPE html>
@@ -12163,12 +13116,14 @@ function initBirthdayFeatures() {
         `;
     }
     
+    // ========== UPDATE getSubject METHOD ==========
     getSubject(type, memberData, extraData) {
         switch(type) {
             case 'welcome': return '👖 Welcome to Jeans Club!';
             case 'purchase': return '🛍️ Purchase Confirmed - Points Added!';
             case 'discount': return `🎫 ${extraData?.discountPercentage || 0}% Discount Voucher`;
             case 'referral': return '🎊 Referral Success! +100 Points';
+            case 'jc_recovery': return '🔐 Your Jeans Club JC ID Recovery';  // ← ADD THIS
             default: return '💌 Message from Jeans Club';
         }
     }
