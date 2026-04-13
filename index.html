@@ -11722,23 +11722,47 @@ console.log('✅ Email service initialized (direct fetch mode)');
 
       
     </script>
-    <!-- Floating Download Bar -->
-<div style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,10,0.95); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,215,0,0.3); padding: 12px 20px; z-index: 9999; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+<!-- Floating Download Bar -->
+<div id="floatingDownloadBar" style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,10,0.95); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,215,0,0.3); padding: 12px 20px; z-index: 9999; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
     <div style="display: flex; align-items: center; gap: 12px;">
-        <span style="font-size: 24px;">👖</span>
+        
         <div>
-            <span style="color: #FFD700; font-weight: bold; font-size: 14px;">JEANS CLUB</span>
-            <span style="color: #888; font-size: 11px; margin-left: 8px;">Raised on Denim</span>
+            <img src="https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg" 
+                 alt="Jeans Club Logo" 
+                 style="height: 30px; width: auto; display: block;">
+            <span style="color: #888; font-size: 10px; margin-top: 4px; display: block;">Raised on Denim</span>
         </div>
     </div>
     
     <div style="display: flex; gap: 15px; align-items: center;">
-        <span style="color: #aaa; font-size: 12px;">Get the app</span>
+        
         <a href="https://elijah787.github.io/Jeans-Club.apk" 
+           id="downloadAppLink"
            style="background: #FFD700; color: #0a0a0a; padding: 8px 24px; border-radius: 40px; text-decoration: none; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-             Download our APP
+             Download the App
         </a>
     </div>
 </div>
+
+<script>
+// Check if user has already downloaded
+if (localStorage.getItem('jeansClubDownloaded') === 'true') {
+    document.getElementById('floatingDownloadBar').style.display = 'none';
+}
+
+// Track download when user clicks
+document.getElementById('downloadAppLink').addEventListener('click', function(e) {
+    // Mark as downloaded
+    localStorage.setItem('jeansClubDownloaded', 'true');
+    
+    // Hide the bar immediately
+    document.getElementById('floatingDownloadBar').style.display = 'none';
+    
+    // Optional: Show a toast message
+    setTimeout(function() {
+        alert('✅ Download started! The app will be saved to your phone.\n\n📱 To reinstall later, visit our website again.');
+    }, 500);
+});
+</script>
 </body>
 </html> 
