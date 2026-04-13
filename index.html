@@ -4367,6 +4367,7 @@
                 type: "MEMBER_LOGIN",
                 jcId: clubManager.currentMember.jcId,
                 name: clubManager.currentMember.name,
+                autoJoin: true,  // ✅ NEW: Tell salesperson to auto-join
                 timestamp: Date.now()
             };
             
@@ -4571,97 +4572,9 @@
             }
         }
 
-        // Show member join QR after salesperson scans
-        function showMemberJoinQR(transaction, member) {
-            const joinData = {
-                action: "join_transaction",
-                transactionId: transaction.id,
-                sessionId: transaction.sessionId,
-                memberJcId: member.jcId,
-                timestamp: Date.now()
-            };
-            
-            const jsonString = JSON.stringify(joinData);
-            const encodedData = encodeURIComponent(jsonString);
-            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodedData}`;
-            
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.9);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 10000;
-            `;
-            
-            modal.innerHTML = `
-                <div style="background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 90%;">
-                    <img src="https://i.ibb.co.com/Rp9F4xBC/jeans-club.jpg" alt="Jeans Club" style="height: 50px; margin-bottom: 20px;">
-                    <h3 style="margin-top: 0; color: #333;">Ask Member to Scan</h3>
-                    <p style="color: #666; margin-bottom: 20px;">Member must scan this QR code with their phone to join the transaction</p>
-                    <img src="${qrCodeUrl}" alt="Join QR Code" 
-                         style="width: 250px; height: 250px; border: 2px solid #ddd; border-radius: 10px; padding: 10px; margin: 20px 0;">
-                    <p style="color: #28a745; font-weight: bold; margin-bottom: 10px;" id="joinStatus">⏳ Waiting for member to join...</p>
-                    <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Transaction ID: ${transaction.id}</p>
-                    <button onclick="this.parentElement.parentElement.remove()" 
-                            class="btn" style="padding: 10px 20px;">
-                        Close (Transaction will continue)
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            waitForMemberToJoin(transaction.id);
-        }
+      
 
-        // Wait for member to join
-        function waitForMemberToJoin(transactionId) {
-            if (!window.supabaseDbInstance) return;
-            
-            const { supabase } = window.supabaseDbInstance;
-            
-            const joinChannel = supabase
-                .channel('transaction_join_' + transactionId)
-                .on('broadcast', { event: 'member_joined' }, (payload) => {
-                    console.log("✅ Member joined!", payload);
-                    
-                    const statusEl = document.getElementById('joinStatus');
-                    if (statusEl) {
-                        statusEl.innerHTML = '✅ Member joined! You can now add items.';
-                        statusEl.style.color = '#28a745';
-                    }
-                    
-                    setTimeout(() => {
-                        const modal = document.querySelector('div[style*="position: fixed"]');
-                        if (modal) modal.remove();
-                    }, 2000);
-                    
-                    if (currentTransaction) {
-                        currentTransaction.memberDeviceId = payload.deviceId;
-                    }
-                    
-                    showToast(`${payload.memberName || 'Member'} joined the transaction!`, "success");
-                    
-                    joinChannel.unsubscribe();
-                })
-                .subscribe();
-            
-            setTimeout(() => {
-                joinChannel.unsubscribe();
-                const statusEl = document.getElementById('joinStatus');
-                if (statusEl) {
-                    statusEl.innerHTML = '⏰ Timeout - please scan again';
-                    statusEl.style.color = '#dc3545';
-                }
-                showToast("Member join timeout - please scan again", "warning");
-            }, 300000);
-        }
+      
 
         // Member joins transaction from their phone
         async function memberJoinTransaction(parsedData) {
@@ -4756,71 +4669,95 @@
 
         // Start transaction with scanned member QR
         async function startTransactionWithMember(parsedData) {
-            try {
-                showToast("Starting transaction...", "info");
-                
-                const { jcId, name } = parsedData;
-                
-                const member = await clubManager.db.getMemberByJCId(jcId);
-                if (!member) {
-                    showToast("Member not found", "error");
-                    return;
-                }
-                
-                const sessionId = "sess_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-                const transactionId = "txn_" + Date.now();
-                
-                const transaction = {
-                    id: transactionId,
-                    sessionId: sessionId,
-                    memberJcId: member.jcId,
-                    memberName: member.name,
-                    memberTier: member.tier,
-                    salespersonName: clubManager.currentSalesperson || "Salesperson",
-                    salespersonDeviceId: "device_" + Date.now(),
-                    status: "pending_items",
-                    items: [],
-                    subtotal: 0,
-                    appliedVoucher: null,
-                    finalTotal: 0,
-                    pointsEarned: 0,
-                    memberConfirmed: false,
-                    salespersonCompleted: false,
-                    memberDeviceId: null,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                };
-                
-                await saveTransaction(transaction);
-                
-                const session = {
-                    sessionId: sessionId,
-                    transactionId: transactionId,
-                    memberJcId: member.jcId,
-                    memberSessionToken: generateSessionToken(),
-                    salespersonSessionToken: generateSessionToken(),
-                    memberLastPing: new Date().toISOString(),
-                    salespersonLastPing: new Date().toISOString(),
-                    createdAt: new Date().toISOString()
-                };
-                
-                await saveTransactionSession(session);
-                
-                currentTransaction = transaction;
-                
-                showMemberJoinQR(transaction, member);
-                
-                subscribeToTransaction(transactionId);
-                
-                showSalespersonTransactionScreen(transaction);
-                
-                showToast(`Transaction started for ${member.name}`, "success");
-                
-            } catch (error) {
-                console.error("Error starting transaction:", error);
-                showToast("Failed to start transaction", "error");
-            }
+    try {
+        showToast("Starting transaction...", "info");
+        
+        const { jcId, name, autoJoin } = parsedData;
+        
+        const member = await clubManager.db.getMemberByJCId(jcId);
+        if (!member) {
+            showToast("Member not found", "error");
+            return;
         }
+        
+        const sessionId = "sess_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+        const transactionId = "txn_" + Date.now();
+        
+        const transaction = {
+            id: transactionId,
+            sessionId: sessionId,
+            memberJcId: member.jcId,
+            memberName: member.name,
+            memberTier: member.tier,
+            salespersonName: clubManager.currentSalesperson || "Salesperson",
+            salespersonDeviceId: "device_" + Date.now(),
+            status: "pending_items",
+            items: [],
+            subtotal: 0,
+            appliedVoucher: null,
+            finalTotal: 0,
+            pointsEarned: 0,
+            memberConfirmed: false,
+            salespersonCompleted: false,
+            memberDeviceId: null,
+            memberJoined: true,  // Auto-join enabled
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        await saveTransaction(transaction);
+        
+        const session = {
+            sessionId: sessionId,
+            transactionId: transactionId,
+            memberJcId: member.jcId,
+            memberSessionToken: generateSessionToken(),
+            salespersonSessionToken: generateSessionToken(),
+            memberLastPing: new Date().toISOString(),
+            salespersonLastPing: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+        };
+        
+        await saveTransactionSession(session);
+        
+        currentTransaction = transaction;
+        
+        // Auto-join broadcast to member
+        await supabase
+            .channel('transaction_join_' + transactionId)
+            .send({
+                type: 'broadcast',
+                event: 'member_joined',
+                payload: { 
+                    deviceId: 'auto_join_' + Date.now(),
+                    memberName: member.name,
+                    autoJoined: true
+                }
+            });
+        
+        subscribeToTransaction(transactionId);
+        
+        // If member is online, auto-show their transaction screen
+        if (autoJoin) {
+            // Broadcast to member's device to show transaction screen
+            await supabase
+                .channel('transaction_' + transactionId)
+                .send({
+                    type: 'broadcast',
+                    event: 'auto_show_transaction',
+                    payload: { transaction: transaction }
+                });
+        }
+        
+        showSalespersonTransactionScreen(transaction);
+        
+        showToast(`${member.name} joined automatically! Add items to cart.`, "success");
+        
+    } catch (error) {
+        console.error("Error starting transaction:", error);
+        showToast("Failed to start transaction", "error");
+    }
+}
 
         // Generate session token
         function generateSessionToken() {
