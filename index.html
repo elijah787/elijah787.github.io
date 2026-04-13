@@ -6217,7 +6217,7 @@ function showMemberTransactionScreen(transaction) {
             throw new Error('Email already in use by another account');
         }
         
-        const lifetimePoints = member.lifetimePoints || Math.floor(member.totalSpent / 1000) + 10;
+        const lifetimePoints = member.lifetimePoints 
         
         const memberData = {
             id: member.id || 'member_' + Date.now(),
