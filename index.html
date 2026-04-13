@@ -10548,162 +10548,176 @@ async function updateMemberVouchers(jcId) {
                 </div>
             `;
         }
-
-        async function redeemPoints() {
-            const points = parseInt(document.getElementById('discountPoints').value);
-            
-            if (!points || points < 4) {
-                showToast('Minimum 4 points required', 'error');
-                return;
-            }
-            
-            if (points > clubManager.currentMember.points) {
-                showToast(`You only have ${clubManager.currentMember.points} points`, 'error');
-                return;
-            }
-            
-            const discountValue = points * 50;
-            const discountPercentage = Math.min(Math.round((discountValue / 10000) * 100), 100);
-               
-            const limitCheck = voucherSystem.canCreateVoucher(
-                clubManager.currentMember.jcId,
-                clubManager.currentMember.tier,
-                discountValue
-            );
-            
-            if (!limitCheck.canCreate) {
-                let errorMessage = limitCheck.reason;
-                
-                if (limitCheck.monthlyRemaining !== undefined) {
-                    errorMessage += `\n\nMonthly discount remaining: ${limitCheck.monthlyRemaining.toLocaleString()} UGX`;
-                }
-                
-                document.getElementById('discountResult').innerHTML = `
-                    <div class="discount-error">
-                        <strong>${errorMessage.replace(/\n/g, '<br>')}</strong>
-                        <p style="margin-top: 10px; color: #856404;">
-                            💰 Discount limits reset monthly.
-                        </p>
-                    </div>
-                `;
-                
-                showToast('Discount exceeds your tier limits', 'error');
-                return;
-            }
-            
-            try {
-                const voucher = await voucherSystem.createVoucher(
-                    clubManager.currentMember.jcId,
-                    clubManager.currentMember.name,
-                    points,
-                    discountPercentage
-                );
-                 // 👇 REPLACE with this DARK HUMOR version:
-
-const darkVoucherMessages = [
-    `🎫 ${clubManager.currentMember.name}, you just created a ${discountPercentage}% OFF voucher! That's like finding money... oh wait, you already spent it.`,
-    `🔖 ${clubManager.currentMember.name}, voucher created! ${discountPercentage}% off your next bad financial decision. We support you.`,
-    `💳 ${clubManager.currentMember.name}, congrats! You've earned the privilege of spending MORE money! ${discountPercentage}% off.`,
-    `🃏 ${clubManager.currentMember.name}, you've unlocked the 'Discount' card. It's like Monopoly, but realer. And sadder. ${discountPercentage}% OFF!`,
-    `🎪 ${clubManager.currentMember.name}, welcome back to the spending circus! Here's ${discountPercentage}% off your next ticket to broke-town.`,
-    `💀 ${clubManager.currentMember.name}, RIP your savings account. But hey, ${discountPercentage}% off your next funeral... I mean, purchase!`,
-    `🤡 ${clubManager.currentMember.name}, another clown joins the discount circus! ${discountPercentage}% off your next questionable decision.`,
-    `📉 ${clubManager.currentMember.name}, your bank account graph goes down, but your discount goes up! ${discountPercentage}% OFF!`,
-    `🍷 ${clubManager.currentMember.name}, poor decisions taste better with a ${discountPercentage}% discount. Cheers to bankruptcy!`,
-    `⚰️ ${clubManager.currentMember.name}, your wallet is officially on life support. Here's ${discountPercentage}% off to pull the plug.`
-];
-
-const randomVoucherMsg = darkVoucherMessages[Math.floor(Math.random() * darkVoucherMessages.length)];
-sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
+async function redeemPoints() {
+    const points = parseInt(document.getElementById('discountPoints').value);
+    
+    if (!points || points < 4) {
+        showToast('Minimum 4 points required', 'error');
+        return;
+    }
+    
+    if (points > clubManager.currentMember.points) {
+        showToast(`You only have ${clubManager.currentMember.points} points`, 'error');
+        return;
+    }
+    
+    const discountValue = points * 50;
+    const discountPercentage = Math.min(Math.round((discountValue / 10000) * 100), 100);
+       
+    const limitCheck = voucherSystem.canCreateVoucher(
+        clubManager.currentMember.jcId,
+        clubManager.currentMember.tier,
+        discountValue
+    );
+    
+    if (!limitCheck.canCreate) {
+        let errorMessage = limitCheck.reason;
         
-                clubManager.currentMember.points -= points;
-                
-                clubManager.currentMember.activityLog.unshift({
-                    timestamp: new Date().toISOString(),
-                    action: 'voucher_created',
-                    description: `Created ${discountPercentage}% discount voucher`,
-                    points: -points
-                });
-                
-                await clubManager.db.saveMember(clubManager.currentMember);
-                
-                const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(voucher.code)}`;
-                
-                document.getElementById('discountResult').innerHTML = `
-                    <div class="discount-success">
-                        <strong>✅ Voucher Created Successfully!</strong><br><br>
-                        
-                        <div style="text-align: center; margin: 15px 0;">
-                            <div style="background: white; padding: 15px; border-radius: 10px; display: inline-block; border: 2px solid #ddd;">
-                                <img src="${qrCodeUrl}" alt="QR Code for voucher ${voucher.code}" 
-                                     style="width: 150px; height: 150px;">
-                                <p style="margin: 10px 0 0; font-size: 12px; color: #666;">Scan at checkout</p>
-                            </div>
-                        </div>
-                        
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                            <table style="width: 100%;">
-                                <tr>
-                                    <td><strong>Voucher Code:</strong></td>
-                                    <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #667eea;">${voucher.code}</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Discount:</strong></td>
-                                    <td style="font-size: 18px; font-weight: bold; color: #28a745;">${discountPercentage}% OFF</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Points Used:</strong></td>
-                                    <td>${points} points (from current balance)</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Value:</strong></td>
-                                    <td>${discountValue.toLocaleString()} UGX</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Lifetime Points:</strong></td>
-                                    <td>${clubManager.currentMember.lifetimePoints.toLocaleString()} (unchanged)</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Expires:</strong></td>
-                                    <td>${new Date(voucher.expiryDate).toLocaleDateString()}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        
-                        <div style="display: flex; gap: 10px; margin-top: 15px;">
-                            <button onclick="showVoucherQR('${voucher.code}')" class="btn" style="flex: 1;">
-                                📱 Show QR
-                            </button>
-                        </div>
-                        
-                        <p style="margin-top: 15px; font-size: 12px; color: #666;">
-                            <strong>How to use:</strong> Show the QR code at checkout
-                        </p>
-                    </div>
-                `;
-                
-                updateMemberDashboard(clubManager.currentMember);
-                
-                clubManager.emailService.sendDiscountEmail(
-                    clubManager.currentMember.email,
-                    clubManager.currentMember,
-                    {
-                        voucherCode: voucher.code,
-                        discountPercentage: discountPercentage,
-                        expiryDate: voucher.expiryDate,
-                        qrCodeUrl: qrCodeUrl,
-                        pointsUsed: points,
-                        discountValue: discountValue
-                    }
-                );
-                
-                showToast('Discount voucher created with QR code!', 'success');
-                
-            } catch (error) {
-                console.error('Error creating voucher:', error);
-                showToast('Failed to create voucher. Please try again.', 'error');
-            }
+        if (limitCheck.monthlyRemaining !== undefined) {
+            errorMessage += `\n\nMonthly discount remaining: ${limitCheck.monthlyRemaining.toLocaleString()} UGX`;
         }
+        
+        document.getElementById('discountResult').innerHTML = `
+            <div class="discount-error">
+                <strong>${errorMessage.replace(/\n/g, '<br>')}</strong>
+                <p style="margin-top: 10px; color: #856404;">
+                    💰 Discount limits reset monthly.
+                </p>
+            </div>
+        `;
+        
+        showToast('Discount exceeds your tier limits', 'error');
+        return;
+    }
+    
+    try {
+        const voucher = await voucherSystem.createVoucher(
+            clubManager.currentMember.jcId,
+            clubManager.currentMember.name,
+            points,
+            discountPercentage
+        );
+        
+        clubManager.currentMember.points -= points;
+        
+        clubManager.currentMember.activityLog.unshift({
+            timestamp: new Date().toISOString(),
+            action: 'voucher_created',
+            description: `Created ${discountPercentage}% discount voucher`,
+            points: -points
+        });
+        
+        await clubManager.db.saveMember(clubManager.currentMember);
+        
+        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(voucher.code)}`;
+        
+        // ✅ SHOW SUCCESS FIRST (before notification)
+        document.getElementById('discountResult').innerHTML = `
+            <div class="discount-success">
+                <strong>✅ Voucher Created Successfully!</strong><br><br>
+                
+                <div style="text-align: center; margin: 15px 0;">
+                    <div style="background: white; padding: 15px; border-radius: 10px; display: inline-block; border: 2px solid #ddd;">
+                        <img src="${qrCodeUrl}" alt="QR Code for voucher ${voucher.code}" 
+                             style="width: 150px; height: 150px;">
+                        <p style="margin: 10px 0 0; font-size: 12px; color: #666;">Scan at checkout</p>
+                    </div>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <table style="width: 100%;">
+                        <tr>
+                            <td><strong>Voucher Code:</strong></td>
+                            <td style="font-family: 'Courier New', monospace; font-weight: bold; color: #667eea;">${voucher.code}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Discount:</strong></td>
+                            <td style="font-size: 18px; font-weight: bold; color: #28a745;">${discountPercentage}% OFF</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Points Used:</strong></td>
+                            <td>${points} points (from current balance)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Value:</strong></td>
+                            <td>${discountValue.toLocaleString()} UGX</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Lifetime Points:</strong></td>
+                            <td>${clubManager.currentMember.lifetimePoints.toLocaleString()} (unchanged)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Expires:</strong></td>
+                            <td>${new Date(voucher.expiryDate).toLocaleDateString()}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button onclick="showVoucherQR('${voucher.code}')" class="btn" style="flex: 1;">
+                        📱 Show QR
+                    </button>
+                </div>
+                
+                <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                    <strong>How to use:</strong> Show the QR code at checkout
+                </p>
+            </div>
+        `;
+        
+        updateMemberDashboard(clubManager.currentMember);
+        
+        // ✅ SHOW TOAST SUCCESS
+        showToast('Discount voucher created successfully!', 'success');
+        
+        // ✅ TRY TO SEND NOTIFICATION (DON'T LET IT BREAK ANYTHING)
+        const darkVoucherMessages = [
+            `🎫 ${clubManager.currentMember.name}, you just created a ${discountPercentage}% OFF voucher! That's like finding money... oh wait, you already spent it.`,
+            `🔖 ${clubManager.currentMember.name}, voucher created! ${discountPercentage}% off your next bad financial decision. We support you.`,
+            `💳 ${clubManager.currentMember.name}, congrats! You've earned the privilege of spending MORE money! ${discountPercentage}% off.`,
+            `🃏 ${clubManager.currentMember.name}, you've unlocked the 'Discount' card. It's like Monopoly, but realer. And sadder. ${discountPercentage}% OFF!`,
+            `🎪 ${clubManager.currentMember.name}, welcome back to the spending circus! Here's ${discountPercentage}% off your next ticket to broke-town.`,
+            `💀 ${clubManager.currentMember.name}, RIP your savings account. But hey, ${discountPercentage}% off your next funeral... I mean, purchase!`,
+            `🤡 ${clubManager.currentMember.name}, another clown joins the discount circus! ${discountPercentage}% off your next questionable decision.`,
+            `📉 ${clubManager.currentMember.name}, your bank account graph goes down, but your discount goes up! ${discountPercentage}% OFF!`,
+            `🍷 ${clubManager.currentMember.name}, poor decisions taste better with a ${discountPercentage}% discount. Cheers to bankruptcy!`,
+            `⚰️ ${clubManager.currentMember.name}, your wallet is officially on life support. Here's ${discountPercentage}% off to pull the plug.`
+        ];
+        
+        const randomVoucherMsg = darkVoucherMessages[Math.floor(Math.random() * darkVoucherMessages.length)];
+        
+        // ✅ TRY SEND NOTIFICATION - CATCH ERROR SO IT DOESN'T BREAK ANYTHING
+        try {
+            sendPushNotification('🎫 Your wallet is crying', randomVoucherMsg);
+        } catch (notifError) {
+            console.log('⚠️ Notification failed but voucher was created successfully:', notifError.message);
+            // Don't show error to user - voucher was already created successfully!
+        }
+        
+        // ✅ SEND EMAIL (don't let it break either)
+        try {
+            clubManager.emailService.sendDiscountEmail(
+                clubManager.currentMember.email,
+                clubManager.currentMember,
+                {
+                    voucherCode: voucher.code,
+                    discountPercentage: discountPercentage,
+                    expiryDate: voucher.expiryDate,
+                    qrCodeUrl: qrCodeUrl,
+                    pointsUsed: points,
+                    discountValue: discountValue
+                }
+            );
+        } catch (emailError) {
+            console.log('⚠️ Email failed but voucher was created:', emailError.message);
+        }
+        
+    } catch (error) {
+        console.error('Error creating voucher:', error);
+        // ✅ ONLY SHOW ERROR IF THE VOUCHER ACTUALLY FAILED
+        showToast('Failed to create voucher. Please try again.', 'error');
+    }
+}
 
         async function toggleNewsletter() {
     if (!clubManager.currentMember) return;
