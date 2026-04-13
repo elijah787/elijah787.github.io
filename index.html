@@ -3966,6 +3966,19 @@
     </footer>
 
     <script>
+        // This runs when inside the installed APK
+(function() {
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var isInWebView = (ua.indexOf('wv') > -1) || (ua.indexOf('WebView') > -1);
+    
+    if (isInWebView) {
+        // We're inside the installed app
+        localStorage.setItem('jeansClubAppInstalled', 'true');
+        localStorage.setItem('jeansClubInstallDate', Date.now().toString());
+        localStorage.setItem('appLastVerifiedInstalled', Date.now().toString());
+        console.log('✅ Running inside Jeans Club APK');
+    }
+})();
         // ===========================
         // GLOBAL VARIABLE DECLARATIONS
         // ===========================
@@ -11725,7 +11738,6 @@ console.log('✅ Email service initialized (direct fetch mode)');
 <!-- Floating Download Bar -->
 <div id="floatingDownloadBar" style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,10,0.95); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,215,0,0.3); padding: 12px 20px; z-index: 9999; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
     <div style="display: flex; align-items: center; gap: 12px;">
-        
         <div>
             <img src="https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg" 
                  alt="Jeans Club Logo" 
@@ -11735,34 +11747,150 @@ console.log('✅ Email service initialized (direct fetch mode)');
     </div>
     
     <div style="display: flex; gap: 15px; align-items: center;">
-        
         <a href="https://elijah787.github.io/Jeans-Club.apk" 
            id="downloadAppLink"
            style="background: #FFD700; color: #0a0a0a; padding: 8px 24px; border-radius: 40px; text-decoration: none; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px;">
              Download the App
         </a>
+        <button id="closeBarBtn" style="background: none; border: none; color: #888; font-size: 20px; cursor: pointer; padding: 0 8px;" title="Close">✕</button>
     </div>
 </div>
 
 <script>
-// Check if user has already downloaded
-if (localStorage.getItem('jeansClubDownloaded') === 'true') {
-    document.getElementById('floatingDownloadBar').style.display = 'none';
+// Function to check if app is actually installed on device
+function isAppInstalled() {
+    // Check if we're inside the APK WebView (means app is installed AND open)
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var isInWebView = (ua.indexOf('wv') > -1) || (ua.indexOf('WebView') > -1);
+    
+    if (isInWebView) {
+        // We're inside the app - definitely installed
+        localStorage.setItem('appLastVerifiedInstalled', Date.now().toString());
+        return true;
+    }
+    
+    // Check if we have a recent installation verification (within last 7 days)
+    var lastVerified = localStorage.getItem('appLastVerifiedInstalled');
+    if (lastVerified) {
+        var daysSinceVerification = (Date.now() - parseInt(lastVerified)) / (1000 * 60 * 60 * 24);
+        if (daysSinceVerification < 7) {
+            // Recently verified as installed
+            return true;
+        }
+    }
+    
+    // Check if user has ever installed (but might have uninstalled)
+    var hasInstalledFlag = localStorage.getItem('jeansClubAppInstalled') === 'true';
+    var installDate = localStorage.getItem('jeansClubInstallDate');
+    
+    if (hasInstalledFlag && installDate) {
+        var daysSinceInstall = (Date.now() - parseInt(installDate)) / (1000 * 60 * 60 * 24);
+        
+        // If installed more than 30 days ago, assume maybe uninstalled (ask again)
+        if (daysSinceInstall > 30) {
+            // Clear old install flags to ask again
+            localStorage.removeItem('jeansClubAppInstalled');
+            localStorage.removeItem('jeansClubDownloaded');
+            localStorage.removeItem('appLastVerifiedInstalled');
+            return false;
+        }
+    }
+    
+    return hasInstalledFlag;
 }
 
-// Track download when user clicks
+// Function to check if we should show the download bar
+function shouldShowDownloadBar() {
+    // Don't show if we're inside the app
+    if (isAppInstalled()) {
+        console.log('App is installed - hiding download bar');
+        return false;
+    }
+    
+    // Don't show if user manually closed it recently
+    var barClosedTime = localStorage.getItem('downloadBarClosedTime');
+    if (barClosedTime) {
+        var hoursSinceClosed = (Date.now() - parseInt(barClosedTime)) / (1000 * 60 * 60);
+        if (hoursSinceClosed < 24) {
+            // User closed it within last 24 hours - respect their choice
+            console.log('User closed bar within last 24 hours - hiding');
+            return false;
+        } else {
+            // It's been more than 24 hours, show again (they might want to install)
+            localStorage.removeItem('downloadBarClosedTime');
+        }
+    }
+    
+    // Don't show if user downloaded but we haven't verified installation
+    var hasDownloaded = localStorage.getItem('jeansClubDownloaded') === 'true';
+    var downloadTime = localStorage.getItem('jeansClubDownloadTime');
+    
+    if (hasDownloaded && downloadTime) {
+        var hoursSinceDownload = (Date.now() - parseInt(downloadTime)) / (1000 * 60 * 60);
+        if (hoursSinceDownload < 48) {
+            // Downloaded within last 48 hours - assume they installed it
+            console.log('Recently downloaded - assuming installed');
+            return false;
+        } else {
+            // Downloaded more than 48 hours ago but no installation verification - ask again
+            console.log('Downloaded but no installation detected - showing bar again');
+            localStorage.removeItem('jeansClubDownloaded');
+            localStorage.removeItem('jeansClubAppInstalled');
+            return true;
+        }
+    }
+    
+    // Default: show the bar
+    return true;
+}
+
+// Show or hide the download bar
+function updateDownloadBar() {
+    var bar = document.getElementById('floatingDownloadBar');
+    if (!bar) return;
+    
+    if (shouldShowDownloadBar()) {
+        bar.style.display = 'flex';
+        console.log('📱 Download bar is VISIBLE');
+    } else {
+        bar.style.display = 'none';
+        console.log('✅ Download bar is HIDDEN');
+    }
+}
+
+// Handle download button click
 document.getElementById('downloadAppLink').addEventListener('click', function(e) {
-    // Mark as downloaded
+    // Mark download time
     localStorage.setItem('jeansClubDownloaded', 'true');
+    localStorage.setItem('jeansClubDownloadTime', Date.now().toString());
     
-    // Hide the bar immediately
-    document.getElementById('floatingDownloadBar').style.display = 'none';
+    // Hide bar immediately
+    var bar = document.getElementById('floatingDownloadBar');
+    if (bar) bar.style.display = 'none';
     
-    // Optional: Show a toast message
+    // Show confirmation
     setTimeout(function() {
-        alert('✅ Download started! The app will be saved to your phone.\n\n📱 To reinstall later, visit our website again.');
+        alert('✅ Download started!\n\nAfter installing, open the app and this bar will never show again in your browser.');
     }, 500);
 });
-</script> 
+
+// Handle close button
+document.getElementById('closeBarBtn').addEventListener('click', function() {
+    localStorage.setItem('downloadBarClosedTime', Date.now().toString());
+    var bar = document.getElementById('floatingDownloadBar');
+    if (bar) bar.style.display = 'none';
+    console.log('User closed download bar - will reappear after 24 hours if app not installed');
+});
+
+// Run on page load
+updateDownloadBar();
+
+// Also check when page becomes visible (user returns to tab)
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        updateDownloadBar();
+    }
+});
+</script>
 </body>
 </html> 
