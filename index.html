@@ -11722,7 +11722,7 @@ console.log('✅ Email service initialized (direct fetch mode)');
 
       
     </script>
-<!-- Floating Download Bar -->
+IN THE BROWSER NOW IT GOES AWAY BUT WHEN YOU OPEN THE APP THE BUTTON IS STILL THERE <!-- Floating Download Bar -->
 <div id="floatingDownloadBar" style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,10,0.95); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,215,0,0.3); padding: 12px 20px; z-index: 9999; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
     <div style="display: flex; align-items: center; gap: 12px;">
         <div>
@@ -11743,53 +11743,19 @@ console.log('✅ Email service initialized (direct fetch mode)');
 </div>
 
 <script>
-// Function to detect if user is inside the installed APK (WebView)
-function isInApp() {
-    // Check for WebView user agent
-    var ua = navigator.userAgent || navigator.vendor || window.opera;
-    
-    // Android WebView detection
-    var isWebView = false;
-    
-    // Check for WebView (APK) indicators
-    if (ua.indexOf('wv') > -1) isWebView = true;  // Android WebView
-    if (ua.indexOf('WebView') > -1) isWebView = true;
-    
-    // Check if the app is loaded via file:// or custom scheme
-    if (window.location.protocol === 'file:') isWebView = true;
-    
-    // Check for WebToApp specific indicators
-    if (window.navigator.standalone === true) isWebView = true;  // iOS standalone
-    
-    // Check if installed flag exists in localStorage (set by app)
-    var hasInstalledFlag = localStorage.getItem('jeansClubAppInstalled') === 'true';
-    
-    return isWebView || hasInstalledFlag;
-}
-
 // Function to check and hide the download bar
 function checkAndHideDownloadBar() {
     var bar = document.getElementById('floatingDownloadBar');
     if (!bar) return;
     
-    // HIDE THE BAR IF:
-    // 1. User is INSIDE the installed app (WebView)
-    // 2. User has already downloaded (browser localStorage)
-    // 3. User manually closed it
-    
-    var isInsideApp = isInApp();
+    // Check multiple storage options
     var hasDownloaded = localStorage.getItem('jeansClubDownloaded') === 'true';
-    var barClosed = localStorage.getItem('downloadBarClosed') === 'true';
+    var hasInstalled = localStorage.getItem('jeansClubInstalled') === 'true';
+    var barClosed = sessionStorage.getItem('downloadBarClosed') === 'true';
     
-    if (isInsideApp || hasDownloaded || barClosed) {
+    if (hasDownloaded || hasInstalled || barClosed) {
         bar.style.display = 'none';
-        console.log('Download bar hidden - reason:', {
-            isInsideApp: isInsideApp,
-            hasDownloaded: hasDownloaded,
-            barClosed: barClosed
-        });
-    } else {
-        console.log('Download bar visible - user in browser, not installed yet');
+        console.log('Download bar hidden - already downloaded/installed');
     }
 }
 
@@ -11802,6 +11768,7 @@ if (downloadLink) {
     downloadLink.addEventListener('click', function(e) {
         // Mark as downloaded
         localStorage.setItem('jeansClubDownloaded', 'true');
+        localStorage.setItem('jeansClubInstalled', 'true');
         
         // Hide the bar immediately
         var bar = document.getElementById('floatingDownloadBar');
@@ -11811,29 +11778,21 @@ if (downloadLink) {
         
         // Show confirmation
         setTimeout(function() {
-            alert('✅ Download started! The app will be saved to your phone.\n\n📱 Once installed, open the app and you will never see this bar again.');
+            alert('✅ Download started! The app will be saved to your phone.\n\n📱 To reinstall later, visit our website again.');
         }, 500);
         
         return true;
     });
 }
 
-// Add close button functionality (add X button to HTML)
-var closeBtn = document.createElement('button');
-closeBtn.innerHTML = '✕';
-closeBtn.style.cssText = 'background: none; border: none; color: #888; font-size: 20px; cursor: pointer; padding: 0 8px; margin-left: 10px;';
-closeBtn.title = 'Close';
-closeBtn.onclick = function() {
-    localStorage.setItem('downloadBarClosed', 'true');
+// Also hide if user has been on the page for more than 30 seconds (optional)
+setTimeout(function() {
     var bar = document.getElementById('floatingDownloadBar');
-    if (bar) bar.style.display = 'none';
-};
-
-// Add close button to the bar
-var rightSection = document.querySelector('#floatingDownloadBar div:last-child');
-if (rightSection) {
-    rightSection.appendChild(closeBtn);
-}
+    if (bar && bar.style.display !== 'none') {
+        // Check again after 30 seconds
+        checkAndHideDownloadBar();
+    }
+}, 30000);
 </script>
 </body>
 </html> 
