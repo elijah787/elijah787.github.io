@@ -11722,9 +11722,10 @@ console.log('✅ Email service initialized (direct fetch mode)');
 
       
     </script>
-IN THE BROWSER NOW IT GOES AWAY BUT WHEN YOU OPEN THE APP THE BUTTON IS STILL THERE <!-- Floating Download Bar -->
+<!-- Floating Download Bar -->
 <div id="floatingDownloadBar" style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,10,0.95); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,215,0,0.3); padding: 12px 20px; z-index: 9999; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
     <div style="display: flex; align-items: center; gap: 12px;">
+        
         <div>
             <img src="https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg" 
                  alt="Jeans Club Logo" 
@@ -11734,6 +11735,7 @@ IN THE BROWSER NOW IT GOES AWAY BUT WHEN YOU OPEN THE APP THE BUTTON IS STILL TH
     </div>
     
     <div style="display: flex; gap: 15px; align-items: center;">
+        
         <a href="https://elijah787.github.io/Jeans-Club.apk" 
            id="downloadAppLink"
            style="background: #FFD700; color: #0a0a0a; padding: 8px 24px; border-radius: 40px; text-decoration: none; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px;">
@@ -11743,56 +11745,24 @@ IN THE BROWSER NOW IT GOES AWAY BUT WHEN YOU OPEN THE APP THE BUTTON IS STILL TH
 </div>
 
 <script>
-// Function to check and hide the download bar
-function checkAndHideDownloadBar() {
-    var bar = document.getElementById('floatingDownloadBar');
-    if (!bar) return;
-    
-    // Check multiple storage options
-    var hasDownloaded = localStorage.getItem('jeansClubDownloaded') === 'true';
-    var hasInstalled = localStorage.getItem('jeansClubInstalled') === 'true';
-    var barClosed = sessionStorage.getItem('downloadBarClosed') === 'true';
-    
-    if (hasDownloaded || hasInstalled || barClosed) {
-        bar.style.display = 'none';
-        console.log('Download bar hidden - already downloaded/installed');
-    }
+// Check if user has already downloaded
+if (localStorage.getItem('jeansClubDownloaded') === 'true') {
+    document.getElementById('floatingDownloadBar').style.display = 'none';
 }
-
-// Check immediately
-checkAndHideDownloadBar();
 
 // Track download when user clicks
-var downloadLink = document.getElementById('downloadAppLink');
-if (downloadLink) {
-    downloadLink.addEventListener('click', function(e) {
-        // Mark as downloaded
-        localStorage.setItem('jeansClubDownloaded', 'true');
-        localStorage.setItem('jeansClubInstalled', 'true');
-        
-        // Hide the bar immediately
-        var bar = document.getElementById('floatingDownloadBar');
-        if (bar) {
-            bar.style.display = 'none';
-        }
-        
-        // Show confirmation
-        setTimeout(function() {
-            alert('✅ Download started! The app will be saved to your phone.\n\n📱 To reinstall later, visit our website again.');
-        }, 500);
-        
-        return true;
-    });
-}
-
-// Also hide if user has been on the page for more than 30 seconds (optional)
-setTimeout(function() {
-    var bar = document.getElementById('floatingDownloadBar');
-    if (bar && bar.style.display !== 'none') {
-        // Check again after 30 seconds
-        checkAndHideDownloadBar();
-    }
-}, 30000);
-</script>
+document.getElementById('downloadAppLink').addEventListener('click', function(e) {
+    // Mark as downloaded
+    localStorage.setItem('jeansClubDownloaded', 'true');
+    
+    // Hide the bar immediately
+    document.getElementById('floatingDownloadBar').style.display = 'none';
+    
+    // Optional: Show a toast message
+    setTimeout(function() {
+        alert('✅ Download started! The app will be saved to your phone.\n\n📱 To reinstall later, visit our website again.');
+    }, 500);
+});
+</script> 
 </body>
 </html> 
