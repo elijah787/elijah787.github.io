@@ -11730,11 +11730,8 @@ console.log('✅ Email service initialized (direct fetch mode)');
         }
     });
 }
- 
-        
 
-      
-    </script>
+</script>
 <!-- Floating Download Bar -->
 <div id="floatingDownloadBar" style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,10,10,0.95); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,215,0,0.3); padding: 12px 20px; z-index: 9999; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
     <div style="display: flex; align-items: center; gap: 12px;">
@@ -11750,8 +11747,9 @@ console.log('✅ Email service initialized (direct fetch mode)');
         <a href="https://elijah787.github.io/Jeans-Club.apk" 
            id="downloadAppLink"
            style="background: #FFD700; color: #0a0a0a; padding: 8px 24px; border-radius: 40px; text-decoration: none; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-             Download the App
+            📲 Download the App
         </a>
+        <button id="closeBarBtn" style="background: none; border: none; color: #888; font-size: 20px; cursor: pointer; padding: 0 8px;" title="Close">✕</button>
     </div>
 </div>
 
@@ -11795,7 +11793,7 @@ function isAppInstalled() {
 // Hide popup if app is installed
 function checkAndHidePopup() {
     var popup = document.getElementById('installPopup');
-    if (!popup) return true;
+    if (!popup) return;
     
     if (isAppInstalled()) {
         popup.style.display = 'none';
@@ -11807,87 +11805,66 @@ function checkAndHidePopup() {
     return false;
 }
 
-// Global interval variable
-var popupCheckInterval = null;
-
-// Show popup and start checking
+// Show popup
 function showInstallPopup() {
     // Don't show if already installed
     if (isAppInstalled()) return;
     
     var popup = document.getElementById('installPopup');
-    if (popup && popup.style.display !== 'flex') {
+    if (popup) {
         popup.style.display = 'flex';
         document.body.style.overflow = 'hidden';
         console.log('⚠️ Showing installation reminder popup');
         
-        // Clear any existing interval
-        if (popupCheckInterval) {
-            clearInterval(popupCheckInterval);
-        }
-        
         // Keep checking every 2 seconds until installed
-        popupCheckInterval = setInterval(function() {
+        var checkInterval = setInterval(function() {
             if (checkAndHidePopup()) {
-                if (popupCheckInterval) {
-                    clearInterval(popupCheckInterval);
-                    popupCheckInterval = null;
-                }
+                clearInterval(checkInterval);
+                console.log('✅ Popup auto-removed - app installed');
             }
         }, 2000);
     }
 }
 
 // Handle download click
-var downloadLink = document.getElementById('downloadAppLink');
-if (downloadLink) {
-    downloadLink.addEventListener('click', function(e) {
-        // Mark that download was started
-        localStorage.setItem('downloadStarted', 'true');
-        localStorage.setItem('downloadStartTime', Date.now().toString());
-        
-        // Hide the floating bar
-        var bar = document.getElementById('floatingDownloadBar');
-        if (bar) bar.style.display = 'none';
-        
-        // Show popup after 2 seconds
-        setTimeout(function() {
-            showInstallPopup();
-        }, 2000);
-    });
-}
+document.getElementById('downloadAppLink').addEventListener('click', function(e) {
+    // Mark that download was started
+    localStorage.setItem('downloadStarted', 'true');
+    localStorage.setItem('downloadStartTime', Date.now().toString());
+    
+    // Hide the floating bar
+    document.getElementById('floatingDownloadBar').style.display = 'none';
+    
+    // Show popup after 2 seconds
+    setTimeout(function() {
+        showInstallPopup();
+    }, 2000);
+});
+
+// Handle close button for floating bar
+document.getElementById('closeBarBtn').addEventListener('click', function() {
+    localStorage.setItem('downloadBarClosed', 'true');
+    document.getElementById('floatingDownloadBar').style.display = 'none';
+});
 
 // Check on page load
 window.addEventListener('load', function() {
     // Hide floating bar if app is installed
-    var bar = document.getElementById('floatingDownloadBar');
-    if (bar && isAppInstalled()) {
-        bar.style.display = 'none';
+    if (isAppInstalled()) {
+        document.getElementById('floatingDownloadBar').style.display = 'none';
     }
     
     // If download was started but app not installed, show popup
     var downloadStarted = localStorage.getItem('downloadStarted') === 'true';
     if (downloadStarted && !isAppInstalled()) {
         showInstallPopup();
-    } else if (isAppInstalled()) {
-        // Clean up if installed
-        localStorage.removeItem('downloadStarted');
-        if (popupCheckInterval) {
-            clearInterval(popupCheckInterval);
-            popupCheckInterval = null;
-        }
     }
 });
 
-// Check when page becomes visible again (user returns to browser)
+// Also check when page becomes visible again (user returns to browser)
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
-        if (checkAndHidePopup()) {
-            if (popupCheckInterval) {
-                clearInterval(popupCheckInterval);
-                popupCheckInterval = null;
-            }
-        }
+        checkAndHidePopup();
     }
 });
 </script>
