@@ -5376,108 +5376,83 @@ function showMemberTransactionScreen(transaction) {
             document.body.appendChild(modal);
         }
 
-        // Process confirmed sale (salesperson scans confirmation QR)
-        async function processConfirmedSale(parsedData) {
+
+async function processConfirmedSale(parsedData) {
+    try {
+        const { transactionId, memberJcId, finalTotal, appliedVoucher } = parsedData;
+        
+        console.log('Processing confirmed sale for:', memberJcId, 'Amount:', finalTotal);
+        
+        // Get the transaction if not in currentTransaction
+        let transaction = currentTransaction;
+        if (!transaction || transaction.id !== transactionId) {
+            const { data, error } = await clubManager.db.supabase
+                .from('transactions')
+                .select('*')
+                .eq('id', transactionId)
+                .single();
+            
+            if (error || !data) {
+                showToast('Transaction not found', 'error');
+                return;
+            }
+            
+            let items = [];
             try {
-                const { transactionId, memberJcId, finalTotal, appliedVoucher } = parsedData;
-                
-                if (!currentTransaction || currentTransaction.id !== transactionId) {
-                    if (!window.supabaseDbInstance) return;
-                    
-                    const { supabase } = window.supabaseDbInstance;
-                    
-                    const { data: transaction, error } = await supabase
-                        .from('transactions')
-                        .select('*')
-                        .eq('id', transactionId)
-                        .single();
-                    
-                    if (error || !transaction) {
-                        showToast("Transaction not found", "error");
-                        return;
-                    }
-                    
-                    let items = [];
-                    try {
-                        items = JSON.parse(transaction.items || '[]');
-                    } catch (e) {
-                        items = [];
-                    }
-                    
-                    const subtotal = items.reduce((sum, item) => sum + (item.price || 0), 0);
-                    
-                    currentTransaction = {
-                        id: transaction.id,
-                        sessionId: transaction.session_id,
-                        memberJcId: transaction.member_jc_id,
-                        memberName: transaction.member_name,
-                        memberTier: transaction.member_tier,
-                        salespersonName: transaction.salesperson_name,
-                        status: transaction.status,
-                        items: items,
-                        subtotal: subtotal,
-                        appliedVoucher: transaction.applied_voucher ? JSON.parse(transaction.applied_voucher) : null,
-                        finalTotal: transaction.final_total || subtotal,
-                        memberConfirmed: transaction.member_confirmed || false
-                    };
-                }
-                
-                await clubManager.addPurchase(
-                    currentTransaction.memberJcId,
-                    finalTotal,
-                    `Store purchase: ${currentTransaction.items.map(i => i.name).join(', ')}`
-                );
-                
-                if (appliedVoucher) {
-                    await voucherSystem.redeemVoucher(
-                        appliedVoucher.code,
-                        clubManager.currentSalesperson || "Salesperson"
-                    );
-                }
-                
-                const pointsEarned = Math.floor(finalTotal / 1000);
-                
-                const receipt = {
-                    transactionId: currentTransaction.id,
-                    store: "Jeans Club - Kampala",
-                    date: new Date().toLocaleString(),
-                    salesperson: currentTransaction.salespersonName,
-                    memberName: currentTransaction.memberName,
-                    memberJcId: currentTransaction.memberJcId,
-                    memberTier: currentTransaction.memberTier,
-                    items: currentTransaction.items,
-                    subtotal: currentTransaction.subtotal,
-                    voucher: appliedVoucher,
-                    finalTotal: finalTotal,
-                    pointsEarned: pointsEarned,
-                    paymentMethod: "Cash"
-                };
-                
+                items = JSON.parse(data.items || '[]');
+            } catch(e) {}
+            
+            transaction = {
+                id: data.id,
+                memberJcId: data.member_jc_id,
+                memberName: data.member_name,
+                items: items,
+                subtotal: items.reduce((sum, i) => sum + (i.price || 0), 0)
+            };
+        }
+        
+        // ✅ ADD PURCHASE TO MEMBER
+        const result = await clubManager.addPurchase(
+            memberJcId,
+            finalTotal,
+            `Store purchase: ${transaction.items.map(i => i.name).join(', ')}`
+        );
+        
+        if (result.success) {
+            // Mark transaction as completed
+            if (currentTransaction) {
                 currentTransaction.status = "completed";
                 currentTransaction.salespersonCompleted = true;
                 currentTransaction.completedAt = new Date().toISOString();
-                currentTransaction.pointsEarned = pointsEarned;
-                
+                currentTransaction.pointsEarned = Math.floor(finalTotal / 1000);
                 await saveTransaction(currentTransaction);
-                
-                broadcastToMember({
-                    type: 'sale_completed',
-                    receipt: receipt
-                });
-                
-                showReceipt(receipt);
-                
-                currentTransaction = null;
-                isInTransactionFlow = false;
-                
-                showToast("Sale completed successfully!", "success");
-                
-            } catch (error) {
-                console.error("Error processing confirmed sale:", error);
-                showToast("Failed to complete sale", "error");
             }
+            
+            // Redeem voucher if used
+            if (appliedVoucher && appliedVoucher.code) {
+                await voucherSystem.redeemVoucher(appliedVoucher.code, clubManager.currentSalesperson || "Salesperson");
+            }
+            
+            showToast(`✅ Sale complete! +${Math.floor(finalTotal / 1000)} points added!`, 'success');
+            
+            // Clear transaction and go back
+            currentTransaction = null;
+            isInTransactionFlow = false;
+            
+            if (clubManager.isAdmin) {
+                showAdminPanel();
+            } else {
+                showDashboard(clubManager.currentMember);
+            }
+        } else {
+            showToast(result.message || 'Failed to complete sale', 'error');
         }
-
+        
+    } catch (error) {
+        console.error('Error processing confirmed sale:', error);
+        showToast('Failed to complete sale', 'error');
+    }
+}
         // Show receipt
         function showReceipt(receipt) {
             const itemsHtml = receipt.items.map(item => `
@@ -7560,10 +7535,11 @@ if (typeof startListeningForNotifications === 'function') {
                     return false;
                 }
             }
-
-
-            async addPurchase(jcId, amount, description) {
+async addPurchase(jcId, amount, description) {
     try {
+        console.log('=== ADD PURCHASE CALLED ===');
+        console.log('JC ID:', jcId, 'Amount:', amount);
+        
         if (!jcId || !amount || amount <= 0) {
             return { success: false, message: 'Invalid purchase data' };
         }
@@ -7576,10 +7552,12 @@ if (typeof startListeningForNotifications === 'function') {
         const pointsEarned = Math.floor(amount / 1000);
         const oldTier = member.tier;
         
-        member.points += pointsEarned;
+        // ✅ UPDATE ALL THREE FIELDS CORRECTLY
+        member.points = (member.points || 0) + pointsEarned;
         member.lifetimePoints = (member.lifetimePoints || 0) + pointsEarned;
-        member.totalSpent += amount;
+        member.totalSpent = (member.totalSpent || 0) + amount;
         
+        // ✅ RECALCULATE TIER BASED ON LIFETIME POINTS
         const tiers = [
             { name: 'PEARL', min: 0, max: 7499 },
             { name: 'BRONZE', min: 7500, max: 24999 },
@@ -7599,6 +7577,8 @@ if (typeof startListeningForNotifications === 'function') {
         
         const tierUpgraded = oldTier !== member.tier;
         
+        // Add to purchase history
+        member.purchaseHistory = member.purchaseHistory || [];
         member.purchaseHistory.unshift({
             timestamp: new Date().toISOString(),
             amount: amount,
@@ -7606,6 +7586,8 @@ if (typeof startListeningForNotifications === 'function') {
             pointsEarned: pointsEarned
         });
         
+        // Add to activity log
+        member.activityLog = member.activityLog || [];
         member.activityLog.unshift({
             timestamp: new Date().toISOString(),
             action: 'purchase',
@@ -7613,91 +7595,168 @@ if (typeof startListeningForNotifications === 'function') {
             points: pointsEarned
         });
         
-        // ✅ SEND PUSH NOTIFICATION FOR PURCHASE
-       // FIND this function in your code and REPLACE the darkMessages array:
-
-const darkMessages = [
-    // DARK HUMOR PURCHASE MESSAGES
-    `💀 ${member.name}, you just spent ${amount.toLocaleString()} UGX. Your ancestors are disappointed, but your jeans look FIRE. +${pointsEarned} points.`,
-    `🔮 ${member.name}, I see debt in your future... but also really nice jeans. ${amount.toLocaleString()} UGX gone. +${pointsEarned} points.`,
-    `⚰️ ${member.name}, your wallet has been officially declared dead at ${amount.toLocaleString()} UGX. Funeral expenses: 0 (you spent it all on jeans). +${pointsEarned} points.`,
-    `👻 ${member.name}, SPOOKY season came early! Your money just vanished like a ghost. ${amount.toLocaleString()} UGX gone. +${pointsEarned} points. Boo-tyful purchase!`,
-    `🤡 ${member.name}, congratulations! You're now officially broke but stylish. ${amount.toLocaleString()} UGX spent. +${pointsEarned} points. Honk honk!`,
-    `📉 ${member.name}, your bank account graph just went 📉 but your style graph went 📈. ${amount.toLocaleString()} UGX. +${pointsEarned} points.`,
-    `🍷 ${member.name}, poor decisions make great stories. ${amount.toLocaleString()} UGX on jeans? Legendary. +${pointsEarned} points.`,
-    `🎪 ${member.name}, welcome to the circus! You're the main attraction with that ${amount.toLocaleString()} UGX purchase. +${pointsEarned} points.`,
-    `🪦 ${member.name}, RIP your savings (${member.joinedDate} - today). Cause of death: Denim addiction. ${amount.toLocaleString()} UGX. +${pointsEarned} points.`,
-    `📢 ${member.name}, this is an intervention! ...Just kidding, spend more! ${amount.toLocaleString()} UGX. +${pointsEarned} points.`
-];
-        const randomMsg = darkMessages[Math.floor(Math.random() * darkMessages.length)];
-        sendPushNotification('🛍️ Purchase Confirmed!', randomMsg);
-        
-        // ✅ SEND TIER UPGRADE NOTIFICATION IF APPLICABLE
-        if (tierUpgraded) {
-            const tierMessages = {
-                'BRONZE': "You're officially not a beginner anymore. The denim gods approve!",
-                'SILVER': "You're now in the top tier of denim enthusiasts. Your jeans are jealous of you!",
-                'RUBY': "At this rate, your closet might need a separate zip code. Keep going!",
-                'GOLD': "You've achieved what many only dream of. The denim throne awaits...",
-                'SAPPHIRE': "You're basically a denim celebrity now. Autographs?",
-                'PLATINUM': "You've reached the peak. Denim royalty, we bow to you."
-            };
-            const tierMsg = tierMessages[member.tier] || `Welcome to ${member.tier} tier!`;
-            sendPushNotification(`🏆 TIER UPGRADE: ${member.tier}!`, tierMsg);
+        // Save to Supabase
+        const saved = await this.db.saveMember(member);
+        if (!saved) {
+            return { success: false, message: 'Failed to save to database' };
         }
         
-        if (member.referredBy) {
-            const referrer = await this.db.getMemberByJCId(member.referredBy);
-            if (referrer) {
-                const referral = referrer.referrals.find(r => r.referredJCId === member.jcId);
-                if (referral && referral.status === 'pending') {
-                    referral.status = 'completed';
-                    referral.completionDate = new Date().toISOString();
-                    
-                    referrer.points += 100;
-                    referrer.lifetimePoints = (referrer.lifetimePoints || 0) + 100;
-                    referrer.activityLog.unshift({
-                        timestamp: new Date().toISOString(),
-                        action: 'referral_completed',
-                        description: `Referral completed: ${member.name}`,
-                        points: 100
-                    });
-                    
-                    await this.db.saveMember(referrer);
-                    
-                    // ✅ SEND REFERRAL NOTIFICATION
-                    sendPushNotification('🎊 Referral Success!', 
-                        `${referrer.name}, ${member.name} made their first purchase! +100 points for you!`);
-                    
-                    await this.emailService.sendReferralEmail(referrer.email, referrer, {
-                        referredName: member.name,
-                        pointsEarned: 100
-                    });
+        // Verify the save worked
+        const verifyMember = await this.db.getMemberByJCId(jcId.toUpperCase());
+        
+        // Update current session if this is the logged-in user
+        if (this.currentMember && this.currentMember.jcId === member.jcId) {
+            this.currentMember = verifyMember;
+            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(verifyMember));
+            
+            // ✅ REFRESH DASHBOARD DISPLAY
+            if (typeof this.refreshDashboard === 'function') {
+                this.refreshDashboard(verifyMember);
+            } else {
+                // Direct DOM updates as fallback
+                const pointsEl = document.getElementById('memberPoints');
+                if (pointsEl) pointsEl.textContent = verifyMember.points.toLocaleString();
+                
+                const lifetimeEl = document.getElementById('lifetimePoints');
+                if (lifetimeEl) lifetimeEl.textContent = verifyMember.lifetimePoints.toLocaleString();
+                
+                const totalSpentEl = document.getElementById('totalSpent');
+                if (totalSpentEl) totalSpentEl.textContent = verifyMember.totalSpent.toLocaleString() + ' UGX';
+                
+                const tierEl = document.getElementById('memberTier');
+                if (tierEl) tierEl.textContent = verifyMember.tier;
+                
+                // Update progress bar
+                const currentTier = tiers.find(t => t.name === verifyMember.tier);
+                const nextTier = tiers[tiers.findIndex(t => t.name === verifyMember.tier) + 1];
+                const progressFill = document.getElementById('progressFill');
+                const progressText = document.getElementById('tierProgressText');
+                
+                if (nextTier && progressFill && progressText) {
+                    const progress = ((verifyMember.lifetimePoints - currentTier.min) / (nextTier.min - currentTier.min)) * 100;
+                    progressFill.style.width = `${Math.min(progress, 100)}%`;
+                    progressText.textContent = `${verifyMember.lifetimePoints.toLocaleString()} / ${nextTier.min.toLocaleString()} lifetime points to ${nextTier.name}`;
+                } else if (progressFill && progressText) {
+                    progressFill.style.width = '100%';
+                    progressText.textContent = 'Maximum tier reached!';
                 }
             }
         }
         
-        await this.db.saveMember(member);
+        // Send push notification
+        if (typeof sendPushNotification === 'function') {
+            const darkMessages = [
+                `💀 You just spent ${amount.toLocaleString()} UGX. +${pointsEarned} points!`,
+                `🔮 ${amount.toLocaleString()} UGX gone. +${pointsEarned} points. Your jeans look FIRE!`,
+                `⚰️ Your wallet died at ${amount.toLocaleString()} UGX. +${pointsEarned} points.`
+            ];
+            const randomMsg = darkMessages[Math.floor(Math.random() * darkMessages.length)];
+            sendPushNotification('🛍️ Purchase Confirmed!', randomMsg);
+        }
         
-        await this.emailService.sendPurchaseEmail(member.email, member, {
+        // Send email notification
+        await this.emailService.sendPurchaseEmail(member.email, verifyMember, {
             amount: amount,
             description: description,
             pointsEarned: pointsEarned,
-            newBalance: member.points
+            newBalance: verifyMember.points
         });
+        
+        console.log('✅ Purchase recorded successfully!');
         
         return {
             success: true,
             message: `Purchase recorded! ${pointsEarned} points added.`,
-            member: member
+            member: verifyMember
         };
         
     } catch (error) {
         console.error('Add purchase error:', error);
-        return { success: false, message: 'Failed to record purchase' };
+        return { success: false, message: 'Failed to record purchase: ' + error.message };
     }
 }
 
+// Add this helper function to refresh dashboard display
+refreshDashboard(member) {
+    if (!member && this.currentMember) {
+        member = this.currentMember;
+    }
+    if (!member) return;
+    
+    console.log('🔄 Refreshing dashboard for:', member.name);
+    
+    // Update all text elements
+    const pointsEl = document.getElementById('memberPoints');
+    if (pointsEl) pointsEl.textContent = member.points?.toLocaleString() || '0';
+    
+    const lifetimeEl = document.getElementById('lifetimePoints');
+    if (lifetimeEl) lifetimeEl.textContent = member.lifetimePoints?.toLocaleString() || '0';
+    
+    const totalSpentEl = document.getElementById('totalSpent');
+    if (totalSpentEl) totalSpentEl.textContent = (member.totalSpent?.toLocaleString() || '0') + ' UGX';
+    
+    const tierEl = document.getElementById('memberTier');
+    if (tierEl) tierEl.textContent = member.tier || 'PEARL';
+    
+    const jcIdEl = document.getElementById('memberJcId');
+    if (jcIdEl) jcIdEl.textContent = member.jcId;
+    
+    const nameEl = document.getElementById('memberName');
+    if (nameEl) nameEl.textContent = member.name;
+    
+    // Update member card
+    const cardNumber = document.getElementById('cardNumber');
+    if (cardNumber && member.jcId) {
+        cardNumber.innerHTML = member.jcId.split('').map(char => `<span>${char}</span>`).join('');
+    }
+    
+    const cardHolderName = document.getElementById('cardHolderName');
+    if (cardHolderName) cardHolderName.textContent = member.name?.toUpperCase() || 'MEMBER';
+    
+    const memberCard = document.getElementById('memberCard');
+    if (memberCard && member.tier) {
+        memberCard.className = `member-card ${member.tier.toLowerCase()}`;
+    }
+    
+    // Update tier progress
+    const tiers = [
+        { name: 'PEARL', min: 0, max: 7499 },
+        { name: 'BRONZE', min: 7500, max: 24999 },
+        { name: 'SILVER', min: 25000, max: 99999 },
+        { name: 'RUBY', min: 100000, max: 249999 },
+        { name: 'GOLD', min: 250000, max: 499999 },
+        { name: 'SAPPHIRE', min: 500000, max: 999999 },
+        { name: 'PLATINUM', min: 1000000, max: Infinity }
+    ];
+    
+    const currentTier = tiers.find(t => t.name === member.tier);
+    const nextTier = tiers[tiers.findIndex(t => t.name === member.tier) + 1];
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('tierProgressText');
+    
+    if (nextTier && progressFill && progressText) {
+        const progress = ((member.lifetimePoints - currentTier.min) / (nextTier.min - currentTier.min)) * 100;
+        progressFill.style.width = `${Math.min(progress, 100)}%`;
+        progressText.textContent = `${member.lifetimePoints.toLocaleString()} / ${nextTier.min.toLocaleString()} lifetime points to ${nextTier.name}`;
+    } else if (progressFill && progressText) {
+        progressFill.style.width = '100%';
+        progressText.textContent = 'Maximum tier reached!';
+    }
+    
+    // Update activity log
+    const activityLog = document.getElementById('activityLog');
+    if (activityLog && member.activityLog) {
+        activityLog.innerHTML = member.activityLog.slice(0, 10).map(activity => `
+            <div class="activity-item">
+                <strong>${new Date(activity.timestamp).toLocaleDateString()}</strong><br>
+                ${activity.description}
+                ${activity.points ? `<span style="color: #28a745;"> (+${activity.points} pts)</span>` : ''}
+            </div>
+        `).join('');
+    }
+    
+    console.log('✅ Dashboard refreshed');
+}
             logout() {
                 this.currentMember = null;
                 this.isAdmin = false;
