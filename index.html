@@ -4857,23 +4857,44 @@
         }
     }
 }
-        // Handle sale completed
-        function handleSaleCompleted(payload) {
-            showToast("Sale completed successfully!", "success");
-            
-            if (payload.receipt) {
-                showReceipt(payload.receipt);
-            }
-            
-            currentTransaction = null;
-            isInTransactionFlow = false;
-            
-            if (clubManager.isAdmin) {
-                showAdminPanel();
-            } else {
-                showDashboard(clubManager.currentMember);
-            }
+function handleSaleCompleted(payload) {
+    console.log('🎉 Sale completed!', payload);
+    
+    // Show success message on member phone
+    if (payload.success !== false) {
+        const pointsEarned = payload.pointsEarned || 0;
+        showToast(`✅ Purchase complete! +${pointsEarned} points added!`, 'success');
+        
+        // Update member's local data
+        if (clubManager && clubManager.currentMember) {
+            // Refresh member data
+            clubManager.db.getMemberByJCId(clubManager.currentMember.jcId).then(freshMember => {
+                if (freshMember) {
+                    clubManager.currentMember = freshMember;
+                    localStorage.setItem('jeansClubCurrentMember', JSON.stringify(freshMember));
+                    if (typeof updateMemberDashboard === 'function') {
+                        updateMemberDashboard(freshMember);
+                    }
+                }
+            });
         }
+    } else {
+        showToast(payload.message || 'Transaction failed', 'error');
+    }
+    
+    // Clear transaction
+    currentTransaction = null;
+    isInTransactionFlow = false;
+    
+    // Return to dashboard after 2 seconds
+    setTimeout(() => {
+        if (clubManager.isAdmin) {
+            showAdminPanel();
+        } else {
+            showDashboard(clubManager.currentMember);
+        }
+    }, 2000);
+}
 function showMemberTransactionScreen(transaction) {
     hideAllSections();
     document.getElementById('memberTransactionScreen').classList.remove('hidden');
@@ -5376,12 +5397,14 @@ function showMemberTransactionScreen(transaction) {
             document.body.appendChild(modal);
         }
 
-
 async function processConfirmedSale(parsedData) {
     try {
         const { transactionId, memberJcId, finalTotal, appliedVoucher } = parsedData;
         
-        console.log('Processing confirmed sale for:', memberJcId, 'Amount:', finalTotal);
+        console.log('🟢 PROCESSING CONFIRMED SALE');
+        console.log('Transaction ID:', transactionId);
+        console.log('Member JC ID:', memberJcId);
+        console.log('Final Total:', finalTotal);
         
         // Get the transaction if not in currentTransaction
         let transaction = currentTransaction;
@@ -5411,6 +5434,9 @@ async function processConfirmedSale(parsedData) {
             };
         }
         
+        // Show loading indicator
+        showToast('Processing payment...', 'info');
+        
         // ✅ ADD PURCHASE TO MEMBER
         const result = await clubManager.addPurchase(
             memberJcId,
@@ -5433,11 +5459,45 @@ async function processConfirmedSale(parsedData) {
                 await voucherSystem.redeemVoucher(appliedVoucher.code, clubManager.currentSalesperson || "Salesperson");
             }
             
+            // ✅ SEND CONFIRMATION TO MEMBER VIA BROADCAST
+            if (window.supabaseDbInstance) {
+                const { supabase } = window.supabaseDbInstance;
+                
+                // Broadcast to member that sale is complete
+                await supabase
+                    .channel('transaction_' + transactionId)
+                    .send({
+                        type: 'broadcast',
+                        event: 'sale_completed',
+                        payload: {
+                            success: true,
+                            message: `Purchase complete! +${Math.floor(finalTotal / 1000)} points added!`,
+                            pointsEarned: Math.floor(finalTotal / 1000),
+                            finalTotal: finalTotal,
+                            timestamp: Date.now()
+                        }
+                    });
+                
+                console.log('✅ Broadcast sent to member');
+            }
+            
             showToast(`✅ Sale complete! +${Math.floor(finalTotal / 1000)} points added!`, 'success');
             
             // Clear transaction and go back
             currentTransaction = null;
             isInTransactionFlow = false;
+            
+            // Refresh dashboard if needed
+            if (clubManager.currentMember && clubManager.currentMember.jcId === memberJcId) {
+                const freshMember = await clubManager.db.getMemberByJCId(memberJcId);
+                if (freshMember) {
+                    clubManager.currentMember = freshMember;
+                    localStorage.setItem('jeansClubCurrentMember', JSON.stringify(freshMember));
+                    if (typeof updateMemberDashboard === 'function') {
+                        updateMemberDashboard(freshMember);
+                    }
+                }
+            }
             
             if (clubManager.isAdmin) {
                 showAdminPanel();
@@ -5446,6 +5506,22 @@ async function processConfirmedSale(parsedData) {
             }
         } else {
             showToast(result.message || 'Failed to complete sale', 'error');
+            
+            // Send failure broadcast to member
+            if (window.supabaseDbInstance) {
+                const { supabase } = window.supabaseDbInstance;
+                await supabase
+                    .channel('transaction_' + transactionId)
+                    .send({
+                        type: 'broadcast',
+                        event: 'sale_failed',
+                        payload: {
+                            success: false,
+                            message: result.message || 'Transaction failed',
+                            timestamp: Date.now()
+                        }
+                    });
+            }
         }
         
     } catch (error) {
