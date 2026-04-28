@@ -1,0 +1,32 @@
+{
+	"appId": "io.github.elijah787",
+	"appName": "Jeans Club",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"plugins": {
+		"StatusBar": {
+			"style": "DARK",
+			"backgroundColor": "#4C2E85"
+		},
+		"NavigationBar": {
+			"backgroundColor": "#4C2E85"
+		},
+		"SplashScreen": {
+			"launchShowDuration": 1500,
+			"launchAutoHide": true,
+			"backgroundColor": "#4C2E85",
+			"androidSplashResourceName": "splash",
+			"showSpinner": true,
+			"spinnerColor": "#FFFFFF"
+		}
+	},
+	"android": {
+		"webContentsDebuggingEnabled": false,
+		"allowMixedContent": true,
+		"overrideUserAgent": true,
+		"appendUserAgent": "WebToAPK",
+		"backgroundColor": "#ffffff"
+	}
+}

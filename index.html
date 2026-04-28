@@ -8594,35 +8594,35 @@ class PushNotificationManager {
             }
         }
     }
-
-    sendNotification(title, body, data = {}) {
-        if (!this.isSubscribed) {
-            console.log('Not subscribed, storing notification');
-            this.storeNotification(title, body, data);
-            return;
-        }
-        
-        // Try OneSignal first
-        if (window.OneSignal) {
-            OneSignal.Notifications.addNotification({
-                title: title,
-                body: body,
-                data: data,
-                icon: 'https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg'
-            }).catch(e => console.log('OneSignal send error:', e));
-        }
-        
-        // Also show on current device
-        if (Notification.permission === 'granted') {
-            new Notification(title, {
-                body: body,
-                icon: 'https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg'
-            });
-        }
-        
-        // Store for cross-device sync
-        this.saveNotificationToSupabase(title, body, data);
+// Update the sendNotification method in your PushNotificationManager class:
+sendNotification(title, body, data = {}) {
+    if (!this.isSubscribed) {
+        console.log('Not subscribed, storing notification');
+        this.storeNotification(title, body, data);
+        return;
     }
+    
+    // Use OneSignal v16 API
+    if (window.OneSignal && OneSignal.Notifications) {
+        OneSignal.Notifications.createNotification({
+            title: title,
+            message: body,
+            data: data,
+            icon: 'https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg'
+        }).catch(e => console.log('OneSignal send error:', e));
+    }
+    
+    // Also show on current device
+    if (Notification.permission === 'granted') {
+        new Notification(title, {
+            body: body,
+            icon: 'https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg'
+        });
+    }
+    
+    // Store for cross-device sync
+    this.saveNotificationToSupabase(title, body, data);
+}
     
     storeNotification(title, body, data = {}) {
         const pending = JSON.parse(localStorage.getItem('pendingNotifications') || '[]');
@@ -9258,21 +9258,64 @@ async function updateNotificationButton() {
 // REPLACE sendPushNotification with this Supabase version
 // ===========================================
 
+// REPLACE your existing sendPushNotification function with this:
 function sendPushNotification(title, body, data = {}) {
-    // Store in Supabase for cross-device sync
-    if (clubManager && clubManager.currentMember) {
-        saveNotificationToSupabase(clubManager.currentMember.jcId, title, body, data);
+    console.log(`📤 Sending push notification: ${title}`);
+    
+    // Method 1: Use OneSignal v16 API if available
+    if (window.OneSignal && OneSignal.User && OneSignal.User.PushSubscription) {
+        // Store in Supabase for cross-device sync FIRST
+        saveNotificationToSupabase(clubManager.currentMember?.jcId, title, body, data);
+        
+        // Send via OneSignal's createNotification method (v16 way)
+        OneSignal.Notifications.createNotification({
+            title: title,
+            message: body,
+            data: data,
+            icon: 'https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg'
+        }).then(() => {
+            console.log('✅ OneSignal notification sent');
+        }).catch((error) => {
+            console.log('⚠️ OneSignal notification error:', error.message);
+            // Fallback to browser notification
+            sendBrowserNotification(title, body);
+        });
+    } 
+    // Method 2: Use browser Notification API as fallback
+    else {
+        sendBrowserNotification(title, body);
     }
     
-    // Also show on current device immediately
-    if (pushManager && pushManager.isSubscribed) {
-        pushManager.sendNotification(title, body, data);
-    } else if (pushManager) {
-        pushManager.storeNotification(title, body, data);
-    } else {
+    // Method 3: Store for later if we have a member
+    if (clubManager && clubManager.currentMember) {
         const pending = JSON.parse(localStorage.getItem('pendingNotifications') || '[]');
         pending.push({ title, body, data, timestamp: Date.now() });
+        if (pending.length > 50) pending.shift();
         localStorage.setItem('pendingNotifications', JSON.stringify(pending));
+    }
+}
+
+// Helper function for browser notifications
+function sendBrowserNotification(title, body) {
+    if (Notification.permission === 'granted') {
+        try {
+            new Notification(title, {
+                body: body,
+                icon: 'https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg'
+            });
+            console.log('✅ Browser notification sent');
+        } catch (err) {
+            console.log('❌ Browser notification failed:', err);
+        }
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                new Notification(title, {
+                    body: body,
+                    icon: 'https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg'
+                });
+            }
+        });
     }
 }
 

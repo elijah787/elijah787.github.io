@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Jeans Club</title>
+                <style>
+                  * {margin: 0; padding: 0; box-sizing: border-box; }
+                  html, body {height: 100%; overflow: hidden; }
+                  .app-container {
+                    width: 100%;
+                  height: 100vh;
+                  position: relative;
+                  background: #ffffff;
+        }
+                  .loading {
+                    position: absolute;
+                  top: 50%;
+                  left: 50%;
+                  transform: translate(-50%, -50%);
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                  color: #666;
+                  z-index: 1;
+        }
+                  .website-frame {
+                    width: 100%;
+                  height: 100%;
+                  border: none;
+                  display: block;
+                  background: #ffffff;
+        }
+                  .website-frame.loaded + .loading {
+                    display: none;
+        }
+                </style>
+                <script type="module">
+        // Capacitor Back Button Handler
+        document.addEventListener('DOMContentLoaded', async () => {
+                    console.log('Initializing Capacitor back button handler...');
+
+                  // Check if in Capacitor environment
+                  if (window.Capacitor && window.Capacitor.Plugins) {
+                const {App} = window.Capacitor.Plugins;
+
+                  // Listen for physical back button events
+                  App.addListener('backButton', ({canGoBack}) => {
+                    console.log('Back button pressed, canGoBack:', canGoBack);
+                  console.log('Current history length:', window.history.length);
+
+                    // Due to iframe approach, main app history length is usually 1
+                    // Exit app directly to achieve "one back press to exit" effect
+                    if (window.history.length > 1) {
+                    console.log('Navigating back in history');
+                  window.history.back();
+                    } else {
+                    console.log('Exiting app - implementing single-back-to-exit behavior');
+                  App.exitApp();
+                    }
+                });
+
+                  console.log('Back button listener registered successfully');
+            } else {
+                    console.log('Not in Capacitor environment, back button handling skipped');
+            }
+        });
+                </script>
+              </head>
+              <body>
+                <div class="app-container">
+                  <iframe
+                    src="https://elijah787.github.io"
+                    class="website-frame"
+                    allowfullscreen
+                    allow="camera; microphone; geolocation; payment"
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation"
+                    onload="this.classList.add('loaded')"
+                  ></iframe>
+                  <div class="loading">Loading Jeans Club...</div>
+                </div>
+              </body>
+            </html>
