@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+i want to change the points of a memeber i have in supabase to 240 current points and 250 lifetimepoints give me something to run in my sql below is my code <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7618,6 +7618,8 @@ if (typeof startListeningForNotifications === 'function') {
             }
       // ADD THIS RIGHT HERE - before addPurchase function
 
+// ADD THIS RIGHT HERE - before addPurchase function
+
 async addPurchase(jcId, amount, description) {
     try {
         console.log('=== ADD PURCHASE CALLED ===');
@@ -7726,18 +7728,9 @@ async addPurchase(jcId, amount, description) {
             }
         }
         
-        // Send push notification
-        if (typeof sendPushNotification === 'function') {
-            const darkMessages = [
-                `💀 You just spent ${amount.toLocaleString()} UGX. +${pointsEarned} points!`,
-                `🔮 ${amount.toLocaleString()} UGX gone. +${pointsEarned} points. Your jeans look FIRE!`,
-                `⚰️ Your wallet died at ${amount.toLocaleString()} UGX. +${pointsEarned} points.`
-            ];
-            const randomMsg = darkMessages[Math.floor(Math.random() * darkMessages.length)];
-            sendPushNotification('🛍️ Purchase Confirmed!', randomMsg);
-        }
+        // ❌ PUSH NOTIFICATION REMOVED - iOS FIX
         
-        // Send email notification
+        // ✅ Send email notification (kept)
         await this.emailService.sendPurchaseEmail(member.email, verifyMember, {
             amount: amount,
             description: description,
@@ -11955,4 +11948,4 @@ document.addEventListener('visibilitychange', function() {
 });
 </script>
 </body>
-</html> 
+</html>
