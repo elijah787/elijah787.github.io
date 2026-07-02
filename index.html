@@ -7346,24 +7346,23 @@ class GoogleAppsEmailService {
                 }
             }
 
-            generateJCId() {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                let id = 'JC';
-                for (let i = 0; i < 4; i++) {
-                    id += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return id;
-            }
+         generateJCId() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let id = 'JC';
+    for (let i = 0; i < 8; i++) {  // Changed from 4 to 8
+        id += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return id;
+}
 
-            generateReferralCode() {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                let code = '';
-                for (let i = 0; i < 6; i++) {
-                    code += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return code;
-            }
-
+generateReferralCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {  // Changed from 6 to 8
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
             calculateTier(member) {
                 const points = member.lifetimePoints || 0;
                 
