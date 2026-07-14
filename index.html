@@ -5764,33 +5764,97 @@ async function processConfirmedSale(parsedData) {
                 };
             }
 
-            startAutoCleanup() {
-                this.cleanupExpiredVouchers();
-                
-                this.cleanupInterval = setInterval(() => {
-                    this.cleanupExpiredVouchers();
-                }, 24 * 60 * 60 * 1000);
-            }
+          startAutoCleanup() {
+    // Run cleanup immediately
+    this.cleanupExpiredVouchers();
+    this.cleanupUsedVouchers();  // ← ADD THIS LINE
+    
+    // Then run daily
+    this.cleanupInterval = setInterval(() => {
+        this.cleanupExpiredVouchers();
+        this.cleanupUsedVouchers();  // ← ADD THIS LINE
+    }, 24 * 60 * 60 * 1000);
+}
 
-            cleanupExpiredVouchers() {
-                const now = new Date();
-                const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-                
-                const originalCount = this.vouchers.length;
-                this.vouchers = this.vouchers.filter(voucher => {
-                    if (voucher.status === 'expired') {
-                        const expiryDate = new Date(voucher.expiryDate);
-                        return expiryDate > thirtyDaysAgo;
-                    }
-                    return true;
-                });
-                
-                const removedCount = originalCount - this.vouchers.length;
-                if (removedCount > 0) {
-                    this.saveVouchers();
-                    console.log(`Cleaned up ${removedCount} old expired vouchers`);
-                }
+          cleanupExpiredVouchers() {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+    
+    const originalCount = this.vouchers.length;
+    let deleted = 0;
+    
+    this.vouchers = this.vouchers.filter(voucher => {
+        if (voucher.status === 'expired') {
+            const expiryDate = new Date(voucher.expiryDate);
+            if (expiryDate < thirtyDaysAgo) {
+                // Delete from Supabase too
+                this.deleteVoucherFromSupabase(voucher.code);
+                deleted++;
+                return false;
             }
+            return true;
+        }
+        return true;
+    });
+    
+    if (deleted > 0) {
+        this.saveVouchers();
+        console.log(`🧹 Cleaned up ${deleted} expired vouchers from localStorage & Supabase`);
+    }
+}
+
+cleanupUsedVouchers() {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    let deleted = 0;
+    
+    this.vouchers = this.vouchers.filter(voucher => {
+        if (voucher.status === 'used' && voucher.usedDate) {
+            const usedDate = new Date(voucher.usedDate);
+            if (usedDate < sevenDaysAgo) {
+                // Delete from Supabase too
+                this.deleteVoucherFromSupabase(voucher.code);
+                deleted++;
+                return false;
+            }
+        }
+        return true;
+    });
+    
+    if (deleted > 0) {
+        this.saveVouchers();
+        console.log(`🧹 Deleted ${deleted} used vouchers (older than 7 days) from localStorage & Supabase`);
+    }
+}
+
+async deleteVoucherFromSupabase(voucherCode) {
+    try {
+        if (!window.supabaseDbInstance) {
+            console.error("❌ Supabase DB not initialized");
+            return false;
+        }
+        
+        const { supabase } = window.supabaseDbInstance;
+        
+        const { data, error } = await supabase
+            .from('vouchers')
+            .delete()
+            .eq('code', voucherCode);
+        
+        if (error) {
+            console.error("❌ Failed to delete voucher from Supabase:", error);
+            return false;
+        }
+        
+        console.log("✅ Deleted voucher from Supabase:", voucherCode);
+        return true;
+        
+    } catch (error) {
+        console.error("❌ Error deleting voucher from Supabase:", error);
+        return false;
+    }
+}
 
             canCreateVoucher(memberJCId, memberTier, discountValue) {
                 const limits = this.TIER_MONEY_LIMITS[memberTier] || this.TIER_MONEY_LIMITS.PEARL;
