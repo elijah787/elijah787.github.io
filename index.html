@@ -7175,6 +7175,8 @@ class GoogleAppsEmailService {
                 window.voucherSystem = this.voucherSystem;
                 
                 this.init();
+                 // ✅ ADD THIS LINE
+    this.startTransactionCleanup();
             }
 
             async init() {
@@ -8084,7 +8086,149 @@ refreshDashboard(member) {
                     return { success: false, message: 'Failed to send newsletter' };
                 }
             }
-    
+                // ===========================================
+            // TRANSACTION CLEANUP FUNCTIONS
+            // ===========================================
+
+            // Delete old transactions and sessions after 30 days
+            async cleanupOldTransactions() {
+                try {
+                    console.log('🧹 Starting transaction cleanup...');
+                    
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    
+                    if (!window.supabaseDbInstance) {
+                        console.error('❌ Supabase DB not initialized');
+                        return false;
+                    }
+                    
+                    const { supabase } = window.supabaseDbInstance;
+                    
+                    // 1. Delete old transaction sessions first (foreign key)
+                    const { error: sessionError, count: sessionCount } = await supabase
+                        .from('transaction_sessions')
+                        .delete()
+                        .lt('created_at', thirtyDaysAgo.toISOString())
+                        .select('count');
+                    
+                    if (sessionError) {
+                        console.error('❌ Failed to delete old sessions:', sessionError);
+                    } else {
+                        console.log(`🧹 Deleted ${sessionCount || 0} old transaction sessions`);
+                    }
+                    
+                    // 2. Delete old transactions
+                    const { error: transactionError, count: transactionCount } = await supabase
+                        .from('transactions')
+                        .delete()
+                        .lt('created_at', thirtyDaysAgo.toISOString())
+                        .select('count');
+                    
+                    if (transactionError) {
+                        console.error('❌ Failed to delete old transactions:', transactionError);
+                    } else {
+                        console.log(`🧹 Deleted ${transactionCount || 0} old transactions`);
+                    }
+                    
+                    // 3. Delete old transaction queue items (optional)
+                    const { error: queueError, count: queueCount } = await supabase
+                        .from('transaction_queue')
+                        .delete()
+                        .lt('created_at', thirtyDaysAgo.toISOString())
+                        .select('count');
+                    
+                    if (queueError) {
+                        console.error('❌ Failed to delete old queue items:', queueError);
+                    } else {
+                        console.log(`🧹 Deleted ${queueCount || 0} old queue items`);
+                    }
+                    
+                    // 4. Delete old price overrides (optional)
+                    const { error: overrideError, count: overrideCount } = await supabase
+                        .from('price_overrides')
+                        .delete()
+                        .lt('timestamp', thirtyDaysAgo.toISOString())
+                        .select('count');
+                    
+                    if (overrideError) {
+                        console.error('❌ Failed to delete old price overrides:', overrideError);
+                    } else {
+                        console.log(`🧹 Deleted ${overrideCount || 0} old price overrides`);
+                    }
+                    
+                    return true;
+                    
+                } catch (error) {
+                    console.error('❌ Transaction cleanup error:', error);
+                    return false;
+                }
+            }
+
+            // Get transaction stats
+            async getTransactionStats() {
+                try {
+                    if (!window.supabaseDbInstance) {
+                        return { error: 'Supabase DB not initialized' };
+                    }
+                    
+                    const { supabase } = window.supabaseDbInstance;
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    
+                    // Count all transactions
+                    const { count: total, error: totalError } = await supabase
+                        .from('transactions')
+                        .select('*', { count: 'exact', head: true });
+                    
+                    // Count old transactions (30+ days)
+                    const { count: old, error: oldError } = await supabase
+                        .from('transactions')
+                        .select('*', { count: 'exact', head: true })
+                        .lt('created_at', thirtyDaysAgo.toISOString());
+                    
+                    // Count all sessions
+                    const { count: sessionsTotal, error: sessionTotalError } = await supabase
+                        .from('transaction_sessions')
+                        .select('*', { count: 'exact', head: true });
+                    
+                    // Count old sessions
+                    const { count: sessionsOld, error: sessionsOldError } = await supabase
+                        .from('transaction_sessions')
+                        .select('*', { count: 'exact', head: true })
+                        .lt('created_at', thirtyDaysAgo.toISOString());
+                    
+                    return {
+                        transactions: {
+                            total: total || 0,
+                            old: old || 0,
+                            kept: (total || 0) - (old || 0)
+                        },
+                        sessions: {
+                            total: sessionsTotal || 0,
+                            old: sessionsOld || 0,
+                            kept: (sessionsTotal || 0) - (sessionsOld || 0)
+                        }
+                    };
+                    
+                } catch (error) {
+                    console.error('Error getting transaction stats:', error);
+                    return { error: error.message };
+                }
+            }
+
+            // Start auto-cleanup for transactions
+            startTransactionCleanup() {
+                console.log('🔄 Starting transaction auto-cleanup...');
+                
+                // Run immediately
+                this.cleanupOldTransactions();
+                
+                // Then run daily
+                setInterval(() => {
+                    this.cleanupOldTransactions();
+                }, 24 * 60 * 60 * 1000); // 24 hours
+            }
   }
   // ===========================================
 // CROSS-DEVICE NOTIFICATION FUNCTIONS
