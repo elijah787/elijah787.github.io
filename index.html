@@ -7149,6 +7149,59 @@ class GoogleAppsEmailService {
     async sendNewsletterEmail(email, memberData, newsletterData) {
         return this.sendEmailToGoogleScript(email, 'newsletter', memberData, newsletterData);
     }
+    // Add this method inside GoogleAppsEmailService class, before the closing }
+
+async sendBulkNewsletter(emails, subject, message) {
+    try {
+        console.log(`📧 Sending bulk newsletter to ${emails.length} subscribers...`);
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        // Send to each email individually (with delay to avoid rate limiting)
+        for (const email of emails) {
+            try {
+                const result = await this.sendEmailToGoogleScript(
+                    email, 
+                    'newsletter', 
+                    { name: email.split('@')[0], email: email }, 
+                    { subject, message }
+                );
+                
+                if (result.success) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+                
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+            } catch (error) {
+                console.error(`❌ Failed to send to ${email}:`, error);
+                failCount++;
+            }
+        }
+        
+        console.log(`✅ Newsletter sent: ${successCount} success, ${failCount} failed`);
+        
+        return {
+            success: successCount > 0,
+            message: `Sent to ${successCount}/${emails.length} subscribers`,
+            successCount: successCount,
+            failCount: failCount
+        };
+        
+    } catch (error) {
+        console.error('❌ Bulk newsletter error:', error);
+        return {
+            success: false,
+            message: 'Failed to send newsletter: ' + error.message,
+            successCount: 0,
+            failCount: emails.length
+        };
+    }
+}
 }
 
         // ===========================
