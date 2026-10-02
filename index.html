@@ -7654,21 +7654,30 @@ generateReferralCode() {
                 if (points >= 25000) return 'SILVER';
                 if (points >= 7500) return 'BRONZE';
                 return 'PEARL';
-            }
-async signUpWithEmail(name, email, password, referralCode = null, birthday = null) {
+                 
+async function signUpWithEmail(name, email, password, referralCode = null, birthday = null) {
     try {
+        // ===========================================
+        // STEP 1: Basic validation
+        // ===========================================
         if (!name || !email || !password) {
-            showToast('Please fill in all required fields', 'error');
-            return false;
+            return { 
+                success: false, 
+                message: 'Please fill in all required fields' 
+            };
         }
         
         const emailValidation = isValidEmailWithFraudPrevention(email);
         if (!emailValidation.valid) {
-            showToast(emailValidation.message, 'error');
-            return false;
+            return { 
+                success: false, 
+                message: emailValidation.message 
+            };
         }
         
-        // Validate birthday if provided
+        // ===========================================
+        // STEP 2: Birthday validation (optional field)
+        // ===========================================
         if (birthday) {
             const birthDate = new Date(birthday);
             const today = new Date();
@@ -7679,38 +7688,58 @@ async signUpWithEmail(name, email, password, referralCode = null, birthday = nul
             }
             
             if (age < 13) {
-                showToast('You must be at least 13 years old to join', 'error');
-                return false;
+                return { 
+                    success: false, 
+                    message: 'You must be at least 13 years old to join' 
+                };
             }
             
             if (age > 120) {
-                showToast('Please enter a valid birthday', 'error');
-                return false;
+                return { 
+                    success: false, 
+                    message: 'Please enter a valid birthday' 
+                };
             }
         }
         
-        const normalizedEmail = normalizeEmailForDatabase(email);
-        
+        // ===========================================
+        // STEP 3: Duplicate email check
+        // ===========================================
         const existingMember = await this.db.getMemberByEmail(email);
         if (existingMember) {
-            showToast('An account with this email already exists', 'error');
-            return false;
+            return { 
+                success: false, 
+                message: 'An account with this email already exists' 
+            };
         }
         
+        // ===========================================
+        // STEP 4: Referral code validation
+        // ===========================================
         const allMembers = await this.db.getAllMembers();
         
         if (referralCode && isSelfReferral(referralCode, email)) {
-            showToast('You cannot use your own referral code', 'error');
-            return false;
+            return { 
+                success: false, 
+                message: 'You cannot use your own referral code' 
+            };
         }
         
+        // ===========================================
+        // STEP 5: IP fraud check
+        // ===========================================
         const clientIP = await getClientIP();
         const ipCheck = await checkMultipleAccountsFromIP(email, clientIP);
         if (!ipCheck.allowed) {
-            showToast(ipCheck.reason, 'error');
-            return false;
+            return { 
+                success: false, 
+                message: ipCheck.reason 
+            };
         }
         
+        // ===========================================
+        // STEP 6: Build member object
+        // ===========================================
         const jcId = this.generateJCId();
         const memberReferralCode = this.generateReferralCode();
         
@@ -7724,16 +7753,24 @@ async signUpWithEmail(name, email, password, referralCode = null, birthday = nul
                 referredBy = referrer.jcId;
                 referralPoints = 20;
                 
-                referrer.referrals.push({
-                    referredJCId: jcId,
-                    referredName: name,
-                    referralDate: new Date().toISOString(),
-                    status: 'pending'
-                });
-                await this.db.saveMember(referrer);
+                // Add referral to referrer's record (non-critical, wrapped)
+                try {
+                    referrer.referrals = referrer.referrals || [];
+                    referrer.referrals.push({
+                        referredJCId: jcId,
+                        referredName: name,
+                        referralDate: new Date().toISOString(),
+                        status: 'pending'
+                    });
+                    await this.db.saveMember(referrer);
+                } catch (refErr) {
+                    console.warn('⚠️ Could not update referrer (non-critical):', refErr.message);
+                }
             } else {
-                showToast('Invalid referral code', 'error');
-                return false;
+                return { 
+                    success: false, 
+                    message: 'Invalid referral code' 
+                };
             }
         }
         
@@ -7751,7 +7788,7 @@ async signUpWithEmail(name, email, password, referralCode = null, birthday = nul
             joinedDate: new Date().toISOString(),
             totalSpent: 0,
             newsletterSubscribed: document.getElementById('newsletterSignup')?.checked || true,
-            birthday: birthday || null,  // ADD THIS LINE
+            birthday: birthday || null,
             purchaseHistory: [],
             activityLog: [],
             challenges: [],
@@ -7768,64 +7805,128 @@ async signUpWithEmail(name, email, password, referralCode = null, birthday = nul
             points: referralPoints
         });
         
+        // ===========================================
+        // STEP 7: SAVE MEMBER (THIS IS THE ONLY CRITICAL STEP)
+        // ===========================================
         const saved = await this.db.saveMember(member);
         if (!saved) {
-            showToast('Failed to create account. Please try again.', 'error');
-            return false;
+            console.error('❌ CRITICAL: Member save failed');
+            return { 
+                success: false, 
+                message: 'Failed to create account. Please try again.' 
+            };
         }
         
+        console.log('✅ Member saved successfully:', member.jcId);
+        
+        // ===========================================
+        // ACCOUNT IS NOW SAFE - Nothing below can fail signup
+        // ===========================================
+        
+        // Set current member in session
         this.currentMember = member;
         this.isAdmin = false;
         localStorage.setItem('jeansClubCurrentMember', JSON.stringify(member));
         localStorage.setItem('jeansClubIsAdmin', 'false');
         
-        // Send birthday notification if provided
-        if (birthday) {
-            const birthDate = new Date(birthday);
-            const formattedBirthday = birthDate.toLocaleDateString('en-US', { 
-                month: 'long', 
-                day: 'numeric'
-            });
-            sendPushNotification('🎂 Birthday Added!', 
-                `Thanks for sharing your birthday! We'll have something special waiting for you on ${formattedBirthday}!`);
+        // ===========================================
+        // STEP 8: Non-critical actions (all wrapped in try/catch)
+        // ===========================================
+        
+        // Birthday push notification
+        try {
+            if (birthday) {
+                const birthDate = new Date(birthday);
+                const formattedBirthday = birthDate.toLocaleDateString('en-US', { 
+                    month: 'long', 
+                    day: 'numeric'
+                });
+                sendPushNotification('🎂 Birthday Added!', 
+                    `Thanks for sharing your birthday! We'll have something special waiting for you on ${formattedBirthday}!`);
+            }
+        } catch (notifErr) {
+            console.warn('⚠️ Birthday notification failed (non-critical):', notifErr.message);
         }
         
-        const darkWelcomeMessages = [
-            `💀 Welcome ${name}! You've just joined the exclusive club of people who spend too much on denim. We're your people.`,
-            `🔮 ${name}, your future includes: 1) Jeans 2) Happiness 3) Questioning your life choices. Welcome!`,
-            `🤡 ${name}, another clown joins the circus! Just kidding. But seriously, welcome to the broke-but-stylish club.`,
-            `⚰️ ${name}, your savings just filed a restraining order. Welcome to Jeans Club!`,
-            `🎪 ${name}, you've joined the greatest show on earth! Starring: Your wallet. Co-starring: Your impulse control (RIP).`
-        ];
-        const randomMsg = darkWelcomeMessages[Math.floor(Math.random() * darkWelcomeMessages.length)];
-        sendPushNotification('👖 Welcome to Jeans Club!', randomMsg);
+        // Welcome push notification (with dark humor)
+        try {
+            const darkWelcomeMessages = [
+                `💀 Welcome ${name}! You've just joined the exclusive club of people who spend too much on denim. We're your people.`,
+                `🔮 ${name}, your future includes: 1) Jeans 2) Happiness 3) Questioning your life choices. Welcome!`,
+                `🤡 ${name}, another clown joins the circus! Just kidding. But seriously, welcome to the broke-but-stylish club.`,
+                `⚰️ ${name}, your savings just filed a restraining order. Welcome to Jeans Club!`,
+                `🎪 ${name}, you've joined the greatest show on earth! Starring: Your wallet. Co-starring: Your impulse control (RIP).`
+            ];
+            const randomMsg = darkWelcomeMessages[Math.floor(Math.random() * darkWelcomeMessages.length)];
+            sendPushNotification('👖 Welcome to Jeans Club!', randomMsg);
+        } catch (notifErr) {
+            console.warn('⚠️ Welcome notification failed (non-critical):', notifErr.message);
+        }
         
-        await this.emailService.sendWelcomeEmail(email, member);
+        // Welcome email
+        try {
+            await this.emailService.sendWelcomeEmail(email, member);
+        } catch (emailErr) {
+            console.warn('⚠️ Welcome email failed (non-critical):', emailErr.message);
+        }
         
+        // Newsletter subscription
         if (member.newsletterSubscribed) {
-            await this.db.subscribeToNewsletter(email, name);
-            await this.emailService.sendNewsletterWelcomeEmail(email, member, {
-                subject: "Welcome to Jeans Club Newsletter!",
-                message: "Thank you for subscribing!"
-            });
+            try {
+                await this.db.subscribeToNewsletter(email, name);
+            } catch (newsErr) {
+                console.warn('⚠️ Newsletter subscribe failed (non-critical):', newsErr.message);
+            }
+            
+            try {
+                await this.emailService.sendNewsletterWelcomeEmail(email, member, {
+                    subject: "Welcome to Jeans Club Newsletter!",
+                    message: "Thank you for subscribing!"
+                });
+            } catch (emailErr) {
+                console.warn('⚠️ Newsletter email failed (non-critical):', emailErr.message);
+            }
         }
         
-        await showDashboard(member);
+        // Show dashboard
+        try {
+            await showDashboard(member);
+        } catch (dashErr) {
+            console.error('❌ Dashboard failed:', dashErr.message);
+            // Even if dashboard fails, account exists - don't fail signup
+        }
+        
+        // Welcome toast
         showToast(`Welcome to Jeans Club ${name}!`, 'success');
-       // runAutoSyncAfterLogin();
         
-        setTimeout(() => {
-            initPushNotifications();
-        }, 1000);
+        // Init push notifications
+        try {
+            setTimeout(() => {
+                initPushNotifications();
+            }, 1000);
+        } catch (initErr) {
+            console.warn('⚠️ Push init failed (non-critical):', initErr.message);
+        }
         
-        return true;
+        // ===========================================
+        // SUCCESS - Return consistent object
+        // ===========================================
+        return { 
+            success: true, 
+            message: `Welcome ${name}! Your account has been created.`,
+            member: member
+        };
         
     } catch (error) {
-        console.error('Sign up error:', error);
-        showToast('An error occurred. Please try again.', 'error');
-        return false;
+        console.error('❌ Sign up error (unexpected):', error);
+        return { 
+            success: false, 
+            message: 'An unexpected error occurred. Please try again.' 
+        };
     }
 }
+}
+
             async loginWithJCId(jcId, password) {
                 try {
                     if (!jcId || !password) {
