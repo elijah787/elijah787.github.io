@@ -3926,6 +3926,160 @@
             <p style="color: #666; margin-top: 15px;">Scan to share with friends</p>
         </div>
     </div>
+     <!-- ⬇️⬇️⬇️ PASTE THE ACCOUNT CREATION OVERLAY HTML HERE ⬇️⬇️⬇️ -->
+    
+    <!-- Account Creation Loading Overlay -->
+    <div id="accountCreationOverlay" style="
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.92);
+        backdrop-filter: blur(8px);
+        z-index: 99999;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    ">
+        <div style="
+            background: linear-gradient(135deg, #1a1a2e 0%, #0a0a0a 100%);
+            border: 2px solid #00AFF0;
+            border-radius: 24px;
+            padding: 40px 30px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(0, 175, 240, 0.3);
+            animation: popIn 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        ">
+            <img src="https://i.ibb.co/rKnKMscG/67556a31-02c7-4182-a1d8-c12667bd7136.jpg" 
+                 alt="Jeans Club" 
+                 style="height: 60px; margin-bottom: 20px;">
+            
+            <div id="creationSpinner" style="
+                width: 70px; height: 70px;
+                margin: 0 auto 25px;
+                border: 4px solid rgba(0, 175, 240, 0.2);
+                border-top: 4px solid #00AFF0;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            "></div>
+            
+            <div id="creationIcon" style="font-size: 60px; margin-bottom: 20px; display: none;"></div>
+            
+            <h2 id="creationTitle" style="
+                color: #00AFF0;
+                font-size: 24px;
+                margin-bottom: 12px;
+                font-family: Emirates-Bold, Arial, sans-serif;
+            ">Creating Your Account...</h2>
+            
+            <p id="creationMessage" style="
+                color: #ccc;
+                font-size: 15px;
+                line-height: 1.6;
+                margin-bottom: 25px;
+            ">Please wait while we set up your Jeans Club membership. This usually takes 5-10 seconds.</p>
+            
+            <div id="creationSteps" style="
+                text-align: left;
+                background: rgba(255,255,255,0.05);
+                border-radius: 12px;
+                padding: 15px;
+                margin-bottom: 20px;
+            ">
+                <div class="creation-step" data-step="1" style="
+                    display: flex; align-items: center; gap: 10px;
+                    padding: 8px 0; color: #888; font-size: 13px;
+                ">
+                    <span class="step-dot" style="
+                        width: 20px; height: 20px;
+                        border-radius: 50%;
+                        background: #333;
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 11px;
+                    ">1</span>
+                    <span>Validating email...</span>
+                </div>
+                <div class="creation-step" data-step="2" style="
+                    display: flex; align-items: center; gap: 10px;
+                    padding: 8px 0; color: #888; font-size: 13px;
+                ">
+                    <span class="step-dot" style="
+                        width: 20px; height: 20px;
+                        border-radius: 50%;
+                        background: #333;
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 11px;
+                    ">2</span>
+                    <span>Creating your profile...</span>
+                </div>
+                <div class="creation-step" data-step="3" style="
+                    display: flex; align-items: center; gap: 10px;
+                    padding: 8px 0; color: #888; font-size: 13px;
+                ">
+                    <span class="step-dot" style="
+                        width: 20px; height: 20px;
+                        border-radius: 50%;
+                        background: #333;
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 11px;
+                    ">3</span>
+                    <span>Setting up your rewards...</span>
+                </div>
+                <div class="creation-step" data-step="4" style="
+                    display: flex; align-items: center; gap: 10px;
+                    padding: 8px 0; color: #888; font-size: 13px;
+                ">
+                    <span class="step-dot" style="
+                        width: 20px; height: 20px;
+                        border-radius: 50%;
+                        background: #333;
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 11px;
+                    ">4</span>
+                    <span>Almost done...</span>
+                </div>
+            </div>
+            
+            <button id="creationActionBtn" onclick="handleCreationAction()" style="
+                display: none;
+                background: linear-gradient(135deg, #00AFF0 0%, #0077b6 100%);
+                color: white;
+                border: none;
+                padding: 15px 30px;
+                border-radius: 50px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                width: 100%;
+                transition: transform 0.2s;
+            ">Continue</button>
+            
+            <p id="creationProgress" style="
+                color: #00AFF0;
+                font-size: 13px;
+                margin-top: 15px;
+                font-weight: bold;
+            ">0%</p>
+        </div>
+    </div>
+
+    <style>
+    @keyframes popIn {
+        0% { transform: scale(0.7); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .creation-step.active { color: #00AFF0 !important; }
+    .creation-step.active .step-dot { background: #00AFF0 !important; color: white !important; }
+    .creation-step.completed { color: #28a745 !important; }
+    .creation-step.completed .step-dot { background: #28a745 !important; color: white !important; }
+    </style>
+    
+    <!-- ⬆️⬆️⬆️ END OF ACCOUNT CREATION OVERLAY HTML ⬆️⬆️⬆️ -->
 
     <!-- Footer -->
     <footer class="footer">
@@ -10860,12 +11014,196 @@ async function updateMemberVouchers(jcId) {
         // ===========================
         // EVENT HANDLERS
         // ===========================
+                // ===========================================
+        // ACCOUNT CREATION LOADING SCREEN
+        // ===========================================
+        
+        let isCreatingAccount = false;
+
+        function showAccountCreationOverlay() {
+            const overlay = document.getElementById('accountCreationOverlay');
+            if (!overlay) {
+                console.error('❌ Overlay not found! Paste the HTML block first.');
+                return;
+            }
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            document.getElementById('creationSpinner').style.display = 'block';
+            document.getElementById('creationIcon').style.display = 'none';
+            document.getElementById('creationTitle').textContent = 'Creating Your Account...';
+            document.getElementById('creationTitle').style.color = '#00AFF0';
+            document.getElementById('creationMessage').textContent = 
+                'Please wait while we set up your Jeans Club membership. This usually takes 5-10 seconds.';
+            document.getElementById('creationActionBtn').style.display = 'none';
+            document.getElementById('creationSteps').style.display = 'block';
+            document.getElementById('creationProgress').textContent = '0%';
+            document.getElementById('creationProgress').style.color = '#00AFF0';
+            
+            document.querySelectorAll('.creation-step').forEach(step => {
+                step.classList.remove('active', 'completed');
+                const dot = step.querySelector('.step-dot');
+                dot.textContent = step.dataset.step;
+            });
+            
+            updateCreationStep(1);
+            animateProgress(0, 30, 800);
+        }
+
+        function updateCreationStep(stepNumber) {
+            document.querySelectorAll('.creation-step').forEach(step => {
+                const stepNum = parseInt(step.dataset.step);
+                const dot = step.querySelector('.step-dot');
+                
+                if (stepNum < stepNumber) {
+                    step.classList.remove('active');
+                    step.classList.add('completed');
+                    dot.textContent = '✓';
+                } else if (stepNum === stepNumber) {
+                    step.classList.add('active');
+                    dot.textContent = stepNum;
+                }
+            });
+        }
+
+        function animateProgress(from, to, duration) {
+            const progressEl = document.getElementById('creationProgress');
+            if (!progressEl) return;
+            
+            const startTime = performance.now();
+            
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const current = Math.floor(from + (to - from) * progress);
+                progressEl.textContent = current + '%';
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        function showAccountCreationSuccess(member) {
+            document.getElementById('creationSpinner').style.display = 'none';
+            document.getElementById('creationIcon').style.display = 'block';
+            document.getElementById('creationIcon').textContent = '✅';
+            document.getElementById('creationTitle').textContent = 'Account Created!';
+            document.getElementById('creationTitle').style.color = '#28a745';
+            
+            document.querySelectorAll('.creation-step').forEach(step => {
+                step.classList.remove('active');
+                step.classList.add('completed');
+                step.querySelector('.step-dot').textContent = '✓';
+            });
+            
+            document.getElementById('creationProgress').textContent = '100%';
+            document.getElementById('creationProgress').style.color = '#28a745';
+            
+            document.getElementById('creationMessage').innerHTML = `
+                <strong style="color: #00AFF0; font-size: 18px;">Welcome, ${member.name}!</strong><br><br>
+                <div style="background: rgba(0,175,240,0.1); padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <div style="color: #888; font-size: 12px; margin-bottom: 5px;">YOUR JC ID</div>
+                    <div style="color: #FFD700; font-family: monospace; font-size: 22px; font-weight: bold; letter-spacing: 2px;">
+                        ${member.jcId}
+                    </div>
+                </div>
+                <div style="color: #28a745; font-size: 14px;">
+                    💎 ${member.points} welcome points added!
+                </div>
+            `;
+            
+            const btn = document.getElementById('creationActionBtn');
+            btn.textContent = '🎉 Continue to Dashboard';
+            btn.style.display = 'block';
+            btn.style.background = 'linear-gradient(135deg, #00AFF0 0%, #0077b6 100%)';
+            btn.onclick = () => {
+                hideAccountCreationOverlay();
+                if (clubManager.currentMember) {
+                    showDashboard(clubManager.currentMember);
+                }
+            };
+        }
+
+        function showAccountCreationError(message) {
+            document.getElementById('creationSpinner').style.display = 'none';
+            document.getElementById('creationIcon').style.display = 'block';
+            document.getElementById('creationIcon').textContent = '❌';
+            document.getElementById('creationTitle').textContent = 'Oops!';
+            document.getElementById('creationTitle').style.color = '#dc3545';
+            document.getElementById('creationMessage').textContent = message;
+            document.getElementById('creationSteps').style.display = 'none';
+            document.getElementById('creationProgress').textContent = '';
+            
+            const btn = document.getElementById('creationActionBtn');
+            btn.textContent = '← Try Again';
+            btn.style.display = 'block';
+            btn.style.background = 'linear-gradient(135deg, #dc3545 0%, #a02030 100%)';
+            btn.onclick = () => {
+                hideAccountCreationOverlay();
+            };
+        }
+
+        function showAccountAlreadyExists(member) {
+            document.getElementById('creationSpinner').style.display = 'none';
+            document.getElementById('creationIcon').style.display = 'block';
+            document.getElementById('creationIcon').textContent = '👋';
+            document.getElementById('creationTitle').textContent = 'Welcome Back!';
+            document.getElementById('creationTitle').style.color = '#FFD700';
+            document.getElementById('creationSteps').style.display = 'none';
+            document.getElementById('creationProgress').textContent = '';
+            
+            document.getElementById('creationMessage').innerHTML = `
+                <strong style="color: #FFD700; font-size: 16px;">You already have an account!</strong><br><br>
+                <div style="background: rgba(255,215,0,0.1); padding: 15px; border-radius: 10px; margin: 15px 0; text-align: left;">
+                    <div style="color: #888; font-size: 12px;">Name: <span style="color: white;">${member.name}</span></div>
+                    <div style="color: #888; font-size: 12px; margin-top: 5px;">JC ID: <span style="color: #FFD700; font-family: monospace;">${member.jcId}</span></div>
+                    <div style="color: #888; font-size: 12px; margin-top: 5px;">Points: <span style="color: #28a745;">${member.points}</span></div>
+                </div>
+                <span style="color: #ccc; font-size: 13px;">
+                    Looks like you may have already signed up. Would you like to login instead?
+                </span>
+            `;
+            
+            const btn = document.getElementById('creationActionBtn');
+            btn.textContent = '🔐 Login to My Account';
+            btn.style.display = 'block';
+            btn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+            btn.onclick = () => {
+                hideAccountCreationOverlay();
+                const loginJcIdField = document.getElementById('loginJCId');
+                if (loginJcIdField) {
+                    loginJcIdField.value = member.jcId;
+                }
+                showLoginScreen();
+            };
+        }
+
+        function hideAccountCreationOverlay() {
+            const overlay = document.getElementById('accountCreationOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+            document.body.style.overflow = 'auto';
+            isCreatingAccount = false;
+        }
+
+        function handleCreationAction() {
+            hideAccountCreationOverlay();
+        }
        function signUpWithEmail() {
+    // 🚫 PREVENT DOUBLE-CLICK
+    if (isCreatingAccount) {
+        showToast('Account creation in progress, please wait...', 'info');
+        return;
+    }
+    
     const name = document.getElementById('userName').value.trim();
     const email = document.getElementById('userEmail').value.trim();
     const password = document.getElementById('userPassword').value;
     const referralCode = document.getElementById('referralCode').value.trim().toUpperCase();
-    const birthday = document.getElementById('userBirthday').value;  // ADD THIS LINE
+    const birthday = document.getElementById('userBirthday').value;
     
     if (!name || !email || !password) {
         showToast('Please fill in all required fields', 'error');
@@ -10880,8 +11218,64 @@ async function updateMemberVouchers(jcId) {
         }
     }
     
-    clubManager.signUpWithEmail(name, email, password, referralCode, birthday);
-} 
+    // ✅ SHOW LOADING OVERLAY + LOCK UI
+    isCreatingAccount = true;
+    showAccountCreationOverlay();
+    
+    // Animate step progression while creating
+    setTimeout(() => {
+        if (isCreatingAccount) {
+            updateCreationStep(2);
+            animateProgress(30, 60, 1000);
+        }
+    }, 1200);
+    
+    setTimeout(() => {
+        if (isCreatingAccount) {
+            updateCreationStep(3);
+            animateProgress(60, 85, 1500);
+        }
+    }, 2500);
+    
+    // 🚀 CALL THE REAL SIGNUP
+    clubManager.signUpWithEmail(name, email, password, referralCode, birthday)
+        .then(result => {
+            if (result && result.success) {
+                updateCreationStep(4);
+                animateProgress(85, 100, 600);
+                
+                setTimeout(() => {
+                    showAccountCreationSuccess(clubManager.currentMember);
+                    isCreatingAccount = false;
+                }, 800);
+            } else {
+                const errorMsg = (result && result.message) ? result.message : '';
+                
+                if (errorMsg.toLowerCase().includes('already exists') || 
+                    errorMsg.toLowerCase().includes('duplicate') ||
+                    errorMsg.toLowerCase().includes('already in use')) {
+                    
+                    clubManager.db.getMemberByEmail(email).then(existingMember => {
+                        if (existingMember) {
+                            showAccountAlreadyExists(existingMember);
+                        } else {
+                            showAccountCreationError('An account with this email already exists. Please try logging in.');
+                        }
+                        isCreatingAccount = false;
+                    });
+                } else {
+                    showAccountCreationError(errorMsg || 'Failed to create account. Please try again.');
+                    isCreatingAccount = false;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Signup error:', error);
+            showAccountCreationError('An unexpected error occurred. Please try again.');
+            isCreatingAccount = false;
+        });
+}
+
 
         function loginWithCredentials() {
             const jcId = document.getElementById('loginJCId').value.trim().toUpperCase();
