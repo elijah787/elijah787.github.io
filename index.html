@@ -4123,7 +4123,7 @@
         </div>
         
         <div class="footer-bottom">
-            <p>&copy; 2026 Jeans Club. All rights reserved | Raised On Denim. </p>
+            <p>&copy; <span id="footerCopyrightYear">2026</span> Jeans Club. All rights reserved | Raised On Denim. </p>
         </div>
     </footer>
 
@@ -12194,10 +12194,16 @@ function closeBirthdayModal() {
     document.body.style.overflow = 'auto';
 }
 
-// Save birthday to database
+// Save birthday to database — LOCKED after first save
 async function saveBirthday() {
     const birthday = document.getElementById('birthdayInput').value;
     const messageDiv = document.getElementById('birthdayMessage');
+    
+    // 🔒 BLOCK: If birthday already exists, refuse
+    if (clubManager.currentMember && clubManager.currentMember.birthday) {
+        messageDiv.innerHTML = '<div class="error-message">🔒 Your birthday is locked. You can only set it once.</div>';
+        return;
+    }
     
     if (!birthday) {
         messageDiv.innerHTML = '<div class="error-message">Please select your birthday</div>';
@@ -12223,9 +12229,31 @@ async function saveBirthday() {
         return;
     }
     
+    // Double confirm — this is permanent
+    if (!confirm("⚠️ IMPORTANT:\n\nYour birthday can only be set ONCE and CANNOT be changed later.\n\nIs " + birthday + " correct?")) {
+        messageDiv.innerHTML = '<div class="info-message">Cancelled. Birthday not saved.</div>';
+        return;
+    }
+    
     messageDiv.innerHTML = '<div class="info-message">Saving...</div>';
     
     try {
+        // Re-check database to prevent race condition / double submit
+        const { data: freshCheck } = await clubManager.db.supabase
+            .from('members')
+            .select('birthday')
+            .eq('jc_id', clubManager.currentMember.jcId)
+            .single();
+        
+        if (freshCheck && freshCheck.birthday) {
+            // Someone/something already set it — lock it
+            clubManager.currentMember.birthday = freshCheck.birthday;
+            localStorage.setItem('jeansClubCurrentMember', JSON.stringify(clubManager.currentMember));
+            updateBirthdayDisplay();
+            messageDiv.innerHTML = '<div class="error-message">🔒 Birthday is already set and locked.</div>';
+            return;
+        }
+        
         // Update Supabase
         const { error } = await clubManager.db.supabase
             .from('members')
@@ -12233,7 +12261,8 @@ async function saveBirthday() {
                 birthday: birthday,
                 updated_at: new Date().toISOString()
             })
-            .eq('jc_id', clubManager.currentMember.jcId);
+            .eq('jc_id', clubManager.currentMember.jcId)
+            .is('birthday', null);  // ← Only updates if still null (hard lock)
         
         if (error) throw error;
         
@@ -12244,9 +12273,7 @@ async function saveBirthday() {
         // Update birthday display
         updateBirthdayDisplay();
         
-        // Show success message
-        const isNew = !clubManager.currentMember.birthday;
-        messageDiv.innerHTML = `<div class="success-message">✅ Birthday ${isNew ? 'added' : 'updated'} successfully!</div>`;
+        messageDiv.innerHTML = '<div class="success-message">✅ Birthday saved! It is now permanently locked.</div>';
         
         // Calculate if birthday is soon
         const nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
@@ -12262,13 +12289,15 @@ async function saveBirthday() {
         }
         
         // Send push notification
-        sendPushNotification('🎂 Birthday Added!', 
-            `Thanks for sharing your birthday! We'll have something special waiting for you on ${birthDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}!`);
+        try {
+            sendPushNotification('🎂 Birthday Locked!', 
+                `Your birthday is now saved and can't be changed. We'll celebrate you on ${birthDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}!`);
+        } catch(e) {}
         
-        // Close modal after 2 seconds
+        // Close modal after 2.5 seconds
         setTimeout(() => {
             closeBirthdayModal();
-        }, 2000);
+        }, 2500);
         
     } catch (error) {
         console.error('Error saving birthday:', error);
@@ -12276,7 +12305,7 @@ async function saveBirthday() {
     }
 }
 
-// Update birthday display on dashboard
+// Update birthday display on dashboard — shows LOCKED state if already set
 function updateBirthdayDisplay() {
     const container = document.getElementById('birthdayDisplay');
     if (!container) return;
@@ -12285,6 +12314,7 @@ function updateBirthdayDisplay() {
     const birthdayBtn = document.getElementById('birthdayBtn');
     
     if (birthday) {
+        // 🔒 LOCKED STATE
         const birthDate = new Date(birthday);
         const today = new Date();
         
@@ -12314,21 +12344,31 @@ function updateBirthdayDisplay() {
                 <p style="margin: 10px 0 0 0; font-size: 12px; color: #856404;">
                     ✨ You'll receive a special birthday reward on your special day!
                 </p>
+                <p style="margin: 8px 0 0 0; font-size: 11px; color: #dc3545; font-weight: bold;">
+                    🔒 This birthday is locked and cannot be changed.
+                </p>
             </div>
         `;
-        birthdayBtn.textContent = '✏️ Update Birthday';
-        birthdayBtn.style.background = '#6c757d';
+        
+        // Hide the button entirely — no more changes allowed
+        if (birthdayBtn) {
+            birthdayBtn.style.display = 'none';
+        }
     } else {
+        // Not set yet — show add prompt
         container.innerHTML = `
             <div style="background: #e7f3ff; padding: 15px; border-radius: 10px;">
                 <p style="margin: 0; color: #2196F3;">
                     🎂 <strong>We'd love to celebrate your birthday!</strong><br>
-                    <small>Add your birthday to receive special rewards and surprises on your special day.</small>
+                    <small>Add your birthday to receive special rewards. ⚠️ You can only set it ONCE.</small>
                 </p>
             </div>
         `;
-        birthdayBtn.textContent = '➕ Add Birthday';
-        birthdayBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        if (birthdayBtn) {
+            birthdayBtn.textContent = '➕ Add Birthday (One-Time Only)';
+            birthdayBtn.style.display = 'block';
+            birthdayBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
     }
 }
 
@@ -12708,6 +12748,15 @@ document.addEventListener('visibilitychange', function() {
         checkAndHidePopup();
     }
 });
+</script>
+<script>
+// Auto-update copyright year every new year
+(function updateCopyrightYear() {
+    const yearEl = document.getElementById('footerCopyrightYear');
+    if (yearEl) {
+        yearEl.textContent = new Date().getFullYear();
+    }
+})();
 </script>
 </body>
 </html>
