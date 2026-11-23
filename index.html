@@ -2930,6 +2930,39 @@ body{background:linear-gradient(160deg,rgba(60,30,110,.5),rgba(8,14,40,.78)),url
 
 /* remove the purple tint: back to the plain dark overlay */
 body{background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url('https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=1920&q=80') center/cover fixed!important;padding-bottom:78px}
+/* ===== STAFF SCREEN: glass, readable ===== */
+#salespersonTransactionScreen .salesperson-transaction{background:transparent!important;border:0;padding:0;box-shadow:none}
+#salespersonTransactionScreen :is(.member-info-bar,.item-entry-section,.cart-items,.totals-card,.transaction-timeline){background:rgba(255,255,255,.08)!important;border:1px solid rgba(212,165,116,.35)!important;box-shadow:none}
+#salespersonTransactionScreen :where(div,span,strong,b,h2,h3,h4,p,small){color:#f7f3ec!important}
+#salespersonTransactionScreen .cart-item{border-bottom-color:rgba(255,255,255,.14)}
+#salespersonTransactionScreen .total-row.final{border-top-color:rgba(255,255,255,.25)}
+#salespersonTransactionScreen .cart-item-price,#salespersonTransactionScreen .final-price,#salespersonTransactionScreen .final-price strong{color:#f3dba5!important}
+#salespersonTransactionScreen .total-row.discount span{color:#7ee2a8!important}
+#salespersonTransactionScreen .timeline-step.completed,#salespersonTransactionScreen .timeline-step.completed span{color:#7ee2a8!important}
+#salespersonTransactionScreen .timeline-step.active,#salespersonTransactionScreen .timeline-step.active span{color:#f3dba5!important}
+#salespersonTransactionScreen .member-tier-badge{background:linear-gradient(135deg,#f3dba5,#d4a574)!important;color:#1a1a2e!important}
+#salespersonTransactionScreen .quick-item-btn{background:rgba(255,255,255,.08)!important;color:#f3dba5!important;border:1px solid rgba(212,165,116,.6)!important}
+#salespersonTransactionScreen .quick-item-btn:hover{background:linear-gradient(135deg,#f3dba5,#d4a574)!important;color:#1a1a2e!important}
+#salespersonTransactionScreen :is(input){background:rgba(255,255,255,.1)!important;color:#f7f3ec!important;border:1px solid rgba(255,255,255,.28)!important}
+#salespersonTransactionScreen .btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ===== MEMBER RECEIPT: dark text on the paper ===== */
+#memberTransactionScreen .jc-pp,#memberTransactionScreen .jc-pp :where(div,span,b,small,p){color:#1a1a2e!important}
+#memberTransactionScreen .jc-pp small{color:#6b6b7a!important}
+#memberTransactionScreen .jc-pp .jc-sub,#memberTransactionScreen .jc-pp .jc-sub span{color:#6b6b7a!important}
+#memberTransactionScreen .jc-pp .jc-sub .g span{color:#2e9e6b!important}
+#memberTransactionScreen .jc-pp .jc-grand span{color:#f0ebe6!important}
+#memberTransactionScreen .jc-pp .jc-grand .jc-n{color:#d4a574!important}
+#memberTransactionScreen .jc-pp .jc-tier{color:#fff!important}
+#memberTransactionScreen .jc-pp .jc-stamp{color:#2e9e6b!important}
+#memberTransactionScreen .jc-pp .jc-pts :where(div,span){color:#6b4a22!important}
+#memberTransactionScreen .jc-pp .jc-foot{color:#6b6b7a!important}
+#memberTransactionScreen .jc-pp .jc-foot b{color:#1a1a2e!important}
+#memberTransactionScreen .jc-hd,#memberTransactionScreen .jc-hd div{color:#f0ebe6!important}
+#memberTransactionScreen .jc-hd .jc-tg,#memberTransactionScreen .jc-hd .jc-bar{color:#d4a574!important}
+#memberTransactionScreen .jc-step h3{color:#2e9e6b!important}
+#memberTransactionScreen .jc-step p{color:#6b6b7a!important}
+#memberTransactionScreen .jc-step img{width:230px;height:230px;background:#fff;padding:8px;border-radius:10px}
 </style>
 
     <!-- Add Supabase CDN -->
@@ -4752,18 +4785,18 @@ body{background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url('https://imag
         }
 
         function handleMemberConfirmed(payload) {
-    if (currentTransaction) {
-        currentTransaction.memberConfirmed = true;
-        
-        // Show success message
-        showToast("Payment confirmed successfully!", "success");
-        
-        // Update the transaction screen to show receipt + QR code
-        if (typeof showMemberTransactionScreen === 'function') {
-            showMemberTransactionScreen(currentTransaction);
-        }
+    if (!currentTransaction) return;
+    currentTransaction.memberConfirmed = true;
+
+    if (!document.getElementById('salespersonTransactionScreen').classList.contains('hidden')) {
+        showSalespersonTransactionScreen(currentTransaction);
+        showToast('Member confirmed payment. Scan their confirmation QR.', 'success');
+    } else if (!document.getElementById('memberTransactionScreen').classList.contains('hidden')) {
+        showMemberTransactionScreen(currentTransaction);
     }
 }
+
+
 function handleSaleCompleted(payload) {
     console.log('🎉 Sale completed!', payload);
     
@@ -4852,7 +4885,7 @@ function showMemberTransactionScreen(transaction) {
         transactionId: transaction.id,
         memberJcId: transaction.memberJcId,
         finalTotal: total,
-        appliedVoucher: applied,
+        appliedVoucher: applied ? { code: applied.code } : null,
         pointsEarned: pts,
         timestamp: Date.now()
     }));
@@ -5021,10 +5054,9 @@ function shareReceiptWhatsApp() {
                             ${transaction.items.length === 0 || transaction.memberConfirmed ? 'disabled' : ''}>
                         📱 Send to Member
                     </button>
-                    <button class="btn btn-success" style="flex: 1; background: #28a745;" onclick="openConfirmScanner()" 
-                            ${!transaction.memberConfirmed ? 'disabled' : ''}>
-                        💵 Scan Member Confirmation
-                    </button>
+                    <button class="btn btn-success" style="flex: 1; background: #28a745;" onclick="openConfirmScanner()">
+    💵 Scan Member Confirmation
+</button>
                 </div>
                 
                 <button class="btn btn-secondary" style="margin-top: 10px;" onclick="cancelTransaction()">
@@ -5174,19 +5206,18 @@ function shareReceiptWhatsApp() {
             showToast("Voucher removed", "info");
         }
 
-        // Member confirms payment - shows QR for salesperson
         async function memberConfirmPayment() {
-            if (!currentTransaction) return;
-            
-            currentTransaction.memberConfirmed = true;
-            currentTransaction.memberConfirmedAt = new Date().toISOString();
-            
-            await saveTransaction(currentTransaction);
-            
-            showMemberTransactionScreen(currentTransaction);
-            
-            showToast("Payment confirmed! Show QR to salesperson.", "success");
-        }
+    if (!currentTransaction) return;
+
+    currentTransaction.memberConfirmed = true;
+    currentTransaction.memberConfirmedAt = new Date().toISOString();
+
+    await saveTransaction(currentTransaction);
+    try { await broadcastToSalesperson({ type: 'member_confirmed' }); } catch (e) {}
+
+    showMemberTransactionScreen(currentTransaction);
+    showToast("Payment confirmed! Show QR to salesperson.", "success");
+}
 
         // Send to member for confirmation (salesperson) - SHOWS QR CODE
         async function sendToMemberForConfirmation() {
@@ -6792,18 +6823,22 @@ class GoogleAppsEmailService {
     esc(s) {
         return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
-
     shell(title, subtitle, body) {
         const LOGO = 'https://i.postimg.cc/GtNfc8TH/Whats-App-Image-2026-09-02-at-11-24-04.jpg';
+        const BG = 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&w=1200&q=70';
         return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#0b0b14;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b0b14;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" background="${BG}" bgcolor="#0b0b14" style="background:#0b0b14 url('${BG}') center/cover no-repeat;"><tr><td align="center" style="padding:28px 12px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fffdf9;border-radius:16px;overflow:hidden;">
-    <tr><td align="center" style="background:#141423;padding:28px 20px 0;border-bottom:2px dashed #d4a574;">
-      <img src="${LOGO}" alt="Jeans Club" height="56" style="height:56px;max-width:80%;display:block;margin:0 auto;">
-      <div style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13px;letter-spacing:3px;color:#d4a574;text-transform:uppercase;margin-top:10px;">Raised on Denim</div>
-      <div style="margin:18px -20px 0;padding:11px 0;background:#0a0a14;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;color:#d4a574;">${subtitle}</div>
+    <tr><td background="${BG}" bgcolor="#141423" style="background:#141423 url('${BG}') center/cover no-repeat;border-bottom:2px dashed #d4a574;padding:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr><td align="center" style="background:rgba(11,11,20,.68);padding:30px 20px 20px;">
+          <img src="${LOGO}" alt="Jeans Club" height="60" style="height:60px;max-width:80%;display:block;margin:0 auto;">
+          <div style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13px;letter-spacing:3px;color:#d4a574;text-transform:uppercase;margin-top:12px;">Raised on Denim</div>
+        </td></tr>
+        <tr><td align="center" style="background:rgba(8,8,16,.9);padding:12px 0;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;color:#d4a574;">${subtitle}</td></tr>
+      </table>
     </td></tr>
     <tr><td style="padding:30px 26px 10px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1a1a2e;">
       <h2 style="margin:0 0 14px;font-family:Georgia,'Times New Roman',serif;font-weight:normal;font-size:26px;color:#1a1a2e;">${title}</h2>
