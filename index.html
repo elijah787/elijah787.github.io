@@ -2984,6 +2984,18 @@ body{background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url('https://imag
 #memberTransactionScreen .jc-pp .jc-grand>span:first-child{color:#d4a574!important}
 .jc-rw{background:#f4efe9;border-radius:8px;padding:10px 12px;margin:14px 0 6px;font-size:12px}
 .jc-rw b{display:block;margin-bottom:4px;font-size:13px}
+.vs-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.vs-tile{background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:14px 10px;text-align:center}
+#voucherManagementSection .vs-n{font:700 30px/1.1 'Playfair Display',Georgia,serif;color:#f7f3ec!important}
+#voucherManagementSection .vs-l{font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#d4a574!important;margin-top:6px}
+#voucherManagementSection .vs-s{font-size:11px;color:rgba(247,243,236,.7)!important;margin-top:2px}
+#voucherManagementSection .vs-active .vs-n{color:#7ee2a8!important}
+#voucherManagementSection .vs-used .vs-n{color:#f3dba5!important}
+#voucherManagementSection .vs-expired .vs-n{color:#ff9aa5!important}
+.vs-money{margin-top:14px;border:1px solid rgba(212,165,116,.4);border-radius:12px;padding:6px 14px}
+#voucherManagementSection .vs-mrow{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.12);font-size:14px}
+#voucherManagementSection .vs-mrow b{color:#f3dba5!important}
+#voucherManagementSection .vs-note{font-size:11px;line-height:1.5;padding:8px 0;color:rgba(247,243,236,.65)!important}
 </style>
 
     <!-- Add Supabase CDN -->
@@ -10784,72 +10796,86 @@ async function updateMemberVouchers(jcId) {
             document.getElementById('purchaseJCId').focus();
         }
 
-        async function loadAllVouchers() {
-            const allVouchersList = document.getElementById('allVouchersList');
-            const voucherStats = document.getElementById('voucherStats');
-            
-            const stats = voucherSystem.getVoucherStats();
-            voucherStats.innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                    <div style="text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                        <div style="font-size: 24px; font-weight: bold;">${stats.total}</div>
-                        <div style="font-size: 12px; color: #666;">Total</div>
-                    </div>
-                    <div style="text-align: center; padding: 10px; background: #d4edda; border-radius: 8px;">
-                        <div style="font-size: 24px; font-weight: bold;">${stats.active}</div>
-                        <div style="font-size: 12px; color: #666;">Active</div>
-                    </div>
-                    <div style="text-align: center; padding: 10px; background: #e2e3e5; border-radius: 8px;">
-                        <div style="font-size: 24px; font-weight: bold;">${stats.used}</div>
-                        <div style="font-size: 12px; color: #666;">Used</div>
-                    </div>
-                    <div style="text-align: center; padding: 10px; background: #f8d7da; border-radius: 8px;">
-                        <div style="font-size: 24px; font-weight: bold;">${stats.expired}</div>
-                        <div style="font-size: 12px; color: #666;">Expired</div>
-                    </div>
+       async function loadAllVouchers() {
+    const listEl = document.getElementById('allVouchersList');
+    const statsEl = document.getElementById('voucherStats');
+    statsEl.innerHTML = '<div class="activity-item">Loading statistics...</div>';
+
+    let vouchers = [];
+    try {
+        const { data, error } = await window.supabaseDbInstance.supabase
+            .from('vouchers').select('*').order('created_date', { ascending: false });
+        if (error) throw error;
+        vouchers = data.map(v => ({
+            code: v.code, memberJCId: v.member_jc_id, memberName: v.member_name,
+            pointsUsed: v.points_used, discountPercentage: v.discount_percentage,
+            createdDate: v.created_date, expiryDate: v.expiry_date,
+            status: v.status, usedDate: v.used_date, redeemedBy: v.redeemed_by
+        }));
+    } catch (e) {
+        console.error('Voucher load failed, using local copy:', e);
+        vouchers = voucherSystem.getAllVouchers();
+    }
+
+    const now = new Date();
+    vouchers.forEach(v => {
+        if (v.status === 'active' && new Date(v.expiryDate) < now) v.status = 'expired';
+    });
+
+    const fmt = n => Math.round(n || 0).toLocaleString();
+    const value = v => (v.pointsUsed || 0) * 50;
+    const total = arr => arr.reduce((s, v) => s + value(v), 0);
+
+    const active = vouchers.filter(v => v.status === 'active');
+    const used = vouchers.filter(v => v.status === 'used');
+    const expired = vouchers.filter(v => v.status === 'expired');
+    const ended = used.length + expired.length;
+    const rate = ended > 0 ? Math.round((used.length / ended) * 100) + '%' : 'N/A';
+
+    const tile = (cls, n, label, sub) => `
+        <div class="vs-tile ${cls}">
+            <div class="vs-n">${n}</div>
+            <div class="vs-l">${label}</div>
+            <div class="vs-s">${sub}</div>
+        </div>`;
+
+    statsEl.innerHTML = `
+        <div class="vs-grid">
+            ${tile('vs-total', vouchers.length, 'Issued', 'all vouchers created')}
+            ${tile('vs-active', active.length, 'Active', 'valid, not yet used')}
+            ${tile('vs-used', used.length, 'Redeemed', 'used at the till')}
+            ${tile('vs-expired', expired.length, 'Expired', 'not used in time')}
+        </div>
+        <div class="vs-money">
+            <div class="vs-mrow"><span>Total value issued</span><b>UGX ${fmt(total(vouchers))}</b></div>
+            <div class="vs-mrow"><span>Value redeemed</span><b>UGX ${fmt(total(used))}</b></div>
+            <div class="vs-mrow"><span>Outstanding liability (active)</span><b>UGX ${fmt(total(active))}</b></div>
+            <div class="vs-mrow"><span>Redemption rate</span><b>${rate}</b></div>
+            <div class="vs-note">Value is the maximum discount (points × 50 UGX). Redemption rate is redeemed ÷ (redeemed + expired), so vouchers still active are not counted against it.</div>
+        </div>`;
+
+    if (vouchers.length === 0) {
+        listEl.innerHTML = '<div class="activity-item">No vouchers found</div>';
+        return;
+    }
+
+    const label = { active: 'Active', used: 'Redeemed', expired: 'Expired' };
+    listEl.innerHTML = vouchers.map(v => `
+        <div class="voucher-item ${v.status}">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                <div>
+                    <strong>${v.memberName} (${v.memberJCId})</strong>
+                    <span class="voucher-status status-${v.status === 'used' ? 'used' : v.status}">${label[v.status] || v.status}</span>
                 </div>
-                <div style="margin-top: 15px;">
-                    <p><strong>Average Discount:</strong> ${stats.avgDiscount}%</p>
-                    <p><strong>Redemption Rate:</strong> ${stats.redemptionRate}</p>
-                </div>
-            `;
-            
-            const vouchers = voucherSystem.getAllVouchers();
-            
-            if (vouchers.length === 0) {
-                allVouchersList.innerHTML = '<div class="activity-item">No vouchers found</div>';
-                return;
-            }
-            
-            allVouchersList.innerHTML = vouchers.map(voucher => {
-                const statusClass = voucher.status === 'active' ? 'status-active' : 
-                                   voucher.status === 'used' ? 'status-used' : 'status-expired';
-                const statusText = voucher.status.charAt(0).toUpperCase() + voucher.status.slice(1);
-                const expiryDate = new Date(voucher.expiryDate).toLocaleDateString();
-                const createdDate = new Date(voucher.createdDate).toLocaleDateString();
-                
-                return `
-                    <div class="voucher-item ${voucher.status}">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong>${voucher.memberName} (${voucher.memberJCId})</strong>
-                                <span class="voucher-status ${statusClass}">${statusText}</span>
-                            </div>
-                            <div style="font-size: 12px; color: #666;">
-                                ${createdDate}
-                            </div>
-                        </div>
-                        <div class="voucher-code">${voucher.code}</div>
-                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
-                            <strong>${voucher.discountPercentage}% OFF</strong> | 
-                            Points: ${voucher.pointsUsed} | 
-                            Expires: ${expiryDate}
-                            ${voucher.usedDate ? `<br>Used by: ${voucher.redeemedBy || 'system'} on ${new Date(voucher.usedDate).toLocaleDateString()}` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
+                <div style="font-size:12px;">${new Date(v.createdDate).toLocaleDateString()}</div>
+            </div>
+            <div class="voucher-code">${v.code}</div>
+            <div style="font-size:12px;margin-top:5px;">
+                <strong>UGX ${fmt(value(v))}</strong> · ${v.pointsUsed} pts · Expires ${new Date(v.expiryDate).toLocaleDateString()}
+                ${v.usedDate ? `<br>Redeemed by ${v.redeemedBy || 'staff'} on ${new Date(v.usedDate).toLocaleDateString()}` : ''}
+            </div>
+        </div>`).join('');
+}
                 // ===========================================
         // ACCOUNT CREATION LOADING SCREEN
         // ===========================================
