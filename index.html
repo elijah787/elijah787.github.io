@@ -2963,6 +2963,12 @@ body{background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url('https://imag
 #memberTransactionScreen .jc-step h3{color:#2e9e6b!important}
 #memberTransactionScreen .jc-step p{color:#6b6b7a!important}
 #memberTransactionScreen .jc-step img{width:230px;height:230px;background:#fff;padding:8px;border-radius:10px}
+/* card flip: show only one side at a time */
+.jc-face,.jc-face *{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.jc-c3 .jc-face{transition:visibility 0s linear .5s}
+.jc-c3 #jcBack{visibility:hidden}
+.jc-c3[data-flipped="1"] #jcFront{visibility:hidden}
+.jc-c3[data-flipped="1"] #jcBack{visibility:visible}
 </style>
 
     <!-- Add Supabase CDN -->
