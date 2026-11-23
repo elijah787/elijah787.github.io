@@ -2965,10 +2965,25 @@ body{background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url('https://imag
 #memberTransactionScreen .jc-step img{width:230px;height:230px;background:#fff;padding:8px;border-radius:10px}
 /* card flip: show only one side at a time */
 .jc-face,.jc-face *{backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.jc-c3 .jc-face{transition:visibility 0s linear .5s}
-.jc-c3 #jcBack{visibility:hidden}
-.jc-c3[data-flipped="1"] #jcFront{visibility:hidden}
-.jc-c3[data-flipped="1"] #jcBack{visibility:visible}
+.jc-top{background:#fffdf9;border-radius:14px 14px 0 0;padding:18px 20px 14px;border-bottom:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.jc-top img{height:40px;width:auto;display:block;margin-bottom:4px}
+#memberTransactionScreen .jc-top small{display:block;font-size:10px;letter-spacing:1px;color:#6b6b7a!important}
+.jc-top-r{text-align:right}
+#memberTransactionScreen .jc-top-r b{display:block;font-size:13px;color:#1a1a2e!important}
+
+.jc-th,.jc-row{display:grid;grid-template-columns:1fr 34px 96px;gap:8px;align-items:baseline}
+.jc-th{padding:8px 0;border-bottom:1.5px solid #1a1a2e}
+.jc-th small{font:600 9px Inter;letter-spacing:1.5px;text-transform:uppercase}
+.jc-row{padding:10px 0;border-bottom:1px solid #e6ddd0;font-size:13px}
+.jc-th>:nth-child(2),.jc-row>:nth-child(2){text-align:center}
+.jc-th>:last-child,.jc-row>:last-child{text-align:right}
+.jc-line{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
+.jc-sub{border-top:0;margin-top:6px}
+.jc-grand span:first-child{font-size:10px;letter-spacing:3px}
+.jc-grand .jc-n{font-size:20px}
+#memberTransactionScreen .jc-pp .jc-grand>span:first-child{color:#d4a574!important}
+.jc-rw{background:#f4efe9;border-radius:8px;padding:10px 12px;margin:14px 0 6px;font-size:12px}
+.jc-rw b{display:block;margin-bottom:4px;font-size:13px}
 </style>
 
     <!-- Add Supabase CDN -->
@@ -4769,26 +4784,29 @@ body{background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url('https://imag
                 .on('broadcast', { event: 'sale_completed' }, (payload) => {
                     handleSaleCompleted(payload);
                 })
+                .on('broadcast', { event: 'sale_failed' }, (msg) => {
+    handleSaleCompleted({ payload: { ...unwrapBroadcast(msg), success: false } });
+})
                 .subscribe();
         }
+      function unwrapBroadcast(msg) {
+    return (msg && msg.payload) ? msg.payload : (msg || {});
+}
+      
+        function handleTransactionUpdate(msg) {
+    const payload = unwrapBroadcast(msg);
+    if (!currentTransaction) return;
 
-        // Handle transaction update
-        function handleTransactionUpdate(payload) {
-            if (!currentTransaction) return;
-            
-            if (payload.items) currentTransaction.items = payload.items;
-            if (payload.subtotal !== undefined) currentTransaction.subtotal = payload.subtotal;
-            if (payload.appliedVoucher) currentTransaction.appliedVoucher = payload.appliedVoucher;
-            if (payload.finalTotal !== undefined) currentTransaction.finalTotal = payload.finalTotal;
-            
-            if (!document.getElementById('memberTransactionScreen').classList.contains('hidden')) {
-                showMemberTransactionScreen(currentTransaction);
-            }
-            
-            if (!document.getElementById('salespersonTransactionScreen').classList.contains('hidden')) {
-                showSalespersonTransactionScreen(currentTransaction);
-            }
-        }
+    if (payload.items) currentTransaction.items = payload.items;
+    if (payload.subtotal !== undefined) currentTransaction.subtotal = payload.subtotal;
+    if ('appliedVoucher' in payload) currentTransaction.appliedVoucher = payload.appliedVoucher;
+    if (payload.finalTotal !== undefined) currentTransaction.finalTotal = payload.finalTotal;
+
+    if (!document.getElementById('memberTransactionScreen').classList.contains('hidden'))
+        showMemberTransactionScreen(currentTransaction);
+    if (!document.getElementById('salespersonTransactionScreen').classList.contains('hidden'))
+        showSalespersonTransactionScreen(currentTransaction);
+}
 
         function handleMemberConfirmed(payload) {
     if (!currentTransaction) return;
@@ -4802,43 +4820,36 @@ body{background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url('https://imag
     }
 }
 
+function handleSaleCompleted(msg) {
+    const payload = unwrapBroadcast(msg);
 
-function handleSaleCompleted(payload) {
-    console.log('🎉 Sale completed!', payload);
-    
-    // Show success message on member phone
+    // fallback: work the points out from the member's own copy of the sale
+    const t = currentTransaction;
+    const fallbackPts = t ? Math.floor(((t.appliedVoucher ? t.finalTotal : t.subtotal) || 0) / 1000) : 0;
+    const pointsEarned = payload.pointsEarned ?? fallbackPts;
+
     if (payload.success !== false) {
-        const pointsEarned = payload.pointsEarned || 0;
         showToast(`✅ Purchase complete! +${pointsEarned} points added!`, 'success');
-        
-        // Update member's local data
-        if (clubManager && clubManager.currentMember) {
-            // Refresh member data
-            clubManager.db.getMemberByJCId(clubManager.currentMember.jcId).then(freshMember => {
-                if (freshMember) {
-                    clubManager.currentMember = freshMember;
-                    localStorage.setItem('jeansClubCurrentMember', JSON.stringify(freshMember));
-                    if (typeof updateMemberDashboard === 'function') {
-                        updateMemberDashboard(freshMember);
-                    }
+
+        if (clubManager?.currentMember) {
+            clubManager.db.getMemberByJCId(clubManager.currentMember.jcId).then(fresh => {
+                if (fresh) {
+                    clubManager.currentMember = fresh;
+                    localStorage.setItem('jeansClubCurrentMember', JSON.stringify(fresh));
+                    updateMemberDashboard(fresh);
                 }
             });
         }
     } else {
         showToast(payload.message || 'Transaction failed', 'error');
     }
-    
-    // Clear transaction
+
     currentTransaction = null;
     isInTransactionFlow = false;
-    
-    // Return to dashboard after 2 seconds
+
     setTimeout(() => {
-        if (clubManager.isAdmin) {
-            showAdminPanel();
-        } else {
-            showDashboard(clubManager.currentMember);
-        }
+        if (clubManager.isAdmin) showAdminPanel();
+        else showDashboard(clubManager.currentMember);
     }, 2000);
 }
 function showMemberTransactionScreen(transaction) {
@@ -4863,6 +4874,18 @@ function showMemberTransactionScreen(transaction) {
     const next = tiers[idx + 1];
     const pct = next ? Math.min(100, Math.round(((life - tiers[idx][1]) / (next[1] - tiers[idx][1])) * 100)) : 100;
     const nextTxt = next ? `${fmt(life)} / ${fmt(next[1])} lifetime pts to ${next[0]}` : 'Maximum tier reached';
+    const ref = 'JC-' + String(transaction.id || '').replace('txn_', '').slice(-8);
+const grouped = Object.values((transaction.items || []).reduce((a, i) => {
+    const k = i.name + '|' + i.price;
+    (a[k] = a[k] || { name: i.name, price: i.price, qty: 0 }).qty++;
+    return a;
+}, {}));
+const rowsHtml = grouped.map(i => `
+    <div class="jc-row">
+        <span>${i.name}${i.qty > 1 ? `<small style="display:block">@ ${fmt(i.price)}</small>` : ''}</span>
+        <span>${i.qty}</span>
+        <span class="jc-n">${fmt(i.price * i.qty)}</span>
+    </div>`).join('') || '<div class="jc-row"><span><small>No items added yet</small></span><span></span><span></span></div>';
 
     const itemsHtml = (transaction.items || []).map(i => `
         <div class="jc-r"><span>${i.name}</span><i></i><span class="jc-n">${fmt(i.price)}</span></div>`).join('')
@@ -4901,36 +4924,37 @@ function showMemberTransactionScreen(transaction) {
         : (confirmed ? 'Waiting for salesperson to complete…' : 'Awaiting your confirmation');
 
     c.innerHTML = `
-    <div class="jc-rc">
-        <div class="jc-hd">
-            <img src="${LOGO}" alt="Jeans Club">
-            <div class="jc-tg">Raised on Denim</div>
-            <div class="jc-bar">Receipt</div>
+       <div class="jc-rc">
+        <div class="jc-top">
+            <div><img src="${LOGO}" alt="Jeans Club"><small>Raised on denim · Kampala, Uganda</small></div>
+            <div class="jc-top-r"><small>Sales receipt</small><b>${ref}</b></div>
         </div>
         <div class="jc-pp">
             ${confirmed ? '<div class="jc-stamp">CONFIRMED</div>' : ''}
             <div class="jc-meta">
-                <div><small>Date</small>${now.toLocaleDateString()}</div>
-                <div><small>Time</small>${now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+                <div><small>Date / time</small>${now.toLocaleDateString()} · ${now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
                 <div><small>Served by</small>${transaction.salespersonName || 'Staff'}</div>
-                <div><small>JC ID</small>${transaction.memberJcId}</div>
+                <div><small>Account holder</small>${transaction.memberName}</div>
+                <div><small>Member ID</small>${transaction.memberJcId}</div>
             </div>
-            <div class="jc-mem">
-                <div><small>Member</small><b>${transaction.memberName}</b></div>
-                <span class="jc-tier">${member.tier || transaction.memberTier}</span>
-            </div>
-            ${itemsHtml}
+
+            <div class="jc-th"><small>Description</small><small>Qty</small><small>Amount (UGX)</small></div>
+            ${rowsHtml}
+
             <div class="jc-sub">
-                <div class="jc-r"><span>Subtotal</span><i></i><span class="jc-n">${fmt(subtotal)}</span></div>
-                ${applied ? `<div class="jc-r g"><span>Voucher ${applied.code} (${applied.percentage}%)</span><i></i><span class="jc-n">-${fmt(applied.discount)}</span></div>` : ''}
+                <div class="jc-line"><span>Gross amount</span><span class="jc-n">${fmt(subtotal)}</span></div>
+                ${applied ? `<div class="jc-line g"><span>Less: member voucher (${applied.code})</span><span class="jc-n">(${fmt(applied.discount)})</span></div>` : ''}
             </div>
-            <div class="jc-grand"><span>YOU PAY</span><span class="jc-n">${fmt(total)} UGX</span></div>
-            <div class="jc-pts">
-                <div><span>✨ Points to earn</span><span class="jc-n">+${pts}</span></div>
-                <div class="jc-pb"><i style="width:${pct}%"></i></div>
-                <div>${nextTxt}</div>
+            <div class="jc-grand"><span>NET AMOUNT PAYABLE</span><span class="jc-n">UGX ${fmt(total)}</span></div>
+
+            <div class="jc-rw">
+                <b>Rewards statement</b>
+                <div class="jc-line"><span>Points accrued this transaction</span><span class="jc-n">+${pts}</span></div>
+                <div class="jc-line"><span>Lifetime points</span><span class="jc-n">${fmt(member.lifetimePoints || 0)}</span></div>
+                <div class="jc-line"><span>Membership tier</span><span>${member.tier || transaction.memberTier}</span></div>
             </div>
-            <div class="jc-foot"><b>Thank you for shopping</b>Jeans Club · Kampala, Uganda</div>
+            <div class="jc-foot"><b>Thank you for your patronage</b>
+                Computer-generated receipt. No signature required.</div>
         </div>
         <div class="jc-zig"></div>
     </div>
@@ -6852,7 +6876,7 @@ class GoogleAppsEmailService {
     </td></tr>
     <tr><td align="center" style="padding:22px 26px 28px;font-family:Arial,sans-serif;font-size:11px;line-height:1.7;color:#6b6b7a;border-top:1px solid #eee3d6;">
       <div style="font-family:Georgia,serif;font-style:italic;font-size:16px;color:#1a1a2e;">Jeans Club</div>
-      Kampala, Uganda · +256 772558913<br>Earn 1 point per 1,000 UGX · 1 point = 50 UGX discount<br>
+      Kampala, Uganda · +256 772558913<br>Rewards terms apply. This is an automated message, please do not reply.<br>
       &copy; ${new Date().getFullYear()} Jeans Club. All rights reserved.
     </td></tr>
   </table>
@@ -6896,71 +6920,74 @@ class GoogleAppsEmailService {
     }
 
     buildWelcomeEmail(member) {
-        return this.shell(`Welcome, ${this.esc(member.name)}`, 'Membership Confirmed', `
-            <p>Your Jeans Club account is ready. Keep your JC ID safe, you'll use it to log in and at the till.</p>
-            ${this.codeBox('Your JC ID', this.esc(member.jcId))}
-            ${this.rows([
-                ['Referral code', this.esc(member.referralCode)],
-                ['Welcome points', '+' + (member.points || 0)],
-                ['Starting tier', this.esc(member.tier)]
-            ])}
-            <p style="font-size:13px;color:#6b6b7a;">Share your referral code with friends, you earn 100 bonus points when they join and make their first purchase.</p>
-            ${this.button('Open Jeans Club', 'https://elijah787.github.io/')}`);
-    }
+    return this.shell(`Dear ${this.esc(member.name)},`, 'Membership Confirmation', `
+        <p>We are pleased to confirm that your Jeans Club membership has been successfully established. Please retain your Member ID, as it is required for account access and at point of sale.</p>
+        ${this.codeBox('Member ID', this.esc(member.jcId))}
+        ${this.rows([
+            ['Membership tier', this.esc(member.tier)],
+            ['Opening rewards balance', (member.points || 0) + ' pts'],
+            ['Referral code', this.esc(member.referralCode)]
+        ])}
+        <p style="font-size:13px;color:#6b6b7a;">A lump-sum credit of 100 points is issued to you for each referred member upon their first qualifying purchase.</p>
+        ${this.button('Access Member Portal', 'https://elijah787.github.io/')}`);
+}
 
-    buildPurchaseEmail(member, p) {
-        const amount = p?.amount || 0, pts = p?.pointsEarned || 0;
-        return this.shell(`Thank you, ${this.esc(member.name)}`, 'Purchase Confirmed', `
-            <p>Your purchase is confirmed and your points have been added.</p>
-            ${this.rows([
-                ['Description', this.esc(p?.description || 'Purchase')],
-                ['Amount', amount.toLocaleString() + ' UGX'],
-                ['Points earned', '+' + pts]
-            ])}
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:#141423;border-radius:10px;border-bottom:3px solid #d4a574;padding:16px;">
-                <span style="font-size:10px;letter-spacing:3px;color:#d4a574;">NEW BALANCE</span><br>
-                <span style="font-family:Georgia,serif;font-size:26px;color:#f0ebe6;">${(member.points || 0).toLocaleString()} points</span>
-                <span style="float:right;margin-top:6px;background:#22385e;color:#fff;font-size:10px;font-weight:bold;letter-spacing:2px;padding:4px 12px;border-radius:50px;">${this.esc(member.tier)}</span>
-            </td></tr></table>`);
-    }
+  buildPurchaseEmail(member, p) {
+    const amount = p?.amount || 0, pts = p?.pointsEarned || 0;
+    return this.shell(`Dear ${this.esc(member.name)},`, 'Transaction Confirmation', `
+        <p>This message confirms that your transaction has been settled and your rewards account has been updated accordingly.</p>
+        ${this.rows([
+            ['Transaction details', this.esc(p?.description || 'In-store purchase')],
+            ['Net amount settled', amount.toLocaleString() + ' UGX'],
+            ['Rewards accrued', '+' + pts + ' pts'],
+            ['Closing rewards balance', (member.points || 0).toLocaleString() + ' pts'],
+            ['Membership tier', this.esc(member.tier)]
+        ])}
+        <p style="font-size:13px;color:#6b6b7a;">Rewards accrue at 1 point per UGX 1,000 of net spend. Tier status is determined by lifetime points and is never reduced by redemptions.</p>`);
+}
 
-    buildDiscountEmail(member, d) {
-        const exp = d?.expiryDate ? new Date(d.expiryDate).toLocaleDateString() : 'N/A';
-        const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(d?.voucherCode || '');
-        return this.shell(`${d?.discountPercentage || 0}% off, ${this.esc(member.name)}`, 'Your Discount Voucher', `
-            <p>Your voucher is ready. Show the QR code at checkout.</p>
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0;"><tr><td align="center" style="border:2px dashed #d4a574;border-radius:12px;padding:22px 16px;background:#fff;">
-                <div style="font-family:Georgia,serif;font-size:40px;color:#b0763f;">${d?.discountPercentage || 0}% OFF</div>
-                <img src="${qr}" width="150" height="150" alt="Voucher QR" style="margin:12px 0;border:1px solid #eee;border-radius:8px;padding:6px;">
-                <div style="font-family:'Courier New',monospace;font-size:20px;font-weight:bold;letter-spacing:3px;">${this.esc(d?.voucherCode || 'N/A')}</div>
-            </td></tr></table>
-            ${this.rows([
-                ['Points used', d?.pointsUsed || 0],
-                ['Value', (d?.discountValue || 0).toLocaleString() + ' UGX'],
-                ['Valid until', exp]
-            ])}
-            <p style="font-size:13px;color:#6b6b7a;">One voucher per transaction.</p>`);
-    }
-
+ 
+buildDiscountEmail(member, d) {
+    const exp = d?.expiryDate ? new Date(d.expiryDate).toLocaleDateString() : 'N/A';
+    const qr = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(d?.voucherCode || '');
+    return this.shell(`Dear ${this.esc(member.name)},`, 'Reward Voucher Issued', `
+        <p>Your redemption request has been processed. The voucher below is valid for a single transaction, subject to the terms stated.</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0;"><tr><td align="center" style="border:1px solid #d4a574;border-radius:12px;padding:22px 16px;background:#fff;">
+            <div style="font-size:10px;letter-spacing:3px;color:#6b6b7a;text-transform:uppercase;">Redemption value</div>
+            <div style="font-family:Georgia,serif;font-size:34px;color:#1a1a2e;margin:6px 0;">UGX ${(d?.discountValue || 0).toLocaleString()}</div>
+            <img src="${qr}" width="150" height="150" alt="Voucher QR" style="margin:12px 0;">
+            <div style="font-family:'Courier New',monospace;font-size:18px;font-weight:bold;letter-spacing:3px;">${this.esc(d?.voucherCode || 'N/A')}</div>
+        </td></tr></table>
+        ${this.rows([
+            ['Points redeemed', (d?.pointsUsed || 0) + ' pts'],
+            ['Valid through', exp],
+            ['Usage', 'One voucher per transaction']
+        ])}
+        <p style="font-size:13px;color:#6b6b7a;">Vouchers have no cash value and are non-transferable. Please present the QR code to our associate at checkout.</p>`);
+}
     buildReferralEmail(member, r) {
-        return this.shell(`Congratulations, ${this.esc(member.name)}`, 'Referral Success', `
-            <p>You earned <strong>${r?.pointsEarned || 100} bonus points</strong> for referring <strong>${this.esc(r?.referredName || 'a new member')}</strong>.</p>
-            ${this.codeBox('Your referral code', this.esc(member.referralCode), 'Keep sharing, every friend earns you more')}`);
-    }
+    return this.shell(`Dear ${this.esc(member.name)},`, 'Referral Reward Credited', `
+        <p>Your referral of <strong>${this.esc(r?.referredName || 'a new member')}</strong> has qualified. A lump-sum credit has been posted to your rewards account.</p>
+        ${this.rows([
+            ['Referral reward credited', '+' + (r?.pointsEarned || 100) + ' pts'],
+            ['Referral code', this.esc(member.referralCode)]
+        ])}`);
+}
 
-    buildPasswordResetEmail(member, r) {
-        return this.shell(`Hello, ${this.esc(member.name)}`, 'Password Reset', `
-            <p>We received a request to reset your password. Enter this code on the reset page:</p>
-            ${this.codeBox('Reset code', this.esc(r?.token || 'N/A'), 'Expires in 1 hour')}
-            <p style="font-size:13px;color:#6b6b7a;">If you didn't request this, you can safely ignore this email.</p>`);
-    }
+   buildPasswordResetEmail(member, r) {
+    return this.shell(`Dear ${this.esc(member.name)},`, 'Security Verification', `
+        <p>A password reset was requested for your account. Use the verification code below to proceed. This code is valid for 60 minutes and must not be shared with anyone, including Jeans Club staff.</p>
+        ${this.codeBox('Verification code', this.esc(r?.token || 'N/A'), 'Expires in 60 minutes')}
+        <p style="font-size:13px;color:#6b6b7a;">If you did not initiate this request, no action is required and your account remains secure.</p>`);
+}
 
-    buildPasswordResetSuccessEmail(member) {
-        return this.shell(`All set, ${this.esc(member.name)}`, 'Password Updated', `
-            <p>Your password was reset successfully. You can now log in with your new password.</p>
-            <p style="font-size:13px;color:#6b6b7a;">If this wasn't you, contact us immediately on +256 772558913.</p>
-            ${this.button('Log in', 'https://elijah787.github.io/?action=login')}`);
-    }
+   
+buildPasswordResetSuccessEmail(member) {
+    return this.shell(`Dear ${this.esc(member.name)},`, 'Security Notice', `
+        <p>Your account password was successfully updated. You may now sign in using your new credentials.</p>
+        <p style="font-size:13px;color:#6b6b7a;">If you did not authorise this change, please contact us immediately on +256 772558913.</p>
+        ${this.button('Sign In', 'https://elijah787.github.io/?action=login')}`);
+}
 
     buildNewsletterWelcomeEmail(member) {
         return this.shell(`You're subscribed`, 'Newsletter', `
@@ -6975,19 +7002,19 @@ class GoogleAppsEmailService {
             <p style="font-size:11px;color:#9a9aa8;text-align:center;">You can unsubscribe any time from your dashboard.</p>`);
     }
 
-    getSubject(type, memberData, extraData) {
-        switch (type) {
-            case 'welcome': return '👖 Welcome to Jeans Club!';
-            case 'purchase': return '🛍️ Purchase Confirmed - Points Added!';
-            case 'discount': return `🎫 ${extraData?.discountPercentage || 0}% Discount Voucher`;
-            case 'referral': return '🎊 Referral Success! +100 Points';
-            case 'password_reset': return '🔒 Password Reset Request';
-            case 'password_reset_success': return '✅ Password Reset Successful';
-            case 'newsletter_welcome': return extraData?.subject || '👖 Welcome to the Jeans Club Newsletter';
-            case 'newsletter': return extraData?.subject || '💌 News from Jeans Club';
-            default: return '💌 Message from Jeans Club';
-        }
+   getSubject(type, memberData, extraData) {
+    switch (type) {
+        case 'welcome': return 'Membership Confirmation | Jeans Club';
+        case 'purchase': return 'Transaction Confirmation & Rewards Statement';
+        case 'discount': return 'Reward Voucher Issued | Ref ' + (extraData?.voucherCode || '');
+        case 'referral': return 'Referral Reward Credited';
+        case 'password_reset': return 'Security Verification Code';
+        case 'password_reset_success': return 'Security Notice: Password Updated';
+        case 'newsletter_welcome': return extraData?.subject || 'Subscription Confirmation | Jeans Club';
+        case 'newsletter': return extraData?.subject || 'Member Communication | Jeans Club';
+        default: return 'Correspondence from Jeans Club';
     }
+}
 
     async sendWelcomeEmail(email, memberData) {
         return this.sendEmailToGoogleScript(email, 'welcome', memberData);
@@ -12493,9 +12520,9 @@ function flipJcCard() {
   const flip = document.getElementById('jcFlip');
   const c3 = document.getElementById('jcC3');
   if (!flip || !c3) return;
-  const flipped = c3.dataset.flipped === '1';
-  c3.dataset.flipped = flipped ? '0' : '1';
-  c3.style.transform = flipped ? 'rotateY(0deg)' : 'rotateY(180deg)';
+  const to = c3.dataset.turn === '1' ? '0' : '1';
+  c3.dataset.turn = to;
+  c3.style.transform = to === '1' ? 'rotateY(180deg)' : 'rotateY(0deg)';
   flip.classList.remove('jc-pop');
   void flip.offsetWidth;
   flip.classList.add('jc-pop');
