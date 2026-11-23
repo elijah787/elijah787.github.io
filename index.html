@@ -12516,13 +12516,32 @@ function updateJcCard(m) {
   }
 }
 
+function jcShowSide() {
+  const c3 = document.getElementById('jcC3');
+  const front = document.getElementById('jcFront');
+  const back = document.getElementById('jcBack');
+  if (!c3 || !front || !back) return;
+  const m = new DOMMatrix(getComputedStyle(c3).transform);
+  const facingFront = m.a >= 0;
+  front.style.visibility = facingFront ? 'visible' : 'hidden';
+  back.style.visibility = facingFront ? 'hidden' : 'visible';
+}
+
 function flipJcCard() {
   const flip = document.getElementById('jcFlip');
   const c3 = document.getElementById('jcC3');
   if (!flip || !c3) return;
+
   const to = c3.dataset.turn === '1' ? '0' : '1';
   c3.dataset.turn = to;
   c3.style.transform = to === '1' ? 'rotateY(180deg)' : 'rotateY(0deg)';
+
+  const start = performance.now();
+  (function tick(now) {
+    jcShowSide();
+    if (now - start < 1100) requestAnimationFrame(tick);
+  })(start);
+
   flip.classList.remove('jc-pop');
   void flip.offsetWidth;
   flip.classList.add('jc-pop');
