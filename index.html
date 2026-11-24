@@ -6274,9 +6274,9 @@ async deleteVoucherFromSupabase(voucherCode) {
             total_spent: member.totalSpent || 0,
             newsletter_subscribed: member.newsletterSubscribed !== false,
              birthday: member.birthday || null,
-            purchasehistory: JSON.stringify(member.purchaseHistory || []),
+            
             activitylog: JSON.stringify(member.activityLog || []),
-            challenges: JSON.stringify(member.challenges || []),
+            
             referrals: JSON.stringify(member.referrals || []),
             resettoken: member.resetToken || null,
             resettokenexpiry: member.resetTokenExpiry || null,
@@ -7794,14 +7794,7 @@ async addPurchase(jcId, amount, description) {
         
         const tierUpgraded = oldTier !== member.tier;
         
-        // Add to purchase history
-        member.purchaseHistory = member.purchaseHistory || [];
-        member.purchaseHistory.unshift({
-            timestamp: new Date().toISOString(),
-            amount: amount,
-            description: description || 'Purchase',
-            pointsEarned: pointsEarned
-        });
+        
         
         // Add to activity log
         member.activityLog = member.activityLog || [];
