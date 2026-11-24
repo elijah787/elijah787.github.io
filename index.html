@@ -8894,8 +8894,8 @@ sendNotification(title, body, data = {}) {
         });
     }
     
-    // Store for cross-device sync
-    this.saveNotificationToSupabase(title, body, data);
+    
+    
 }
     
     storeNotification(title, body, data = {}) {
@@ -9538,8 +9538,7 @@ function sendPushNotification(title, body, data = {}) {
     
     // Method 1: Use OneSignal v16 API if available
     if (window.OneSignal && OneSignal.User && OneSignal.User.PushSubscription) {
-        // Store in Supabase for cross-device sync FIRST
-        saveNotificationToSupabase(clubManager.currentMember?.jcId, title, body, data);
+        // Store in Supabase for cross-device sync F
         
         // Send via OneSignal's createNotification method (v16 way)
         OneSignal.Notifications.createNotification({
