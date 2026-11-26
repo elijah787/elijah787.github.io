@@ -7692,18 +7692,7 @@ async signUpWithEmail(name, email, password, referralCode = null, birthday = nul
                         return false;
                     }
                     
-                    if (jcId.toLowerCase() === 'admin' && password === 'jeansclub2024') {
-                        this.isAdmin = true;
-                        this.currentMember = null;
-                        this.currentSalesperson = prompt("Enter your name:", "Salesperson");
-                        localStorage.setItem('jeansClubCurrentMember', '');
-                        localStorage.setItem('jeansClubIsAdmin', 'true');
-                        localStorage.setItem('jeansClubSalesperson', this.currentSalesperson);
-                        
-                        showAdminPanel();
-                        showToast(`Welcome ${this.currentSalesperson}!`, 'success');
-                        return true;
-                    }
+                   
                     
                     const member = await this.db.getMemberByJCId(jcId.toUpperCase());
                     if (!member) {
@@ -10576,26 +10565,21 @@ async function sendJCIdRecoveryEmail(email) {
         console.error('Failed to send recovery email:', error);
     }
 }
-        function showAdminLogin() {
-            const jcId = prompt('Enter Admin JC ID:');
-            const password = prompt('Enter Admin Password:');
-            
-            if (jcId === 'admin' && password === 'jeansclub2024') {
-                const salespersonName = prompt("Enter your name:", "Salesperson");
-                
-                clubManager.isAdmin = true;
-                clubManager.currentMember = null;
-                clubManager.currentSalesperson = salespersonName;
-                localStorage.setItem('jeansClubCurrentMember', '');
-                localStorage.setItem('jeansClubIsAdmin', 'true');
-                localStorage.setItem('jeansClubSalesperson', salespersonName);
-                
-                showAdminPanel();
-                showToast(`Welcome ${salespersonName}!`, 'success');
-            } else {
-                showToast('Invalid admin credentials', 'error');
-            }
-        }
+       async function showAdminLogin() {
+    const user = prompt('Enter Admin ID:'); if (!user) return;
+    const pass = prompt('Enter Admin Password:'); if (!pass) return;
+    const { data: ok } = await clubManager.db.supabase.rpc('admin_login', { p_user: user, p_password: pass });
+    if (!ok) { showToast('Invalid admin credentials, or account temporarily locked', 'error'); return; }
+    const salespersonName = prompt("Enter your name:", "Salesperson");
+    clubManager.isAdmin = true;
+    clubManager.currentMember = null;
+    clubManager.currentSalesperson = salespersonName;
+    localStorage.setItem('jeansClubCurrentMember', '');
+    localStorage.setItem('jeansClubIsAdmin', 'true');
+    localStorage.setItem('jeansClubSalesperson', salespersonName);
+    showAdminPanel();
+    showToast(`Welcome ${salespersonName}!`, 'success');
+}
 
         
 
