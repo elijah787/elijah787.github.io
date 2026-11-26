@@ -6825,7 +6825,7 @@ class GoogleAppsEmailService {
         this.scriptURL = 'https://script.google.com/macros/s/AKfycbwxkYkcAxDu_4mkHgM-DIuNNyzdi5TDqb3A7HZd4lD6OflKLDHL2DmSaCJI252qNuxH/exec';
     }
 
-    async sendEmailToGoogleScript(email, type, memberData, extraData = null) {
+    async sendEmailToGoogleScript(email, type, memberData, extraData = null, showReminder = true) {
         try {
             const emailContent = this.buildEmailContent(type, memberData, extraData);
             const subject = this.getSubject(type, memberData, extraData);
@@ -6849,7 +6849,13 @@ class GoogleAppsEmailService {
             });
             
             console.log('✅ Email request sent');
-            return { success: true, message: 'Email sent' };
+
+// Show the Spam Folder reminder after an email request
+if (showReminder && typeof showEmailSpamReminder === 'function') {
+    showEmailSpamReminder(email, type);
+}
+
+return { success: true, message: 'Email request submitted' };
             
         } catch (error) {
             console.error('❌ Email sending failed:', error);
@@ -7071,12 +7077,13 @@ async sendBulkNewsletter(emails, subject, message) {
         // Send to each email individually (with delay to avoid rate limiting)
         for (const email of emails) {
             try {
-                const result = await this.sendEmailToGoogleScript(
-                    email, 
-                    'newsletter', 
-                    { name: email.split('@')[0], email: email }, 
-                    { subject, message }
-                );
+               const result = await this.sendEmailToGoogleScript(
+    email,
+    'newsletter',
+    { name: email.split('@')[0], email: email },
+    { subject, message },
+    false
+);
                 
                 if (result.success) {
                     successCount++;
@@ -10149,6 +10156,210 @@ window.removeFromPushSubscriptions = removeFromPushSubscriptions;
             `;
             document.head.appendChild(style);
         }
+
+function showEmailSpamReminder(email, emailType) {
+
+    // Prevent multiple reminders appearing on top of each other
+    if (document.querySelector('.jc-spam-reminder-overlay')) {
+        return;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'jc-spam-reminder-overlay';
+
+    overlay.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.82);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 999999;
+        backdrop-filter: blur(7px);
+    `;
+
+    const modal = document.createElement('div');
+
+    modal.style.cssText = `
+        width: 100%;
+        max-width: 480px;
+        background: #111827;
+        border: 2px solid #D6A84B;
+        border-radius: 18px;
+        padding: 32px 25px;
+        text-align: center;
+        color: #ffffff;
+        font-family: Arial, sans-serif;
+        box-shadow: 0 20px 70px rgba(0,0,0,0.6);
+        animation: jcSpamAppear 0.3s ease;
+    `;
+
+    const style = document.createElement('style');
+
+    style.textContent = `
+        @keyframes jcSpamAppear {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .jc-spam-checklist {
+            text-align: left;
+            background: rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 16px 18px;
+            margin: 20px 0;
+            line-height: 1.8;
+        }
+
+        .jc-spam-close:hover {
+            background: #f0c46b !important;
+            transform: translateY(-2px);
+        }
+    `;
+
+    document.head.appendChild(style);
+
+    const heading = document.createElement('h2');
+    heading.textContent = '⚠️ IMPORTANT EMAIL REMINDER';
+
+    heading.style.cssText = `
+        color: #D6A84B;
+        font-size: 17px;
+        letter-spacing: 1px;
+        margin: 0 0 18px;
+    `;
+
+    const mainHeading = document.createElement('h1');
+    mainHeading.textContent = 'CHECK YOUR SPAM FOLDER!';
+
+    mainHeading.style.cssText = `
+        color: #FFD36A;
+        font-size: clamp(25px, 6vw, 34px);
+        line-height: 1.15;
+        font-weight: 900;
+        margin: 0 0 18px;
+    `;
+
+    const message = document.createElement('p');
+    message.textContent =
+        'Jeans Club has requested an email to be sent to your address. Please check your Spam or Junk folder if you cannot find it in your Inbox.';
+
+    message.style.cssText = `
+        color: #E5E7EB;
+        font-size: 15px;
+        line-height: 1.7;
+        margin: 0;
+    `;
+
+    const emailAddress = document.createElement('p');
+    emailAddress.textContent = email || '';
+
+    emailAddress.style.cssText = `
+        color: #D6A84B;
+        font-size: 14px;
+        font-weight: bold;
+        overflow-wrap: anywhere;
+        margin: 12px 0;
+    `;
+
+    const checklist = document.createElement('div');
+    checklist.className = 'jc-spam-checklist';
+
+    const checklistTitle = document.createElement('p');
+    checklistTitle.textContent = 'PLEASE CHECK THESE FOLDERS:';
+    checklistTitle.style.cssText = `
+        color: #D6A84B;
+        font-weight: bold;
+        margin: 0 0 10px;
+        font-size: 14px;
+    `;
+
+    const list = document.createElement('div');
+    list.style.cssText = `
+        color: #ffffff;
+        font-size: 14px;
+    `;
+
+    list.innerHTML = `
+        <div>📥 <strong>Inbox</strong></div>
+        <div style="color:#FFD36A; font-weight:900; font-size:16px;">
+            ⚠️ SPAM / JUNK FOLDER — CHECK THIS!
+        </div>
+        <div>📨 <strong>Promotions / Updates</strong></div>
+    `;
+
+    checklist.appendChild(checklistTitle);
+    checklist.appendChild(list);
+
+    const instruction = document.createElement('p');
+    instruction.textContent =
+        'If you find our email in Spam, open it and select "Report as not spam" so future Jeans Club emails can reach your Inbox.';
+
+    instruction.style.cssText = `
+        color: #D1D5DB;
+        font-size: 13px;
+        line-height: 1.7;
+        margin: 0 0 22px;
+    `;
+
+    const button = document.createElement('button');
+    button.className = 'jc-spam-close';
+    button.textContent = "GOT IT — I'LL CHECK SPAM";
+
+    button.style.cssText = `
+        width: 100%;
+        border: none;
+        border-radius: 10px;
+        padding: 16px 12px;
+        background: #D6A84B;
+        color: #111827;
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        transition: 0.2s ease;
+    `;
+
+    function closeReminder() {
+        overlay.remove();
+        style.remove();
+        document.removeEventListener('keydown', handleEscape);
+    }
+
+    function handleEscape(event) {
+        if (event.key === 'Escape') {
+            closeReminder();
+        }
+    }
+
+    button.addEventListener('click', closeReminder);
+
+    overlay.addEventListener('click', function(event) {
+        if (event.target === overlay) {
+            closeReminder();
+        }
+    });
+
+    document.addEventListener('keydown', handleEscape);
+
+    modal.appendChild(heading);
+    modal.appendChild(mainHeading);
+    modal.appendChild(message);
+    modal.appendChild(emailAddress);
+    modal.appendChild(checklist);
+    modal.appendChild(instruction);
+    modal.appendChild(button);
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+}
 
         async function showDashboard(member) {
             hideAllSections();
