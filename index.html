@@ -7691,7 +7691,23 @@ async signUpWithEmail(name, email, password, referralCode = null, birthday = nul
                         showToast('Please enter both JC ID and password', 'error');
                         return false;
                     }
-                    
+                    // Staff check first: only succeeds if jcId matches a row in the admins table
+const { data: isStaff } = await this.db.supabase
+    .rpc('admin_login', { p_user: jcId, p_password: password });
+
+if (isStaff) {
+    this.isAdmin = true;
+    this.currentMember = null;
+    this.currentSalesperson = prompt("Enter your name:", "Salesperson") || "Salesperson";
+    localStorage.setItem('jeansClubCurrentMember', '');
+    localStorage.setItem('jeansClubIsAdmin', 'true');
+    localStorage.setItem('jeansClubSalesperson', this.currentSalesperson);
+
+    showAdminPanel();
+    showToast(`Welcome ${this.currentSalesperson}!`, 'success');
+    return true;
+}
+// not staff: carry on with the normal member login below
                    
                     
                     const member = await this.db.getMemberByJCId(jcId.toUpperCase());
