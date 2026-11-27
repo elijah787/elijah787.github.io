@@ -3242,7 +3242,7 @@ body{background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url('https://imag
             </div>
             <div class="pg-grid">
                 <div class="pg-tile"><em class="pg-ico">💸</em><h3>50 UGX</h3><p>value of each point</p></div>
-                <div class="pg-tile"><em class="pg-ico">🔢</em><h3>4 points</h3><p>minimum per voucher</p></div>
+                <div class="pg-tile"><em class="pg-ico">🔢</em><h3>500 points</h3><p>minimum per voucher</p></div>
                 <div class="pg-tile"><em class="pg-ico">⏰</em><h3>30 days</h3><p>validity after creation</p></div>
                 <div class="pg-tile"><em class="pg-ico">☝️</em><h3>1 per sale</h3><p>one voucher per transaction</p></div>
             </div>
@@ -3595,8 +3595,8 @@ body{background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url('https://imag
             <div class="info-card">
                 <h3>Create Discount Voucher</h3>
                 <div class="form-group">
-                    <label for="discountPoints">Points to Use (Min: 4)</label>
-                    <input type="number" id="discountPoints" placeholder="Enter points to redeem" min="4">
+                    <label for="discountPoints">Points to Use (Min: 500)</label>
+<input type="number" id="discountPoints" placeholder="Enter points to redeem" min="500">
                 </div>
                 <button class="btn" onclick="calculateDiscount()">Calculate Discount</button>
                 <div id="discountResult" class="discount-result"></div>
@@ -5653,37 +5653,37 @@ async function processConfirmedSale(parsedData) {
                     PEARL: { 
                         monthlyMaxDiscount: 100000,
                         perVoucherMax: 25000,
-                        minPoints: 4
+                        minPoints: 500
                     },
                     BRONZE: { 
                         monthlyMaxDiscount: 250000,
                         perVoucherMax: 50000,
-                        minPoints: 4
+                        minPoints: 500
                     },
                     SILVER: { 
                         monthlyMaxDiscount: 500000,
                         perVoucherMax: 100000,
-                        minPoints: 4
+                        minPoints: 500
                     },
                     RUBY: { 
                         monthlyMaxDiscount: 1000000,
                         perVoucherMax: 200000,
-                        minPoints: 4
+                        minPoints: 500
                     },
                     GOLD: { 
                         monthlyMaxDiscount: 2000000,
                         perVoucherMax: 400000,
-                        minPoints: 4
+                        minPoints: 500
                     },
                     SAPPHIRE: { 
                         monthlyMaxDiscount: 4000000,
                         perVoucherMax: 800000,
-                        minPoints: 4
+                        minPoints: 500
                     },
                     PLATINUM: { 
                         monthlyMaxDiscount: 10000000,
                         perVoucherMax: 2000000,
-                        minPoints: 4
+                        minPoints: 500
                     }
                 };
             }
@@ -11430,10 +11430,10 @@ async function updateMemberVouchers(jcId) {
         function calculateDiscount() {
             const points = parseInt(document.getElementById('discountPoints').value);
             
-            if (!points || points < 4) {
-                showToast('Minimum 4 points required', 'error');
-                return;
-            }
+           if (!points || points < 500) {
+    showToast('Minimum 500 points required', 'error');
+    return;
+}
             
             if (points > clubManager.currentMember.points) {
                 showToast(`You only have ${clubManager.currentMember.points} points`, 'error');
@@ -11456,10 +11456,10 @@ async function updateMemberVouchers(jcId) {
 async function redeemPoints() {
     const points = parseInt(document.getElementById('discountPoints').value);
     
-    if (!points || points < 4) {
-        showToast('Minimum 4 points required', 'error');
-        return;
-    }
+    if (!points || points < 500) {
+    showToast('Minimum 500 points required', 'error');
+    return;
+}
     
     if (points > clubManager.currentMember.points) {
         showToast(`You only have ${clubManager.currentMember.points} points`, 'error');
