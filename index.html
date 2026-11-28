@@ -6330,25 +6330,9 @@ async deleteVoucherFromSupabase(voucherCode) {
                         throw error;
                     }
 
-                    if (member) {
-                        return {
-                            ...member,
-                            jcId: member.jc_id,
-                            referralCode: member.referral_code,
-                            referredBy: member.referred_by,
-                            joinedDate: member.joined_date,
-                            totalSpent: member.total_spent,
-                            newsletterSubscribed: member.newsletter_subscribed,
-                            ip_address: member.ip_address,
-                            lastLogin: member.last_login,
-                            createdAt: member.created_at,
-                            lifetimePoints: member.lifetime_points || Math.floor((member.total_spent || 0) / 1000) + 10,
-                            purchaseHistory: member.purchasehistory ? JSON.parse(member.purchasehistory) : [],
-                            activityLog: member.activitylog ? JSON.parse(member.activitylog) : [],
-                            challenges: member.challenges ? JSON.parse(member.challenges) : [],
-                            referrals: member.referrals ? JSON.parse(member.referrals) : []
-                        };
-                    }
+             if (member) {
+    return this.transformMemberData(member);
+}
                     
                     return null;
                 } catch (error) {
