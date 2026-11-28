@@ -3952,6 +3952,18 @@ body{background:linear-gradient(rgba(0,0,0,.7),rgba(0,0,0,.7)),url('https://imag
         console.log('✅ Running inside Jeans Club APK');
     }
 })();
+const CODE_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+function secureCode(len) {
+    let out = '';
+    const buf = new Uint8Array(len * 2);
+    while (out.length < len) {
+        crypto.getRandomValues(buf);
+        for (const b of buf) {
+            if (b < 252 && out.length < len) out += CODE_CHARS[b % 36];
+        }
+    }
+    return out;
+}
         // ===========================
         // GLOBAL VARIABLE DECLARATIONS
         // ===========================
@@ -5836,48 +5848,51 @@ async deleteVoucherFromSupabase(voucherCode) {
                 };
             }
 
-            generateVoucherCode() {
-                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                let code = '';
-                for (let i = 0; i < 10; i++) {
-                    code += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
-                return 'JC' + code;
-            }
-
+           generateVoucherCode() {
+    return 'JC' + secureCode(10);
+}
             generateQRCodeData(voucherCode) {
                 return voucherCode;
             }
 
             async createVoucher(memberJCId, memberName, pointsUsed, discountPercentage, expiryDays = 30) {
-                const voucherCode = this.generateVoucherCode();
-                const createdDate = new Date();
-                const expiryDate = new Date();
-                expiryDate.setDate(expiryDate.getDate() + expiryDays);
+    const createdDate = new Date();
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + expiryDays);
 
-                const voucher = {
-                    id: 'voucher_' + Date.now(),
-                    code: voucherCode,
-                    memberJCId: memberJCId,
-                    memberName: memberName,
-                    pointsUsed: pointsUsed,
-                    discountPercentage: discountPercentage,
-                    createdDate: createdDate.toISOString(),
-                    expiryDate: expiryDate.toISOString(),
-                    status: 'active',
-                    usedDate: null,
-                    qrCodeData: this.generateQRCodeData(voucherCode)
-                };
+    let voucher = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+        const code = this.generateVoucherCode();
+        if (this.vouchers.some(v => v.code === code)) continue;
 
-                this.vouchers.push(voucher);
-                this.saveVouchers();
-                
-                await this.saveVoucherToSupabase(voucher);
+        const candidate = {
+            id: 'voucher_' + crypto.randomUUID(),
+            code: code,
+            memberJCId: memberJCId,
+            memberName: memberName,
+            pointsUsed: pointsUsed,
+            discountPercentage: discountPercentage,
+            createdDate: createdDate.toISOString(),
+            expiryDate: expiryDate.toISOString(),
+            status: 'active',
+            usedDate: null,
+            qrCodeData: code
+        };
 
-                this.logVoucherActivity(voucherCode, 'created', memberJCId, `Voucher created: ${discountPercentage}% discount`);
+        if (await this.saveVoucherToSupabase(candidate, true)) {
+            voucher = candidate;
+            break;
+        }
+        if (this.lastErrorCode !== '23505') break;   // not a collision: stop
+    }
 
-                return voucher;
-            }
+    if (!voucher) throw new Error('Could not create a unique voucher');
+
+    this.vouchers.push(voucher);
+    this.saveVouchers();
+    this.logVoucherActivity(voucher.code, 'created', memberJCId, `Voucher created: ${discountPercentage}% discount`);
+    return voucher;
+}
 
             getMemberVouchers(memberJCId) {
                 return this.vouchers.filter(v => v.memberJCId === memberJCId)
@@ -6010,52 +6025,43 @@ async deleteVoucherFromSupabase(voucherCode) {
             saveVouchers() {
                 localStorage.setItem('jeansClubVouchers', JSON.stringify(this.vouchers));
             }
-            
-            async saveVoucherToSupabase(voucher) {
-                try {
-                    console.log("💾 Saving voucher to Supabase:", voucher.code);
-                    
-                    if (!window.supabaseDbInstance) {
-                        console.error("❌ Supabase DB not initialized");
-                        return false;
-                    }
-                    
-                    const { supabase } = window.supabaseDbInstance;
-                    
-                    const voucherData = {
-                        id: voucher.id,
-                        code: voucher.code,
-                        member_jc_id: voucher.memberJCId,
-                        member_name: voucher.memberName,
-                        points_used: voucher.pointsUsed,
-                        discount_percentage: voucher.discountPercentage,
-                        created_date: voucher.createdDate,
-                        expiry_date: voucher.expiryDate,
-                        status: voucher.status,
-                        used_date: voucher.usedDate,
-                        redeemed_by: voucher.redeemedBy,
-                        qr_code_data: voucher.qrCodeData
-                    };
+            async saveVoucherToSupabase(voucher, isNew = false) {
+    this.lastErrorCode = null;
+    try {
+        if (!window.supabaseDbInstance) return false;
+        const { supabase } = window.supabaseDbInstance;
 
-                    const { data, error } = await supabase
-                        .from('vouchers')
-                        .upsert(voucherData, { 
-                            onConflict: 'code'
-                        });
+        const voucherData = {
+            id: voucher.id,
+            code: voucher.code,
+            member_jc_id: voucher.memberJCId,
+            member_name: voucher.memberName,
+            points_used: voucher.pointsUsed,
+            discount_percentage: voucher.discountPercentage,
+            created_date: voucher.createdDate,
+            expiry_date: voucher.expiryDate,
+            status: voucher.status,
+            used_date: voucher.usedDate,
+            redeemed_by: voucher.redeemedBy,
+            qr_code_data: voucher.qrCodeData
+        };
 
-                    if (error) {
-                        console.error("❌ Supabase voucher save error:", error);
-                        return false;
-                    }
+        const q = isNew
+            ? supabase.from('vouchers').insert(voucherData)
+            : supabase.from('vouchers').upsert(voucherData, { onConflict: 'code' });
 
-                    console.log("✅ Voucher saved to Supabase:", voucher.code);
-                    return true;
-
-                } catch (error) {
-                    console.error("❌ Failed to save voucher to Supabase:", error);
-                    return false;
-                }
-            }
+        const { error } = await q;
+        if (error) {
+            this.lastErrorCode = error.code || null;
+            console.error('❌ Supabase voucher save error:', error);
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to save voucher to Supabase:', error);
+        return false;
+    }
+}
 
             async getVoucherFromSupabase(code) {
                 try {
@@ -6236,7 +6242,9 @@ async deleteVoucherFromSupabase(voucherCode) {
                     return cache?.members || [];
                 }
             }
-           async saveMember(member) {
+   async saveMember(member, isNew = false) {
+    this.lastErrorCode = null;
+    this.lastErrorMessage = '';
     try {
         console.log('💾 Saving member to Supabase:', member.jcId);
         
@@ -6256,10 +6264,10 @@ async deleteVoucherFromSupabase(voucherCode) {
             throw new Error('Email already in use by another account');
         }
         
-        const lifetimePoints = member.lifetimePoints 
+        const lifetimePoints = member.lifetimePoints;
         
         const memberData = {
-            id: member.id || 'member_' + Date.now(),
+            id: member.id || 'member_' + crypto.randomUUID(),
             jc_id: member.jcId,
             email: member.email,
             normalized_email: normalizedEmail,  // Store normalized version
@@ -6273,7 +6281,7 @@ async deleteVoucherFromSupabase(voucherCode) {
             joined_date: member.joinedDate || new Date().toISOString(),
             total_spent: member.totalSpent || 0,
             newsletter_subscribed: member.newsletterSubscribed !== false,
-             birthday: member.birthday || null,
+            birthday: member.birthday || null,
             
             activitylog: JSON.stringify(member.activityLog || []),
             
@@ -6285,11 +6293,13 @@ async deleteVoucherFromSupabase(voucherCode) {
             created_at: member.createdAt || new Date().toISOString()
         };
 
-        const { data, error } = await this.supabase
-            .from('members')
-            .upsert(memberData, { 
-                onConflict: 'jc_id'  // Don't conflict on email, use JC ID
-            });
+        // New members: INSERT only (can never overwrite someone else).
+        // Existing members: UPSERT (normal updates).
+        const query = isNew
+            ? this.supabase.from('members').insert(memberData)
+            : this.supabase.from('members').upsert(memberData, { onConflict: 'jc_id' });
+
+        const { error } = await query;
 
         if (error) {
             console.error('❌ Supabase save error:', error);
@@ -6308,6 +6318,8 @@ async deleteVoucherFromSupabase(voucherCode) {
         return true;
 
     } catch (error) {
+        this.lastErrorCode = error.code || null;
+        this.lastErrorMessage = error.message || '';
         console.error('❌ Failed to save member to Supabase:', error);
         return false;
     }
@@ -7382,21 +7394,11 @@ async sendBulkNewsletter(emails, subject, message) {
                 }
             }
 
-         generateJCId() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let id = 'JC';
-    for (let i = 0; i < 8; i++) {  // Changed from 4 to 8
-        id += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return id;
+      generateJCId() {
+    return 'JC' + secureCode(8);
 }
 generateReferralCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 8; i++) {  // Changed from 6 to 8
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
+    return secureCode(8);
 }
             calculateTier(member) {
                 const points = member.lifetimePoints || 0;
@@ -7501,35 +7503,24 @@ async signUpWithEmail(name, email, password, referralCode = null, birthday = nul
         const jcId = this.generateJCId();
         const memberReferralCode = this.generateReferralCode();
         
-        let referredBy = null;
-        let referralPoints = 10;
-        
-        if (referralCode) {
-            const referrer = allMembers.find(m => m.referralCode === referralCode);
-            
-            if (referrer) {
-                referredBy = referrer.jcId;
-                referralPoints = 20;
-                
-                // Add referral to referrer's record (non-critical, wrapped)
-                try {
-                    referrer.referrals = referrer.referrals || [];
-                    referrer.referrals.push({
-                        referredJCId: jcId,
-                        referredName: name,
-                        referralDate: new Date().toISOString(),
-                        status: 'pending'
-                    });
-                    await this.db.saveMember(referrer);
-                } catch (refErr) {
-                    console.warn('⚠️ Could not update referrer (non-critical):', refErr.message);
-                }
-            } else {
-                return { 
-                    success: false, 
-                    message: 'Invalid referral code' 
-                };
-            }
+   let referredBy = null;
+let referralPoints = 10;
+let referrerToUpdate = null;
+
+if (referralCode) {
+    const referrer = allMembers.find(m => m.referralCode === referralCode);
+    
+    if (referrer) {
+        referredBy = referrer.jcId;
+        referralPoints = 20;
+        referrerToUpdate = referrer;   // we update them AFTER the account is saved
+    } else {
+        return { 
+            success: false, 
+            message: 'Invalid referral code' 
+        };
+    }
+
         }
         
         const member = {
@@ -7566,14 +7557,42 @@ async signUpWithEmail(name, email, password, referralCode = null, birthday = nul
         // ===========================================
         // STEP 7: SAVE MEMBER (THIS IS THE ONLY CRITICAL STEP)
         // ===========================================
-        const saved = await this.db.saveMember(member);
-        if (!saved) {
-            console.error('❌ CRITICAL: Member save failed');
-            return { 
-                success: false, 
-                message: 'Failed to create account. Please try again.' 
-            };
-        }
+        let saved = false;
+for (let attempt = 0; attempt < 5 && !saved; attempt++) {
+    saved = await this.db.saveMember(member, true);
+    if (saved) break;
+
+    const isDuplicate = this.db.lastErrorCode === '23505';
+    const isEmailProblem = /email/i.test(this.db.lastErrorMessage || '');
+    if (!isDuplicate || isEmailProblem) break;   // real error: stop
+
+    // Collision: make new codes and try again
+    member.jcId = this.generateJCId();
+    member.referralCode = this.generateReferralCode();
+    member.id = 'member_' + crypto.randomUUID();
+}
+if (!saved) {
+    return { 
+        success: false, 
+        message: 'Failed to create account. Please try again.' 
+    };
+}
+
+// Now that the account exists, record the referral on the referrer
+if (referrerToUpdate) {
+    try {
+        referrerToUpdate.referrals = referrerToUpdate.referrals || [];
+        referrerToUpdate.referrals.push({
+            referredJCId: member.jcId,
+            referredName: name,
+            referralDate: new Date().toISOString(),
+            status: 'pending'
+        });
+        await this.db.saveMember(referrerToUpdate);
+    } catch (refErr) {
+        console.warn('⚠️ Could not update referrer (non-critical):', refErr.message);
+    }
+}
         
         console.log('✅ Member saved successfully:', member.jcId);
         
@@ -7818,7 +7837,15 @@ async addPurchase(jcId, amount, description) {
         });
         
         // Save to Supabase
-        const saved = await this.db.saveMember(member);
+        let saved = false;
+for (let attempt = 0; attempt < 5 && !saved; attempt++) {
+    saved = await this.db.saveMember(member, true);
+    if (saved) break;
+    if (this.db.lastErrorCode !== '23505' || /email/i.test(this.db.lastErrorMessage || '')) break;
+    member.jcId = this.generateJCId();
+    member.referralCode = this.generateReferralCode();
+    member.id = 'member_' + crypto.randomUUID();
+}
         if (!saved) {
             return { success: false, message: 'Failed to save to database' };
         }
